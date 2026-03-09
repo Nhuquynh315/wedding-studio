@@ -35,6 +35,9 @@ def create_app(config_name='default'):
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Please log in to access this page.'
     
+    # Import models so Flask-Migrate/SQLAlchemy can detect them
+    from app import models  # noqa: F401
+
     # Register blueprints
     from app.routes.main import main_bp
     from app.routes import auth_bp, wedding_bp, guests_bp
