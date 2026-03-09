@@ -27,6 +27,9 @@
                             <a class="nav-link" href="{{ url_for('wedding.dashboard') }}">Dashboard</a>
                         </li>
                         <li class="nav-item">
+                            <span class="nav-link text-white-50 pe-none">Hi, {{ current_user.full_name.split()[0] | capitalize }}</span>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
                         </li>
                     {% else %}
