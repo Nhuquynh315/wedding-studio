@@ -3,6 +3,59 @@
 {% block title %}Dashboard - AI Wedding Studio{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Welcome back, {{ current_user.full_name.split()[0] | capitalize }}!</h1>
-<p class="text-muted">Your wedding dashboard is coming soon.</p>
+<div class="d-flex justify-content-between align-items-center dashboard-header">
+    <h1 class="mb-0">Welcome back, {{ current_user.full_name.split()[0] | capitalize }}!</h1>
+    <a href="/wedding/new" class="btn btn-primary btn-lg">
+        + Create New Wedding
+    </a>
+</div>
+
+{% if weddings %}
+    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+        {% for wedding in weddings %}
+        <div class="col">
+            <a href="/wedding/{{ wedding.id }}" class="text-decoration-none">
+                <div class="card h-100 shadow-sm border-0 wedding-card">
+                    <div class="card-body">
+                        <h5 class="card-title text-dark mb-1">
+                            {{ wedding.partner1_name }} &amp; {{ wedding.partner2_name }}
+                        </h5>
+                        <p class="text-muted small mb-3">
+                            {{ wedding.wedding_date.strftime('%B %d, %Y') if wedding.wedding_date else 'Date TBD' }}
+                        </p>
+                        <ul class="list-unstyled mb-3">
+                            <li class="mb-1 text-secondary">
+                                <span class="me-1">&#128205;</span>{{ wedding.location or 'Location TBD' }}
+                            </li>
+                        </ul>
+                        {% if wedding.style %}
+                            {% set style_colors = {
+                                'romantic':  'danger',
+                                'rustic':    'warning',
+                                'modern':    'primary',
+                                'bohemian':  'success',
+                                'classic':   'secondary',
+                                'garden':    'success',
+                                'beach':     'info',
+                                'glamorous': 'dark'
+                            } %}
+                            <span class="badge bg-{{ style_colors.get(wedding.style | lower, 'secondary') }} text-capitalize">
+                                {{ wedding.style }}
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="text-center empty-state">
+        <span class="empty-icon">&#128149;</span>
+        <h4 class="mt-3">No weddings yet</h4>
+        <p class="mb-4">Get started by creating your first wedding project.</p>
+        <a href="/wedding/new" class="btn btn-primary">Create Your First Wedding</a>
+    </div>
+{% endif %}
 {% endblock %}
+
