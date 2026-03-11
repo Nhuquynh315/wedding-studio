@@ -1,6 +1,9 @@
-from flask import Blueprint, render_template
+from datetime import date
+
+from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import login_required, current_user
 
+from app import db
 from app.models import Wedding
 
 wedding_bp = Blueprint('wedding', __name__)
@@ -11,3 +14,67 @@ wedding_bp = Blueprint('wedding', __name__)
 def dashboard():
     weddings = Wedding.query.filter_by(user_id=current_user.id).order_by(Wedding.created_at.desc()).all()
     return render_template('dashboard.html', weddings=weddings)
+
+
+@wedding_bp.route('/wedding/new', methods=['GET', 'POST'])
+@login_required
+def create_wedding():
+    if request.method == 'POST':
+        # Collect and validate required fields
+        partner1_name   = request.form.get('partner1_name',   '').strip()
+        partner2_name   = request.form.get('partner2_name',   '').strip()
+        wedding_date_s  = request.form.get('wedding_date',    '').strip()
+        location        = request.form.get('location',        '').strip()
+        venue_name      = request.form.get('venue_name',      '').strip()
+        style           = request.form.get('style',           '').strip()
+        primary_color   = request.form.get('primary_color',   '').strip()
+        secondary_color = request.form.get('secondary_color', '').strip()
+
+        errors = []
+        if not partner1_name:
+            errors.append('Partner 1 name is required.')
+        if not partner2_name:
+            errors.append('Partner 2 name is required.')
+        if not wedding_date_s:
+            errors.append('Wedding date is required.')
+        if not location:
+            errors.append('Location is required.')
+        if not venue_name:
+            errors.append('Venue name is required.')
+        if not style:
+            errors.append('Please select a wedding style.')
+        if not primary_color:
+            errors.append('Primary color is required.')
+        if not secondary_color:
+            errors.append('Secondary color is required.')
+
+        wedding_date = None
+        if wedding_date_s and not errors:
+            try:
+                wedding_date = date.fromisoformat(wedding_date_s)
+            except ValueError:
+                errors.append('Invalid wedding date format.')
+
+        if errors:
+            for msg in errors:
+                flash(msg, 'danger')
+            return render_template('wedding/create.html')
+
+        wedding = Wedding(
+            user_id=current_user.id,
+            partner1_name=partner1_name,
+            partner2_name=partner2_name,
+            wedding_date=wedding_date,
+            location=location,
+            venue_name=venue_name,
+            style=style,
+            primary_color=primary_color,
+            secondary_color=secondary_color,
+        )
+        db.session.add(wedding)
+        db.session.commit()
+
+        flash(f"{partner1_name} & {partner2_name}'s wedding has been created!", 'success')
+        return redirect(url_for('wedding.dashboard'))
+
+    return render_template('wedding/create.html')
