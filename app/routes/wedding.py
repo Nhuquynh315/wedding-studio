@@ -1,10 +1,13 @@
+import re
 from datetime import date
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import login_required, current_user
 
 from app import db
-from app.models import Wedding
+from app.models import Wedding, WEDDING_STYLES
+
+_HEX_COLOR = re.compile(r'^#[0-9a-fA-F]{6}$')
 
 wedding_bp = Blueprint('wedding', __name__)
 
@@ -41,12 +44,12 @@ def create_wedding():
             errors.append('Location is required.')
         if not venue_name:
             errors.append('Venue name is required.')
-        if not style:
-            errors.append('Please select a wedding style.')
-        if not primary_color:
-            errors.append('Primary color is required.')
-        if not secondary_color:
-            errors.append('Secondary color is required.')
+        if style not in WEDDING_STYLES:
+            errors.append('Please select a valid wedding style.')
+        if not _HEX_COLOR.match(primary_color):
+            errors.append('Primary color must be a valid hex color (e.g. #ff5733).')
+        if not _HEX_COLOR.match(secondary_color):
+            errors.append('Secondary color must be a valid hex color (e.g. #ff5733).')
 
         wedding_date = None
         if wedding_date_s and not errors:
@@ -72,7 +75,12 @@ def create_wedding():
             secondary_color=secondary_color,
         )
         db.session.add(wedding)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            flash('Something went wrong saving your wedding. Please try again.', 'danger')
+            return render_template('wedding/create.html')
 
         flash(f"{partner1_name} & {partner2_name}'s wedding has been created!", 'success')
         return redirect(url_for('wedding.dashboard'))

@@ -5,7 +5,7 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center dashboard-header">
     <h1 class="mb-0">Welcome back, {{ current_user.full_name.split()[0] | capitalize }}!</h1>
-    <a href="/wedding/new" class="btn btn-primary btn-lg">
+    <a href="{{ url_for('wedding.create_wedding') }}" class="btn btn-primary btn-lg">
         + Create New Wedding
     </a>
 </div>
@@ -30,14 +30,12 @@
                         </ul>
                         {% if wedding.style %}
                             {% set style_colors = {
-                                'romantic':  'danger',
-                                'rustic':    'warning',
-                                'modern':    'primary',
-                                'bohemian':  'success',
-                                'classic':   'secondary',
-                                'garden':    'success',
-                                'beach':     'info',
-                                'glamorous': 'dark'
+                                'rustic':     'warning',
+                                'modern':     'primary',
+                                'luxury':     'dark',
+                                'beach':      'info',
+                                'vintage':    'danger',
+                                'minimalist': 'secondary'
                             } %}
                             <span class="badge bg-{{ style_colors.get(wedding.style | lower, 'secondary') }} text-capitalize">
                                 {{ wedding.style }}
@@ -54,7 +52,7 @@
         <span class="empty-icon">&#128149;</span>
         <h4 class="mt-3">No weddings yet</h4>
         <p class="mb-4">Get started by creating your first wedding project.</p>
-        <a href="/wedding/new" class="btn btn-primary">Create Your First Wedding</a>
+        <a href="{{ url_for('wedding.create_wedding') }}" class="btn btn-primary">Create Your First Wedding</a>
     </div>
 {% endif %}
 {% endblock %}

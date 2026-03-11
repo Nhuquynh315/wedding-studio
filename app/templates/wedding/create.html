@@ -14,8 +14,8 @@
             <p class="text-muted mt-1">Fill in the details and we'll help you plan the perfect day.</p>
         </div>
 
-        <form method="POST" action="/wedding/new" novalidate>
-            {{ form.hidden_tag() if form is defined }}
+        <form method="POST" action="{{ url_for('wedding.create_wedding') }}" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
             <!-- Partners -->
             <div class="card border-0 shadow-sm mb-4">

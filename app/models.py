@@ -28,7 +28,7 @@ class User(UserMixin, db.Model):
     full_name = db.Column(db.String(120), nullable=False)
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
 
-    weddings = db.relationship('Wedding', back_populates='user', lazy='dynamic')
+    weddings = db.relationship('Wedding', back_populates='user', cascade='all, delete-orphan')
 
     def __repr__(self):
         return f'<User {self.email}>'
@@ -74,8 +74,8 @@ class Wedding(db.Model):
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow, nullable=False)
 
     user = db.relationship('User', back_populates='weddings')
-    guests = db.relationship('Guest', back_populates='wedding', lazy='dynamic')
-    designs = db.relationship('Design', back_populates='wedding', lazy='dynamic')
+    guests = db.relationship('Guest', back_populates='wedding', cascade='all, delete-orphan')
+    designs = db.relationship('Design', back_populates='wedding', cascade='all, delete-orphan')
 
     def __repr__(self):
         return f'<Wedding {self.partner1_name} & {self.partner2_name} on {self.wedding_date}>'
@@ -92,7 +92,7 @@ class Guest(db.Model):
     phone = db.Column(db.String(30), nullable=True)
     group_name = db.Column(db.String(100), nullable=True)
     meal_preference = db.Column(db.String(100), nullable=True)
-    rsvp_status = db.Column(db.String(20), nullable=False, default='pending')
+    rsvp_status = db.Column(db.String(20), nullable=False, default='pending')  # 'pending', 'confirmed', 'declined'
     table_number = db.Column(db.Integer, nullable=True)
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
 

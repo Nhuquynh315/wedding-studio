@@ -9,7 +9,8 @@
             <div class="card-body p-4">
                 <h2 class="card-title text-center mb-4">Create an Account</h2>
 
-                <form method="POST" action="/register" novalidate>
+                <form method="POST" action="{{ url_for('auth.register') }}" novalidate>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="mb-3">
                         <label for="full_name" class="form-label">Full Name</label>
                         <input type="text" class="form-control" id="full_name" name="full_name"
@@ -40,7 +41,7 @@
                 </form>
 
                 <p class="text-center mt-3 mb-0">
-                    Already have an account? <a href="/login">Login here</a>
+                    Already have an account? <a href="{{ url_for('auth.login') }}">Login here</a>
                 </p>
             </div>
         </div>

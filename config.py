@@ -6,9 +6,8 @@ load_dotenv()
 
 class Config:
     """Base configuration"""
-    SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
+    SECRET_KEY = os.getenv('SECRET_KEY') or 'dev-only-secret-do-not-use-in-production'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SQLALCHEMY_RECORD_QUERIES = True
     
     # Database configuration
     SQLALCHEMY_DATABASE_URI = os.getenv(
@@ -22,6 +21,7 @@ class DevelopmentConfig(Config):
     DEBUG = True
     TESTING = False
     SQLALCHEMY_ECHO = True
+    SQLALCHEMY_RECORD_QUERIES = True
 
 
 class TestingConfig(Config):
@@ -35,8 +35,8 @@ class ProductionConfig(Config):
     """Production configuration"""
     DEBUG = False
     TESTING = False
-    # DATABASE_URL must be set in environment variables
-    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL')
+    SECRET_KEY = os.environ['SECRET_KEY']  # must be set — crashes loudly if missing
+    SQLALCHEMY_DATABASE_URI = os.environ['DATABASE_URL']  # must be set
 
 
 config = {
