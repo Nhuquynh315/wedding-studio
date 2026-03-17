@@ -49,11 +49,8 @@
         <a href="{{ url_for('wedding.edit_wedding', wedding_id=wedding.id) }}" class="btn btn-outline-primary btn-sm">
             Edit
         </a>
-        <form method="POST" action="{{ url_for('wedding.delete_wedding', wedding_id=wedding.id) }}"
-              onsubmit="return confirm('Are you sure you want to delete this wedding? This cannot be undone.');">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
-        </form>
+        <button type="button" class="btn btn-outline-danger btn-sm"
+                data-bs-toggle="modal" data-bs-target="#deleteModal">Delete</button>
     </div>
 </div>
 
@@ -173,5 +170,29 @@
         </div>
     </div>
 
+</div>
+
+{# ── Delete confirmation modal ─────────────────────────────── #}
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-semibold" id="deleteModalLabel">Delete Wedding</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete
+                <strong>{{ wedding.partner1_name }} &amp; {{ wedding.partner2_name }}</strong>'s wedding?
+                This cannot be undone.
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" action="{{ url_for('wedding.delete_wedding', wedding_id=wedding.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

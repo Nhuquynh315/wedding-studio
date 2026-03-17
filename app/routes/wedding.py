@@ -97,3 +97,92 @@ def wedding_detail(wedding_id):
     if wedding.user_id != current_user.id:
         abort(403)
     return render_template('wedding/detail.html', wedding=wedding)
+
+
+@wedding_bp.route('/wedding/<int:wedding_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_wedding(wedding_id):
+    wedding = Wedding.query.get_or_404(wedding_id)
+    if wedding.user_id != current_user.id:
+        abort(403)
+
+    if request.method == 'POST':
+        partner1_name   = request.form.get('partner1_name',   '').strip()
+        partner2_name   = request.form.get('partner2_name',   '').strip()
+        wedding_date_s  = request.form.get('wedding_date',    '').strip()
+        location        = request.form.get('location',        '').strip()
+        venue_name      = request.form.get('venue_name',      '').strip()
+        style           = request.form.get('style',           '').strip()
+        primary_color   = request.form.get('primary_color',   '').strip()
+        secondary_color = request.form.get('secondary_color', '').strip()
+
+        errors = []
+        if not partner1_name:
+            errors.append('Partner 1 name is required.')
+        if not partner2_name:
+            errors.append('Partner 2 name is required.')
+        if not wedding_date_s:
+            errors.append('Wedding date is required.')
+        if not location:
+            errors.append('Location is required.')
+        if not venue_name:
+            errors.append('Venue name is required.')
+        if style not in WEDDING_STYLES:
+            errors.append('Please select a valid wedding style.')
+        if not _HEX_COLOR.match(primary_color):
+            errors.append('Primary color must be a valid hex color (e.g. #ff5733).')
+        if not _HEX_COLOR.match(secondary_color):
+            errors.append('Secondary color must be a valid hex color (e.g. #ff5733).')
+
+        wedding_date = None
+        if wedding_date_s and not errors:
+            try:
+                wedding_date = date.fromisoformat(wedding_date_s)
+            except ValueError:
+                errors.append('Invalid wedding date format.')
+
+        if errors:
+            for msg in errors:
+                flash(msg, 'danger')
+            return render_template('wedding/edit.html', wedding=wedding)
+
+        wedding.partner1_name   = partner1_name
+        wedding.partner2_name   = partner2_name
+        wedding.wedding_date    = wedding_date
+        wedding.location        = location
+        wedding.venue_name      = venue_name
+        wedding.style           = style
+        wedding.primary_color   = primary_color
+        wedding.secondary_color = secondary_color
+
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            flash('Something went wrong saving your changes. Please try again.', 'danger')
+            return render_template('wedding/edit.html', wedding=wedding)
+
+        flash('Wedding updated successfully.', 'success')
+        return redirect(url_for('wedding.wedding_detail', wedding_id=wedding.id))
+
+    return render_template('wedding/edit.html', wedding=wedding)
+
+
+@wedding_bp.route('/wedding/<int:wedding_id>/delete', methods=['POST'])
+@login_required
+def delete_wedding(wedding_id):
+    wedding = Wedding.query.get_or_404(wedding_id)
+    if wedding.user_id != current_user.id:
+        abort(403)
+
+    name = f"{wedding.partner1_name} & {wedding.partner2_name}"
+    try:
+        db.session.delete(wedding)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        flash('Something went wrong deleting the wedding. Please try again.', 'danger')
+        return redirect(url_for('wedding.wedding_detail', wedding_id=wedding_id))
+
+    flash(f"{name}'s wedding has been deleted.", 'success')
+    return redirect(url_for('wedding.dashboard'))

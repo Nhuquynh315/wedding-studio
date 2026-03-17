@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Wedding - AI Wedding Studio{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-xl-7">
+
+        <div class="mb-4">
+            <a href="{{ url_for('wedding.wedding_detail', wedding_id=wedding.id) }}" class="text-decoration-none text-muted small">
+                &larr; Back to Wedding
+            </a>
+            <h1 class="mt-2 mb-0 fw-bold">Edit Wedding</h1>
+            <p class="text-muted mt-1">{{ wedding.partner1_name }} &amp; {{ wedding.partner2_name }}</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('wedding.edit_wedding', wedding_id=wedding.id) }}" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <!-- Partners -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-3 fw-semibold">The Couple</h5>
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <label for="partner1_name" class="form-label">Partner 1 Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="partner1_name" name="partner1_name"
+                                   value="{{ request.form.partner1_name or wedding.partner1_name }}"
+                                   placeholder="e.g. Emma" required>
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="partner2_name" class="form-label">Partner 2 Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="partner2_name" name="partner2_name"
+                                   value="{{ request.form.partner2_name or wedding.partner2_name }}"
+                                   placeholder="e.g. Liam" required>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Date & Venue -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-3 fw-semibold">Date &amp; Venue</h5>
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <label for="wedding_date" class="form-label">Wedding Date <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="wedding_date" name="wedding_date"
+                                   value="{{ request.form.wedding_date or wedding.wedding_date }}" required>
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="venue_name" class="form-label">Venue Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="venue_name" name="venue_name"
+                                   value="{{ request.form.venue_name or wedding.venue_name }}"
+                                   placeholder="e.g. The Grand Ballroom" required>
+                        </div>
+                        <div class="col-12">
+                            <label for="location" class="form-label">Location <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="location" name="location"
+                                   value="{{ request.form.location or wedding.location }}"
+                                   placeholder="e.g. Paris, France" required>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Style & Colors -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-3 fw-semibold">Style &amp; Colors</h5>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label for="style" class="form-label">Wedding Style <span class="text-danger">*</span></label>
+                            {% set current_style = request.form.style or wedding.style %}
+                            <select class="form-select" id="style" name="style" required>
+                                <option value="" disabled {{ 'selected' if not current_style }}>Select a style...</option>
+                                {% for value, label in [
+                                    ('rustic',     'Rustic'),
+                                    ('modern',     'Modern'),
+                                    ('luxury',     'Luxury'),
+                                    ('beach',      'Beach'),
+                                    ('vintage',    'Vintage'),
+                                    ('minimalist', 'Minimalist')
+                                ] %}
+                                <option value="{{ value }}" {{ 'selected' if current_style == value }}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="primary_color" class="form-label">Primary Color <span class="text-danger">*</span></label>
+                            {% set primary = request.form.primary_color or wedding.primary_color %}
+                            <div class="input-group">
+                                <input type="color" class="form-control form-control-color" id="primary_color_picker"
+                                       value="{{ primary }}" title="Pick primary color">
+                                <input type="text" class="form-control" id="primary_color" name="primary_color"
+                                       value="{{ primary }}" placeholder="#c9748f" required>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="secondary_color" class="form-label">Secondary Color <span class="text-danger">*</span></label>
+                            {% set secondary = request.form.secondary_color or wedding.secondary_color %}
+                            <div class="input-group">
+                                <input type="color" class="form-control form-control-color" id="secondary_color_picker"
+                                       value="{{ secondary }}" title="Pick secondary color">
+                                <input type="text" class="form-control" id="secondary_color" name="secondary_color"
+                                       value="{{ secondary }}" placeholder="#c9a84c" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 justify-content-end mb-5">
+                <a href="{{ url_for('wedding.wedding_detail', wedding_id=wedding.id) }}" class="btn btn-outline-secondary px-4">Cancel</a>
+                <button type="submit" class="btn btn-primary px-5">Save Changes</button>
+            </div>
+        </form>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function syncColor(pickerId, inputId) {
+        const picker = document.getElementById(pickerId);
+        const input  = document.getElementById(inputId);
+        picker.addEventListener('input', () => input.value = picker.value);
+        input.addEventListener('input', () => {
+            if (/^#[0-9a-fA-F]{6}$/.test(input.value)) picker.value = input.value;
+        });
+    }
+    syncColor('primary_color_picker',   'primary_color');
+    syncColor('secondary_color_picker', 'secondary_color');
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-control-color {
+        max-width: 3rem;
+        padding: 0.25rem;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
