@@ -156,10 +156,131 @@
 
     {# ── Guest List tab ────────────────────────────────────── #}
     <div class="tab-pane fade" id="guests" role="tabpanel" aria-labelledby="guests-tab">
-        <div class="text-center text-muted py-5">
-            <span style="font-size: 3rem;">&#128101;</span>
-            <p class="mt-3">Guest management coming soon.</p>
+
+        {# Add guest form #}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <h5 class="card-title fw-semibold mb-3">Add Guest</h5>
+                <form method="POST" action="{{ url_for('guests.add_guest', wedding_id=wedding.id) }}" novalidate>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="full_name" class="form-label">Full Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="full_name" name="full_name"
+                                   placeholder="e.g. Jane Smith" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email"
+                                   placeholder="e.g. jane@example.com">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="phone" class="form-label">Phone</label>
+                            <input type="text" class="form-control" id="phone" name="phone"
+                                   placeholder="e.g. +1 555 000 1234">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="group_name" class="form-label">Group</label>
+                            <select class="form-select" id="group_name" name="group_name">
+                                <option value="">— Select group —</option>
+                                <option>Bride's Family</option>
+                                <option>Groom's Family</option>
+                                <option>Friends</option>
+                                <option>Colleagues</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="meal_preference" class="form-label">Meal Preference</label>
+                            <select class="form-select" id="meal_preference" name="meal_preference">
+                                <option value="">— Select meal —</option>
+                                <option>Standard</option>
+                                <option>Vegetarian</option>
+                                <option>Vegan</option>
+                                <option>Halal</option>
+                                <option>Kosher</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="rsvp_status" class="form-label">RSVP Status</label>
+                            <select class="form-select" id="rsvp_status" name="rsvp_status">
+                                <option value="pending" selected>Pending</option>
+                                <option value="confirmed">Accepted</option>
+                                <option value="declined">Declined</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-3 text-end">
+                        <button type="submit" class="btn btn-primary px-4">Add Guest</button>
+                    </div>
+                </form>
+            </div>
         </div>
+
+        {# Guest table #}
+        {% if wedding.guests %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Group</th>
+                                <th>Meal</th>
+                                <th>RSVP</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set rsvp_badges = {
+                                'pending':   'secondary',
+                                'confirmed': 'success',
+                                'declined':  'danger'
+                            } %}
+                            {% set rsvp_labels = {
+                                'pending':   'Pending',
+                                'confirmed': 'Accepted',
+                                'declined':  'Declined'
+                            } %}
+                            {% for guest in wedding.guests %}
+                            <tr>
+                                <td class="fw-medium">{{ guest.full_name }}</td>
+                                <td class="text-muted">{{ guest.email or '—' }}</td>
+                                <td class="text-muted">{{ guest.phone or '—' }}</td>
+                                <td>{{ guest.group_name or '—' }}</td>
+                                <td>{{ guest.meal_preference or '—' }}</td>
+                                <td>
+                                    <span class="badge bg-{{ rsvp_badges.get(guest.rsvp_status, 'secondary') }}">
+                                        {{ rsvp_labels.get(guest.rsvp_status, guest.rsvp_status | capitalize) }}
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    <a href="{{ url_for('guests.edit_guest', wedding_id=wedding.id, guest_id=guest.id) }}"
+                                       class="btn btn-outline-primary btn-sm">Edit</a>
+                                    <form method="POST" class="d-inline"
+                                          action="{{ url_for('guests.delete_guest', wedding_id=wedding.id, guest_id=guest.id) }}"
+                                          onsubmit="return confirm('Remove {{ guest.full_name }} from the guest list?');">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-4">
+            <p class="mb-0">No guests added yet. Use the form above to add your first guest.</p>
+        </div>
+        {% endif %}
+
     </div>
 
     {# ── Designs tab ───────────────────────────────────────── #}
