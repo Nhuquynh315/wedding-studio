@@ -4,17 +4,29 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center dashboard-header">
-    <h1 class="mb-0">Welcome back, {{ current_user.full_name.split()[0] | capitalize }}!</h1>
-    <a href="{{ url_for('wedding.create_wedding') }}" class="btn btn-primary btn-lg">
-        + Create New Wedding
-    </a>
+    <h1 class="mb-0">
+        {% if current_user.is_authenticated %}
+            Welcome back, {{ current_user.full_name.split()[0] | capitalize }}!
+        {% else %}
+            Wedding Studio
+        {% endif %}
+    </h1>
+    {% if current_user.is_authenticated %}
+        <a href="{{ url_for('wedding.create_wedding') }}" class="btn btn-primary btn-lg">
+            + Create New Wedding
+        </a>
+    {% else %}
+        <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg">
+            Sign in to get started
+        </a>
+    {% endif %}
 </div>
 
 {% if weddings %}
     <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
         {% for wedding in weddings %}
         <div class="col">
-            <a href="/wedding/{{ wedding.id }}" class="text-decoration-none">
+            <a href="{{ url_for('wedding.wedding_detail', wedding_id=wedding.id) }}" class="text-decoration-none">
                 <div class="card h-100 shadow-sm border-0 wedding-card">
                     <div class="card-body">
                         <h5 class="card-title text-dark mb-1">

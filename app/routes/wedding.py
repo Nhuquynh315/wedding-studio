@@ -1,7 +1,7 @@
 import re
 from datetime import date
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import login_required, current_user
 
 from app import db
@@ -12,10 +12,12 @@ _HEX_COLOR = re.compile(r'^#[0-9a-fA-F]{6}$')
 wedding_bp = Blueprint('wedding', __name__)
 
 
+@wedding_bp.route('/')
 @wedding_bp.route('/dashboard')
-@login_required
 def dashboard():
-    weddings = Wedding.query.filter_by(user_id=current_user.id).order_by(Wedding.created_at.desc()).all()
+    weddings = []
+    if current_user.is_authenticated:
+        weddings = Wedding.query.filter_by(user_id=current_user.id).order_by(Wedding.created_at.desc()).all()
     return render_template('dashboard.html', weddings=weddings)
 
 
@@ -86,3 +88,12 @@ def create_wedding():
         return redirect(url_for('wedding.dashboard'))
 
     return render_template('wedding/create.html')
+
+
+@wedding_bp.route('/wedding/<int:wedding_id>')
+@login_required
+def wedding_detail(wedding_id):
+    wedding = Wedding.query.get_or_404(wedding_id)
+    if wedding.user_id != current_user.id:
+        abort(403)
+    return render_template('wedding/detail.html', wedding=wedding)
