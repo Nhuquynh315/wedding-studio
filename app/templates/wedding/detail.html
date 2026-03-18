@@ -157,33 +157,111 @@
     {# ── Guest List tab ────────────────────────────────────── #}
     <div class="tab-pane fade" id="guests" role="tabpanel" aria-labelledby="guests-tab">
 
-        {# Stats row #}
-    <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm text-center py-3">
-                <div class="fs-2 fw-bold">{{ guest_stats.total }}</div>
-                <div class="text-muted small">Total</div>
+        {# ── Guest summary card ─────────────────────────────── #}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+
+                {# Top row: four KPI tiles #}
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-md-3 text-center">
+                        <div class="fs-2 fw-bold">{{ guest_stats.total }}</div>
+                        <div class="text-muted small">Total Guests</div>
+                    </div>
+                    <div class="col-6 col-md-3 text-center">
+                        <div class="fs-2 fw-bold text-success">{{ guest_stats.accepted }}</div>
+                        <div class="text-muted small">Accepted</div>
+                    </div>
+                    <div class="col-6 col-md-3 text-center">
+                        <div class="fs-2 fw-bold text-secondary">{{ guest_stats.pending }}</div>
+                        <div class="text-muted small">Pending</div>
+                    </div>
+                    <div class="col-6 col-md-3 text-center">
+                        <div class="fs-2 fw-bold text-danger">{{ guest_stats.declined }}</div>
+                        <div class="text-muted small">Declined</div>
+                    </div>
+                </div>
+
+                {# Overall RSVP progress bar #}
+                {% if guest_stats.total > 0 %}
+                <div class="mb-1 d-flex justify-content-between">
+                    <span class="small text-muted fw-semibold">RSVP Progress</span>
+                    <span class="small text-muted">{{ guest_stats.response_rate }}% responded</span>
+                </div>
+                <div class="progress mb-4" style="height: 10px;">
+                    <div class="progress-bar bg-success"
+                         style="width: {{ (guest_stats.accepted / guest_stats.total * 100) | round | int }}%"
+                         title="{{ guest_stats.accepted }} accepted"></div>
+                    <div class="progress-bar bg-secondary"
+                         style="width: {{ (guest_stats.pending  / guest_stats.total * 100) | round | int }}%"
+                         title="{{ guest_stats.pending }} pending"></div>
+                    <div class="progress-bar bg-danger"
+                         style="width: {{ (guest_stats.declined / guest_stats.total * 100) | round | int }}%"
+                         title="{{ guest_stats.declined }} declined"></div>
+                </div>
+                {% endif %}
+
+                <div class="row g-4">
+                    {# Meal breakdown #}
+                    <div class="col-md-5">
+                        <h6 class="text-muted text-uppercase fw-semibold mb-2" style="font-size:0.72rem;letter-spacing:.05em;">Meal Preferences</h6>
+                        {% if guest_stats.meal_counts %}
+                        <ul class="list-unstyled mb-0 small">
+                            {% for meal, count in guest_stats.meal_counts.items() %}
+                            <li class="d-flex justify-content-between py-1 border-bottom">
+                                <span>{{ meal }}</span>
+                                <span class="fw-semibold">{{ count }}</span>
+                            </li>
+                            {% endfor %}
+                            {% if guest_stats.no_meal %}
+                            <li class="d-flex justify-content-between py-1 text-muted">
+                                <span>Not specified</span>
+                                <span>{{ guest_stats.no_meal }}</span>
+                            </li>
+                            {% endif %}
+                        </ul>
+                        {% if guest_stats.dietary_count %}
+                        <p class="text-muted small mt-2 mb-0">
+                            {{ guest_stats.dietary_count }} guest{{ 's' if guest_stats.dietary_count != 1 else '' }}
+                            with dietary requirements
+                        </p>
+                        {% endif %}
+                        {% else %}
+                        <p class="text-muted small mb-0">No meal preferences recorded.</p>
+                        {% endif %}
+                    </div>
+
+                    {# Per-group breakdown #}
+                    {% if group_stats %}
+                    <div class="col-md-7">
+                        <h6 class="text-muted text-uppercase fw-semibold mb-2" style="font-size:0.72rem;letter-spacing:.05em;">By Group</h6>
+                        <div class="d-flex flex-column gap-3">
+                            {% for group, s in group_stats.items() %}
+                            <div>
+                                <div class="d-flex justify-content-between align-items-baseline mb-1">
+                                    <span class="fw-medium small">{{ group }}</span>
+                                    <span class="text-muted small">
+                                        {{ s.total }} &middot;
+                                        <span class="text-success">{{ s.accepted }}</span> /
+                                        <span>{{ s.pending }}</span> /
+                                        <span class="text-danger">{{ s.declined }}</span>
+                                    </span>
+                                </div>
+                                <div class="progress" style="height: 6px;">
+                                    {% if s.total > 0 %}
+                                    <div class="progress-bar bg-success" style="width: {{ (s.accepted / s.total * 100) | round | int }}%"></div>
+                                    <div class="progress-bar bg-secondary" style="width: {{ (s.pending  / s.total * 100) | round | int }}%"></div>
+                                    <div class="progress-bar bg-danger"  style="width: {{ (s.declined / s.total * 100) | round | int }}%"></div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
             </div>
         </div>
-        <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm text-center py-3">
-                <div class="fs-2 fw-bold text-success">{{ guest_stats.accepted }}</div>
-                <div class="text-muted small">Accepted</div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm text-center py-3">
-                <div class="fs-2 fw-bold text-danger">{{ guest_stats.declined }}</div>
-                <div class="text-muted small">Declined</div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm text-center py-3">
-                <div class="fs-2 fw-bold text-secondary">{{ guest_stats.pending }}</div>
-                <div class="text-muted small">Pending</div>
-            </div>
-        </div>
-    </div>
 
     {# Import guests from CSV #}
         <div class="card border-0 shadow-sm mb-3">
@@ -271,15 +349,27 @@
 
         {# Group filter #}
         {% if wedding.guests %}
-        <div class="d-flex align-items-center gap-2 mb-3">
-            <label for="groupFilter" class="form-label mb-0 text-muted small fw-semibold">Filter by group:</label>
-            <select id="groupFilter" class="form-select form-select-sm w-auto">
-                <option value="">All groups</option>
-                {% set groups = wedding.guests | map(attribute='group_name') | select | unique | sort %}
-                {% for group in groups %}
-                <option>{{ group }}</option>
-                {% endfor %}
-            </select>
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+            <div class="d-flex align-items-center gap-2">
+                <label for="groupFilter" class="form-label mb-0 text-muted small fw-semibold">Filter by group:</label>
+                <select id="groupFilter" class="form-select form-select-sm w-auto">
+                    <option value="">All groups</option>
+                    {% set groups = wedding.guests | map(attribute='group_name') | select | unique | sort %}
+                    {% for group in groups %}
+                    <option>{{ group }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('guests.export_guests', wedding_id=wedding.id) }}"
+                   class="btn btn-outline-secondary btn-sm">
+                    &#8595; Export CSV
+                </a>
+                <button type="button" class="btn btn-outline-danger btn-sm"
+                        data-bs-toggle="modal" data-bs-target="#deleteAllGuestsModal">
+                    Delete All
+                </button>
+            </div>
         </div>
         {% endif %}
 
@@ -445,6 +535,29 @@
                 <form method="POST" id="deleteGuestForm">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-danger">Remove</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ── Delete all guests modal ───────────────────────────────── #}
+<div class="modal fade" id="deleteAllGuestsModal" tabindex="-1" aria-labelledby="deleteAllGuestsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-semibold" id="deleteAllGuestsModalLabel">Delete All Guests</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                This will permanently remove all <strong>{{ guest_stats.total }}</strong>
+                guest{{ 's' if guest_stats.total != 1 else '' }} from this wedding. This cannot be undone.
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" action="{{ url_for('guests.delete_all_guests', wedding_id=wedding.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">Delete All</button>
                 </form>
             </div>
         </div>

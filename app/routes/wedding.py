@@ -1,4 +1,5 @@
 import re
+from collections import defaultdict
 from datetime import date
 
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
@@ -97,13 +98,46 @@ def wedding_detail(wedding_id):
     if wedding.user_id != current_user.id:
         abort(403)
     guests = wedding.guests
+    total    = len(guests)
+    accepted = sum(1 for g in guests if g.rsvp_status == 'confirmed')
+    declined = sum(1 for g in guests if g.rsvp_status == 'declined')
+    pending  = sum(1 for g in guests if g.rsvp_status == 'pending')
+    responded = accepted + declined  # anyone who made a decision
+
+    # Meal breakdown — count only guests with a non-null preference
+    meal_counts = defaultdict(int)
+    for g in guests:
+        if g.meal_preference:
+            meal_counts[g.meal_preference] += 1
+
     guest_stats = {
-        'total':    len(guests),
-        'accepted': sum(1 for g in guests if g.rsvp_status == 'confirmed'),
-        'declined': sum(1 for g in guests if g.rsvp_status == 'declined'),
-        'pending':  sum(1 for g in guests if g.rsvp_status == 'pending'),
+        'total':          total,
+        'accepted':       accepted,
+        'declined':       declined,
+        'pending':        pending,
+        'responded':      responded,
+        'response_rate':  round(responded / total * 100) if total else 0,
+        'dietary_count':  sum(1 for g in guests
+                              if g.meal_preference and g.meal_preference != 'Standard'),
+        'meal_counts':    dict(sorted(meal_counts.items())),
+        'no_meal':        sum(1 for g in guests if not g.meal_preference),
     }
-    return render_template('wedding/detail.html', wedding=wedding, guest_stats=guest_stats)
+
+    # Per-group breakdown: { group_name: {total, accepted, pending, declined} }
+    group_stats = defaultdict(lambda: {'total': 0, 'accepted': 0, 'pending': 0, 'declined': 0})
+    for g in guests:
+        key = g.group_name or 'Ungrouped'
+        group_stats[key]['total'] += 1
+        if g.rsvp_status == 'confirmed':
+            group_stats[key]['accepted'] += 1
+        elif g.rsvp_status == 'declined':
+            group_stats[key]['declined'] += 1
+        else:
+            group_stats[key]['pending'] += 1
+    group_stats = dict(sorted(group_stats.items()))
+
+    return render_template('wedding/detail.html', wedding=wedding,
+                           guest_stats=guest_stats, group_stats=group_stats)
 
 
 @wedding_bp.route('/wedding/<int:wedding_id>/edit', methods=['GET', 'POST'])

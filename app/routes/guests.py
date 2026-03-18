@@ -1,4 +1,7 @@
-from flask import Blueprint, abort, flash, redirect, url_for, request
+import csv
+import io
+
+from flask import Blueprint, abort, flash, redirect, url_for, request, Response
 from flask_login import login_required, current_user
 
 from app import db
@@ -125,6 +128,37 @@ def edit_guest(guest_id):
     return redirect(detail_url)
 
 
+@guests_bp.route('/wedding/<int:wedding_id>/guests/export-csv')
+@login_required
+def export_guests(wedding_id):
+    wedding = _get_wedding_or_403(wedding_id)
+
+    output = io.StringIO()
+    writer = csv.DictWriter(
+        output,
+        fieldnames=['full_name', 'email', 'phone', 'group_name', 'meal_preference', 'rsvp_status'],
+        extrasaction='ignore',
+        lineterminator='\r\n',
+    )
+    writer.writeheader()
+    for guest in wedding.guests:
+        writer.writerow({
+            'full_name':       guest.full_name,
+            'email':           guest.email        or '',
+            'phone':           guest.phone        or '',
+            'group_name':      guest.group_name   or '',
+            'meal_preference': guest.meal_preference or '',
+            'rsvp_status':     guest.rsvp_status,
+        })
+
+    filename = f"guests_{wedding.partner1_name}_{wedding.partner2_name}.csv".replace(' ', '_')
+    return Response(
+        output.getvalue(),
+        mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename="{filename}"'},
+    )
+
+
 @guests_bp.route('/wedding/<int:wedding_id>/guests/import-csv', methods=['POST'])
 @login_required
 def import_guests(wedding_id):
@@ -168,6 +202,29 @@ def import_guests(wedding_id):
     for msg in errors:
         flash(msg, 'warning')
 
+    return redirect(detail_url)
+
+
+@guests_bp.route('/wedding/<int:wedding_id>/guests/delete-all', methods=['POST'])
+@login_required
+def delete_all_guests(wedding_id):
+    wedding = _get_wedding_or_403(wedding_id)
+    detail_url = url_for('wedding.wedding_detail', wedding_id=wedding_id) + _GUESTS_TAB
+
+    count = len(wedding.guests)
+    if count == 0:
+        flash('There are no guests to delete.', 'warning')
+        return redirect(detail_url)
+
+    try:
+        Guest.query.filter_by(wedding_id=wedding_id).delete()
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        flash('Something went wrong deleting all guests. Please try again.', 'danger')
+        return redirect(detail_url)
+
+    flash(f'All {count} guest{"s" if count != 1 else ""} removed.', 'success')
     return redirect(detail_url)
 
 
