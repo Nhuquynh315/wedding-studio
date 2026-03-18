@@ -157,7 +157,35 @@
     {# ── Guest List tab ────────────────────────────────────── #}
     <div class="tab-pane fade" id="guests" role="tabpanel" aria-labelledby="guests-tab">
 
-        {# Add guest form #}
+        {# Stats row #}
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center py-3">
+                <div class="fs-2 fw-bold">{{ guest_stats.total }}</div>
+                <div class="text-muted small">Total</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center py-3">
+                <div class="fs-2 fw-bold text-success">{{ guest_stats.accepted }}</div>
+                <div class="text-muted small">Accepted</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center py-3">
+                <div class="fs-2 fw-bold text-danger">{{ guest_stats.declined }}</div>
+                <div class="text-muted small">Declined</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center py-3">
+                <div class="fs-2 fw-bold text-secondary">{{ guest_stats.pending }}</div>
+                <div class="text-muted small">Pending</div>
+            </div>
+        </div>
+    </div>
+
+    {# Add guest form #}
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-body p-4">
                 <h5 class="card-title fw-semibold mb-3">Add Guest</h5>
@@ -218,6 +246,20 @@
             </div>
         </div>
 
+        {# Group filter #}
+        {% if wedding.guests %}
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <label for="groupFilter" class="form-label mb-0 text-muted small fw-semibold">Filter by group:</label>
+            <select id="groupFilter" class="form-select form-select-sm w-auto">
+                <option value="">All groups</option>
+                {% set groups = wedding.guests | map(attribute='group_name') | select | unique | sort %}
+                {% for group in groups %}
+                <option>{{ group }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
         {# Guest table #}
         {% if wedding.guests %}
         <div class="card border-0 shadow-sm">
@@ -235,7 +277,7 @@
                                 <th class="text-end">Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="guestTableBody">
                             {% set rsvp_badges = {
                                 'pending':   'secondary',
                                 'confirmed': 'success',
@@ -247,7 +289,7 @@
                                 'declined':  'Declined'
                             } %}
                             {% for guest in wedding.guests %}
-                            <tr>
+                            <tr data-group="{{ guest.group_name or '' }}">
                                 <td class="fw-medium">{{ guest.full_name }}</td>
                                 <td class="text-muted">{{ guest.email or '—' }}</td>
                                 <td class="text-muted">{{ guest.phone or '—' }}</td>
@@ -259,14 +301,19 @@
                                     </span>
                                 </td>
                                 <td class="text-end">
-                                    <a href="{{ url_for('guests.edit_guest', wedding_id=wedding.id, guest_id=guest.id) }}"
-                                       class="btn btn-outline-primary btn-sm">Edit</a>
-                                    <form method="POST" class="d-inline"
-                                          action="{{ url_for('guests.delete_guest', wedding_id=wedding.id, guest_id=guest.id) }}"
-                                          onsubmit="return confirm('Remove {{ guest.full_name }} from the guest list?');">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
-                                    </form>
+                                    <button type="button" class="btn btn-outline-primary btn-sm"
+                                            data-bs-toggle="modal" data-bs-target="#editGuestModal"
+                                            data-guest-id="{{ guest.id }}"
+                                            data-full-name="{{ guest.full_name }}"
+                                            data-email="{{ guest.email or '' }}"
+                                            data-phone="{{ guest.phone or '' }}"
+                                            data-group="{{ guest.group_name or '' }}"
+                                            data-meal="{{ guest.meal_preference or '' }}"
+                                            data-rsvp="{{ guest.rsvp_status }}">Edit</button>
+                                    <button type="button" class="btn btn-outline-danger btn-sm"
+                                            data-bs-toggle="modal" data-bs-target="#deleteGuestModal"
+                                            data-guest-id="{{ guest.id }}"
+                                            data-guest-name="{{ guest.full_name }}">Delete</button>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -293,6 +340,94 @@
 
 </div>
 
+{# ── Edit guest modal ──────────────────────────────────────── #}
+<div class="modal fade" id="editGuestModal" tabindex="-1" aria-labelledby="editGuestModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-semibold" id="editGuestModalLabel">Edit Guest</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" id="editGuestForm" novalidate>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="edit_full_name" class="form-label">Full Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="edit_full_name" name="full_name" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="edit_email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="edit_email" name="email">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="edit_phone" class="form-label">Phone</label>
+                            <input type="text" class="form-control" id="edit_phone" name="phone">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="edit_group_name" class="form-label">Group</label>
+                            <select class="form-select" id="edit_group_name" name="group_name">
+                                <option value="">— Select group —</option>
+                                <option>Bride's Family</option>
+                                <option>Groom's Family</option>
+                                <option>Friends</option>
+                                <option>Colleagues</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="edit_meal_preference" class="form-label">Meal Preference</label>
+                            <select class="form-select" id="edit_meal_preference" name="meal_preference">
+                                <option value="">— Select meal —</option>
+                                <option>Standard</option>
+                                <option>Vegetarian</option>
+                                <option>Vegan</option>
+                                <option>Halal</option>
+                                <option>Kosher</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="edit_rsvp_status" class="form-label">RSVP Status</label>
+                            <select class="form-select" id="edit_rsvp_status" name="rsvp_status">
+                                <option value="pending">Pending</option>
+                                <option value="confirmed">Accepted</option>
+                                <option value="declined">Declined</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{# ── Delete guest modal ────────────────────────────────────── #}
+<div class="modal fade" id="deleteGuestModal" tabindex="-1" aria-labelledby="deleteGuestModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-semibold" id="deleteGuestModalLabel">Remove Guest</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to remove <strong id="deleteGuestName"></strong> from the guest list?
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" id="deleteGuestForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">Remove</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 {# ── Delete confirmation modal ─────────────────────────────── #}
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -316,4 +451,46 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const hash = window.location.hash;
+    if (hash) {
+        const tabBtn = document.querySelector(`button[data-bs-target="${hash}"]`);
+        if (tabBtn) bootstrap.Tab.getOrCreateInstance(tabBtn).show();
+    }
+
+    const groupFilter = document.getElementById('groupFilter');
+    if (groupFilter) {
+        groupFilter.addEventListener('change', function () {
+            const selected = this.value;
+            document.querySelectorAll('#guestTableBody tr').forEach(function (row) {
+                row.style.display = (!selected || row.dataset.group === selected) ? '' : 'none';
+            });
+        });
+    }
+
+    const deleteGuestModal = document.getElementById('deleteGuestModal');
+    deleteGuestModal.addEventListener('show.bs.modal', function (event) {
+        const btn = event.relatedTarget;
+        document.getElementById('deleteGuestName').textContent = btn.dataset.guestName;
+        document.getElementById('deleteGuestForm').action = '/guest/' + btn.dataset.guestId + '/delete';
+    });
+
+    const editGuestModal = document.getElementById('editGuestModal');
+    editGuestModal.addEventListener('show.bs.modal', function (event) {
+        const btn  = event.relatedTarget;
+        const form = document.getElementById('editGuestForm');
+
+        form.action = '/guest/' + btn.dataset.guestId + '/edit';
+
+        document.getElementById('edit_full_name').value   = btn.dataset.fullName;
+        document.getElementById('edit_email').value       = btn.dataset.email;
+        document.getElementById('edit_phone').value       = btn.dataset.phone;
+        document.getElementById('edit_rsvp_status').value = btn.dataset.rsvp;
+        document.getElementById('edit_group_name').value       = btn.dataset.group;
+        document.getElementById('edit_meal_preference').value  = btn.dataset.meal;
+    });
+</script>
 {% endblock %}

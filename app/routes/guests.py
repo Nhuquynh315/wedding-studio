@@ -68,3 +68,76 @@ def add_guest(wedding_id):
 
     flash(f'{full_name} has been added to the guest list.', 'success')
     return redirect(detail_url)
+
+
+def _get_guest_or_403(guest_id):
+    """Fetch guest and abort 403 if its wedding doesn't belong to the current user."""
+    guest = Guest.query.get_or_404(guest_id)
+    if guest.wedding.user_id != current_user.id:
+        abort(403)
+    return guest
+
+
+@guests_bp.route('/guest/<int:guest_id>/edit', methods=['POST'])
+@login_required
+def edit_guest(guest_id):
+    guest = _get_guest_or_403(guest_id)
+    detail_url = url_for('wedding.wedding_detail', wedding_id=guest.wedding_id) + _GUESTS_TAB
+
+    full_name       = request.form.get('full_name',       '').strip()
+    email           = request.form.get('email',           '').strip() or None
+    phone           = request.form.get('phone',           '').strip() or None
+    group_name      = request.form.get('group_name',      '').strip() or None
+    meal_preference = request.form.get('meal_preference', '').strip() or None
+    rsvp_status     = request.form.get('rsvp_status',     'pending').strip()
+
+    if not full_name:
+        flash('Guest name is required.', 'danger')
+        return redirect(detail_url)
+
+    if group_name and group_name not in VALID_GROUPS:
+        flash('Invalid group selection.', 'danger')
+        return redirect(detail_url)
+
+    if meal_preference and meal_preference not in VALID_MEALS:
+        flash('Invalid meal preference.', 'danger')
+        return redirect(detail_url)
+
+    if rsvp_status not in VALID_RSVP:
+        rsvp_status = 'pending'
+
+    guest.full_name       = full_name
+    guest.email           = email
+    guest.phone           = phone
+    guest.group_name      = group_name
+    guest.meal_preference = meal_preference
+    guest.rsvp_status     = rsvp_status
+
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        flash('Something went wrong updating the guest. Please try again.', 'danger')
+        return redirect(detail_url)
+
+    flash(f'{full_name} has been updated.', 'success')
+    return redirect(detail_url)
+
+
+@guests_bp.route('/guest/<int:guest_id>/delete', methods=['POST'])
+@login_required
+def delete_guest(guest_id):
+    guest = _get_guest_or_403(guest_id)
+    detail_url = url_for('wedding.wedding_detail', wedding_id=guest.wedding_id) + _GUESTS_TAB
+
+    name = guest.full_name
+    try:
+        db.session.delete(guest)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        flash('Something went wrong deleting the guest. Please try again.', 'danger')
+        return redirect(detail_url)
+
+    flash(f'{name} has been removed from the guest list.', 'success')
+    return redirect(detail_url)

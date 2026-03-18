@@ -96,7 +96,14 @@ def wedding_detail(wedding_id):
     wedding = Wedding.query.get_or_404(wedding_id)
     if wedding.user_id != current_user.id:
         abort(403)
-    return render_template('wedding/detail.html', wedding=wedding)
+    guests = wedding.guests
+    guest_stats = {
+        'total':    len(guests),
+        'accepted': sum(1 for g in guests if g.rsvp_status == 'confirmed'),
+        'declined': sum(1 for g in guests if g.rsvp_status == 'declined'),
+        'pending':  sum(1 for g in guests if g.rsvp_status == 'pending'),
+    }
+    return render_template('wedding/detail.html', wedding=wedding, guest_stats=guest_stats)
 
 
 @wedding_bp.route('/wedding/<int:wedding_id>/edit', methods=['GET', 'POST'])
