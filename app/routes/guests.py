@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 
 from app import db
 from app.models import Guest, Wedding
+from app.services.csv_service import parse_guest_csv
 
 guests_bp = Blueprint('guests', __name__)
 
@@ -121,6 +122,52 @@ def edit_guest(guest_id):
         return redirect(detail_url)
 
     flash(f'{full_name} has been updated.', 'success')
+    return redirect(detail_url)
+
+
+@guests_bp.route('/wedding/<int:wedding_id>/guests/import-csv', methods=['POST'])
+@login_required
+def import_guests(wedding_id):
+    _get_wedding_or_403(wedding_id)
+    detail_url = url_for('wedding.wedding_detail', wedding_id=wedding_id) + _GUESTS_TAB
+
+    csv_file = request.files.get('csv_file')
+    if not csv_file or csv_file.filename == '':
+        flash('Please select a CSV file to upload.', 'danger')
+        return redirect(detail_url)
+
+    if not csv_file.filename.lower().endswith('.csv'):
+        flash('Only .csv files are accepted.', 'danger')
+        return redirect(detail_url)
+
+    guests, errors = parse_guest_csv(csv_file)
+
+    if not guests and errors:
+        for msg in errors:
+            flash(msg, 'danger')
+        return redirect(detail_url)
+
+    for data in guests:
+        db.session.add(Guest(wedding_id=wedding_id, **data))
+
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        flash('Something went wrong saving the imported guests. Please try again.', 'danger')
+        return redirect(detail_url)
+
+    imported = len(guests)
+    skipped  = len(errors)
+    summary  = f'{imported} guest{"s" if imported != 1 else ""} imported'
+    if skipped:
+        summary += f', {skipped} row{"s" if skipped > 1 else ""} skipped'
+    summary += '.'
+    flash(summary, 'success' if not skipped else 'warning')
+
+    for msg in errors:
+        flash(msg, 'warning')
+
     return redirect(detail_url)
 
 

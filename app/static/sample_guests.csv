@@ -1,0 +1,4 @@
+full_name,email,phone,group_name,meal_preference,rsvp_status
+John Smith,john@example.com,555-0101,Groom's Family,Standard,pending
+Jane Doe,jane@example.com,555-0102,Bride's Family,Vegetarian,confirmed
+Bob Wilson,bob@example.com,555-0103,Friends,Standard,pending
