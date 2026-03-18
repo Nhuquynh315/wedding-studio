@@ -2,11 +2,12 @@ import re
 from collections import defaultdict
 from datetime import date
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
+from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import login_required, current_user
 
 from app import db
 from app.models import Wedding, WEDDING_STYLES
+from app.routes.utils import get_wedding_or_403
 
 _HEX_COLOR = re.compile(r'^#[0-9a-fA-F]{6}$')
 
@@ -94,9 +95,7 @@ def create_wedding():
 @wedding_bp.route('/wedding/<int:wedding_id>')
 @login_required
 def wedding_detail(wedding_id):
-    wedding = Wedding.query.get_or_404(wedding_id)
-    if wedding.user_id != current_user.id:
-        abort(403)
+    wedding = get_wedding_or_403(wedding_id)
     guests = wedding.guests
     total    = len(guests)
     accepted = sum(1 for g in guests if g.rsvp_status == 'confirmed')
@@ -143,9 +142,7 @@ def wedding_detail(wedding_id):
 @wedding_bp.route('/wedding/<int:wedding_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_wedding(wedding_id):
-    wedding = Wedding.query.get_or_404(wedding_id)
-    if wedding.user_id != current_user.id:
-        abort(403)
+    wedding = get_wedding_or_403(wedding_id)
 
     if request.method == 'POST':
         partner1_name   = request.form.get('partner1_name',   '').strip()
@@ -212,9 +209,7 @@ def edit_wedding(wedding_id):
 @wedding_bp.route('/wedding/<int:wedding_id>/delete', methods=['POST'])
 @login_required
 def delete_wedding(wedding_id):
-    wedding = Wedding.query.get_or_404(wedding_id)
-    if wedding.user_id != current_user.id:
-        abort(403)
+    wedding = get_wedding_or_403(wedding_id)
 
     name = f"{wedding.partner1_name} & {wedding.partner2_name}"
     try:

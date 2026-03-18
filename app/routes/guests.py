@@ -1,11 +1,12 @@
 import csv
 import io
 
-from flask import Blueprint, abort, flash, redirect, url_for, request, Response
+from flask import Blueprint, flash, redirect, url_for, request, Response
 from flask_login import login_required, current_user
 
 from app import db
 from app.models import Guest, Wedding
+from app.routes.utils import get_wedding_or_403, get_guest_or_403
 from app.services.csv_service import parse_guest_csv
 
 guests_bp = Blueprint('guests', __name__)
@@ -17,18 +18,10 @@ VALID_MEALS  = {'Standard', 'Vegetarian', 'Vegan', 'Halal', 'Kosher', 'Other'}
 VALID_RSVP   = {'pending', 'confirmed', 'declined'}
 
 
-def _get_wedding_or_403(wedding_id):
-    """Fetch wedding and abort 403 if it doesn't belong to the current user."""
-    wedding = Wedding.query.get_or_404(wedding_id)
-    if wedding.user_id != current_user.id:
-        abort(403)
-    return wedding
-
-
 @guests_bp.route('/wedding/<int:wedding_id>/guests/add', methods=['POST'])
 @login_required
 def add_guest(wedding_id):
-    _get_wedding_or_403(wedding_id)
+    get_wedding_or_403(wedding_id)
     detail_url = url_for('wedding.wedding_detail', wedding_id=wedding_id) + _GUESTS_TAB
 
     full_name       = request.form.get('full_name',       '').strip()
@@ -74,18 +67,11 @@ def add_guest(wedding_id):
     return redirect(detail_url)
 
 
-def _get_guest_or_403(guest_id):
-    """Fetch guest and abort 403 if its wedding doesn't belong to the current user."""
-    guest = Guest.query.get_or_404(guest_id)
-    if guest.wedding.user_id != current_user.id:
-        abort(403)
-    return guest
-
 
 @guests_bp.route('/guest/<int:guest_id>/edit', methods=['POST'])
 @login_required
 def edit_guest(guest_id):
-    guest = _get_guest_or_403(guest_id)
+    guest = get_guest_or_403(guest_id)
     detail_url = url_for('wedding.wedding_detail', wedding_id=guest.wedding_id) + _GUESTS_TAB
 
     full_name       = request.form.get('full_name',       '').strip()
@@ -131,7 +117,7 @@ def edit_guest(guest_id):
 @guests_bp.route('/wedding/<int:wedding_id>/guests/export-csv')
 @login_required
 def export_guests(wedding_id):
-    wedding = _get_wedding_or_403(wedding_id)
+    wedding = get_wedding_or_403(wedding_id)
 
     output = io.StringIO()
     writer = csv.DictWriter(
@@ -162,7 +148,7 @@ def export_guests(wedding_id):
 @guests_bp.route('/wedding/<int:wedding_id>/guests/import-csv', methods=['POST'])
 @login_required
 def import_guests(wedding_id):
-    _get_wedding_or_403(wedding_id)
+    get_wedding_or_403(wedding_id)
     detail_url = url_for('wedding.wedding_detail', wedding_id=wedding_id) + _GUESTS_TAB
 
     csv_file = request.files.get('csv_file')
@@ -181,8 +167,22 @@ def import_guests(wedding_id):
             flash(msg, 'danger')
         return redirect(detail_url)
 
+    # Build a set of existing guest names for this wedding (case-insensitive)
+    existing_names = {
+        g.full_name.lower()
+        for g in Guest.query.filter_by(wedding_id=wedding_id).with_entities(Guest.full_name)
+    }
+
+    added = 0
+    seen_in_csv = set()
     for data in guests:
+        name_key = data['full_name'].lower()
+        if name_key in existing_names or name_key in seen_in_csv:
+            errors.append(f'Skipped duplicate: {data["full_name"]}')
+            continue
+        seen_in_csv.add(name_key)
         db.session.add(Guest(wedding_id=wedding_id, **data))
+        added += 1
 
     try:
         db.session.commit()
@@ -191,7 +191,7 @@ def import_guests(wedding_id):
         flash('Something went wrong saving the imported guests. Please try again.', 'danger')
         return redirect(detail_url)
 
-    imported = len(guests)
+    imported = added
     skipped  = len(errors)
     summary  = f'{imported} guest{"s" if imported != 1 else ""} imported'
     if skipped:
@@ -205,10 +205,43 @@ def import_guests(wedding_id):
     return redirect(detail_url)
 
 
+@guests_bp.route('/wedding/<int:wedding_id>/guests/deduplicate', methods=['POST'])
+@login_required
+def deduplicate_guests(wedding_id):
+    wedding = get_wedding_or_403(wedding_id)
+    detail_url = url_for('wedding.wedding_detail', wedding_id=wedding_id) + _GUESTS_TAB
+
+    seen = {}
+    to_delete = []
+    for guest in wedding.guests:
+        key = guest.full_name.lower()
+        if key in seen:
+            to_delete.append(guest)
+        else:
+            seen[key] = guest
+
+    if not to_delete:
+        flash('No duplicate guests found.', 'info')
+        return redirect(detail_url)
+
+    try:
+        for guest in to_delete:
+            db.session.delete(guest)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        flash('Something went wrong removing duplicates. Please try again.', 'danger')
+        return redirect(detail_url)
+
+    count = len(to_delete)
+    flash(f'{count} duplicate guest{"s" if count != 1 else ""} removed.', 'success')
+    return redirect(detail_url)
+
+
 @guests_bp.route('/wedding/<int:wedding_id>/guests/delete-all', methods=['POST'])
 @login_required
 def delete_all_guests(wedding_id):
-    wedding = _get_wedding_or_403(wedding_id)
+    wedding = get_wedding_or_403(wedding_id)
     detail_url = url_for('wedding.wedding_detail', wedding_id=wedding_id) + _GUESTS_TAB
 
     count = len(wedding.guests)
@@ -231,7 +264,7 @@ def delete_all_guests(wedding_id):
 @guests_bp.route('/guest/<int:guest_id>/delete', methods=['POST'])
 @login_required
 def delete_guest(guest_id):
-    guest = _get_guest_or_403(guest_id)
+    guest = get_guest_or_403(guest_id)
     detail_url = url_for('wedding.wedding_detail', wedding_id=guest.wedding_id) + _GUESTS_TAB
 
     name = guest.full_name
