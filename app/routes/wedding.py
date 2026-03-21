@@ -1,3 +1,4 @@
+import json
 import re
 from collections import defaultdict
 from datetime import date
@@ -8,6 +9,7 @@ from flask_login import login_required, current_user
 from app import db
 from app.models import Wedding, WEDDING_STYLES
 from app.routes.utils import get_wedding_or_403
+from app.services.ai_service import generate_wedding_theme
 
 _HEX_COLOR = re.compile(r'^#[0-9a-fA-F]{6}$')
 
@@ -135,8 +137,16 @@ def wedding_detail(wedding_id):
             group_stats[key]['pending'] += 1
     group_stats = dict(sorted(group_stats.items()))
 
+    theme = None
+    if wedding.ai_generated_theme:
+        try:
+            theme = json.loads(wedding.ai_generated_theme)
+        except (ValueError, TypeError):
+            pass
+
     return render_template('wedding/detail.html', wedding=wedding,
-                           guest_stats=guest_stats, group_stats=group_stats)
+                           guest_stats=guest_stats, group_stats=group_stats,
+                           theme=theme)
 
 
 @wedding_bp.route('/wedding/<int:wedding_id>/edit', methods=['GET', 'POST'])
@@ -184,14 +194,15 @@ def edit_wedding(wedding_id):
                 flash(msg, 'danger')
             return render_template('wedding/edit.html', wedding=wedding)
 
-        wedding.partner1_name   = partner1_name
-        wedding.partner2_name   = partner2_name
-        wedding.wedding_date    = wedding_date
-        wedding.location        = location
-        wedding.venue_name      = venue_name
-        wedding.style           = style
-        wedding.primary_color   = primary_color
-        wedding.secondary_color = secondary_color
+        wedding.partner1_name      = partner1_name
+        wedding.partner2_name      = partner2_name
+        wedding.wedding_date       = wedding_date
+        wedding.location           = location
+        wedding.venue_name         = venue_name
+        wedding.style              = style
+        wedding.primary_color      = primary_color
+        wedding.secondary_color    = secondary_color
+        wedding.ai_generated_theme = None  # invalidate theme when details change
 
         try:
             db.session.commit()
@@ -204,6 +215,33 @@ def edit_wedding(wedding_id):
         return redirect(url_for('wedding.wedding_detail', wedding_id=wedding.id))
 
     return render_template('wedding/edit.html', wedding=wedding)
+
+
+@wedding_bp.route('/wedding/<int:wedding_id>/generate-theme', methods=['POST'])
+@login_required
+def generate_theme(wedding_id):
+    wedding = get_wedding_or_403(wedding_id)
+    theme = generate_wedding_theme(
+        partner1_name=wedding.partner1_name,
+        partner2_name=wedding.partner2_name,
+        wedding_date=wedding.wedding_date.strftime('%B %d, %Y'),
+        location=wedding.location,
+        venue_name=wedding.venue_name,
+        style=wedding.style,
+        primary_color=wedding.primary_color,
+        secondary_color=wedding.secondary_color,
+    )
+    if theme is None:
+        flash('Could not generate theme. Please try again later.', 'danger')
+    else:
+        wedding.ai_generated_theme = json.dumps(theme)
+        try:
+            db.session.commit()
+            flash('Your AI wedding theme has been generated!', 'success')
+        except Exception:
+            db.session.rollback()
+            flash('Theme generated but could not be saved. Please try again.', 'danger')
+    return redirect(url_for('wedding.wedding_detail', wedding_id=wedding_id, _anchor='theme'))
 
 
 @wedding_bp.route('/wedding/<int:wedding_id>/delete', methods=['POST'])

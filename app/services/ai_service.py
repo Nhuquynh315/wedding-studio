@@ -6,9 +6,11 @@ from google.genai import types
 
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-SYSTEM_PROMPT = """You are an expert wedding theme designer with deep knowledge of aesthetics,
-colour theory, typography, and event styling. When given details about a couple's wedding,
-you craft a cohesive, personalised theme package and return it as valid JSON — nothing else."""
+SYSTEM_PROMPT = (
+    "You are an expert luxury wedding theme designer. "
+    "You MUST respond with ONLY a valid JSON object — no markdown, no code blocks, "
+    "no backticks, no explanatory text. Your entire response must start with { and end with }."
+)
 
 
 def generate_wedding_theme(
@@ -22,23 +24,16 @@ def generate_wedding_theme(
     secondary_color,
 ):
     """Call Gemini to generate a wedding theme and return a parsed dict, or None on failure."""
-    user_prompt = f"""Generate a wedding theme for the following details:
+    user_prompt = f"""Wedding theme for {partner1_name} & {partner2_name}.
+Venue: {venue_name}, {location}. Date: {wedding_date}. Style: {style}. Colours: {primary_color}, {secondary_color}.
 
-- Couple: {partner1_name} & {partner2_name}
-- Date: {wedding_date}
-- Location: {location}
-- Venue: {venue_name}
-- Style: {style}
-- Primary colour: {primary_color}
-- Secondary colour: {secondary_color}
-
-Return a JSON object with exactly these fields:
-- color_palette: a description of 4–5 complementary colours that work with the primary and secondary colours
-- font_suggestions: a list of 3 font pairing names (e.g. "Playfair Display + Lato")
-- invitation_text: complete formal invitation wording for this couple
-- tagline: a short romantic one-liner for the couple
-- style_keywords: a list of 3–5 aesthetic keywords describing the theme
-- decor_suggestions: a list of 3–4 specific decoration ideas suited to the venue and style"""
+JSON fields required:
+- tagline: short romantic one-liner for this couple
+- color_palette: array of 5 objects {{name, hex, role}} — real CSS hex inspired by the given colours; roles: Primary/Secondary/Accent/Neutral/Highlight
+- font_suggestions: array of 3 objects {{heading, body, description}} — real Google Font names, one sentence why it suits {style}
+- invitation_text: formal wording for {partner1_name} & {partner2_name} at {venue_name} on {wedding_date}, \\n between sections
+- style_keywords: array of 5 strings
+- decor_suggestions: array of 4 strings specific to {venue_name} and {style}"""
 
     try:
         response = client.models.generate_content(
@@ -49,7 +44,17 @@ Return a JSON object with exactly these fields:
                 response_mime_type="application/json",
             ),
         )
-        return json.loads(response.text)
+        text = response.text.strip()
+        # Strip accidental markdown code fences if present
+        if text.startswith("```"):
+            text = text.split("```")[1]
+            if text.startswith("json"):
+                text = text[4:]
+            text = text.strip()
+        return json.loads(text)
+    except json.JSONDecodeError as e:
+        print(f"[ai_service] JSON parse error: {e}")
+        return None
     except Exception as e:
         print(f"[ai_service] generate_wedding_theme failed: {e}")
         return None
