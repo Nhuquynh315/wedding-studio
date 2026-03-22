@@ -34,3 +34,7 @@ Thumbs.db
 dist/
 build/
 *.egg-info/
+
+# Uploaded/generated files
+uploads/*
+!uploads/.gitkeep

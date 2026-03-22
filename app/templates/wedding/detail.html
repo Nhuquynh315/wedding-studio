@@ -105,6 +105,38 @@
         font-size: 0.72rem;
         color: #a09080;
     }
+    .swatch-item.selected .swatch-circle {
+        outline: 2.5px solid var(--rose-medium);
+        outline-offset: 3px;
+    }
+    .btn-select-colour {
+        font-family: 'Jost', sans-serif;
+        font-size: 0.68rem;
+        font-weight: 500;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        border: 1px solid #d4b8ac;
+        background: transparent;
+        color: #a09080;
+        border-radius: 4px;
+        padding: 0.2rem 0.6rem;
+        cursor: pointer;
+        margin-top: 0.3rem;
+        transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .btn-select-colour:hover {
+        border-color: var(--rose-medium);
+        color: var(--rose-medium);
+    }
+    .colour-selected-badge {
+        display: block;
+        font-family: 'Jost', sans-serif;
+        font-size: 0.68rem;
+        font-weight: 500;
+        letter-spacing: 0.05em;
+        color: var(--rose-medium);
+        margin-top: 0.3rem;
+    }
 
     /* ── Style keywords ───────────────────────────────────── */
     .theme-badge {
@@ -126,6 +158,47 @@
         padding: 1.5rem;
         border: 1px solid #f0e6de;
         height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    .font-pairing-card.selected {
+        border-color: var(--rose-medium);
+        background: #fff8f5;
+        box-shadow: 0 0 0 2px rgba(196, 137, 110, 0.15);
+    }
+    .font-pair-select-btn {
+        margin-top: auto;
+        padding-top: 1rem;
+    }
+    .btn-select-font {
+        font-family: 'Jost', sans-serif;
+        font-size: 0.72rem;
+        font-weight: 500;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        border: 1px solid var(--rose-medium);
+        background: transparent;
+        color: var(--rose-medium);
+        border-radius: 6px;
+        padding: 0.35rem 0.9rem;
+        cursor: pointer;
+        width: 100%;
+        transition: background 0.15s, color 0.15s;
+    }
+    .btn-select-font:hover {
+        background: var(--rose-medium);
+        color: #fff;
+    }
+    .font-selected-badge {
+        font-family: 'Jost', sans-serif;
+        font-size: 0.7rem;
+        font-weight: 500;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--rose-medium);
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
     }
     .font-pair-label {
         font-family: 'Jost', sans-serif;
@@ -442,14 +515,26 @@
                     <p class="theme-card-title">Colour Palette</p>
                     <div class="palette-swatches">
                         {% if theme.color_palette is iterable and theme.color_palette is not string %}
+                            {% set sel_colour = theme.selected_colour if theme.selected_colour is defined else '' %}
                             {% for color in theme.color_palette %}
                             {% if color is mapping %}
-                            <div class="swatch-item">
+                            <div class="swatch-item{% if color.hex | lower == sel_colour | lower %} selected{% endif %}">
                                 <div class="swatch-circle" style="background-color: {{ color.hex }};"></div>
                                 <div class="swatch-info">
                                     <span class="swatch-role">{{ color.role }}</span>
                                     <span class="swatch-name">{{ color.name }}</span>
                                     <span class="swatch-hex">{{ color.hex }}</span>
+                                    {% if color.hex | lower == sel_colour | lower %}
+                                    <span class="colour-selected-badge">✦ Applied</span>
+                                    {% else %}
+                                    <form method="POST"
+                                          action="{{ url_for('wedding.select_colour', wedding_id=wedding.id) }}"
+                                          style="display:inline;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="hex_colour" value="{{ color.hex }}">
+                                        <button type="submit" class="btn-select-colour">Use</button>
+                                    </form>
+                                    {% endif %}
                                 </div>
                             </div>
                             {% endif %}
@@ -491,10 +576,12 @@
                 <div class="theme-card">
                     <p class="theme-card-title">Typography Pairings</p>
                     <div class="row g-3 mt-1" id="fontPairings">
+                        {% set sel_idx = theme.selected_font_index if theme.selected_font_index is defined else 0 %}
                         {% for fp in theme.font_suggestions %}
+                        {% set loop_idx = loop.index0 %}
                         <div class="col-md-4">
                             {% if fp is mapping %}
-                            <div class="font-pairing-card"
+                            <div class="font-pairing-card{% if loop_idx == sel_idx %} selected{% endif %}"
                                  data-heading="{{ fp.heading }}"
                                  data-body="{{ fp.body }}">
                                 <p class="font-pair-label">Heading</p>
@@ -503,6 +590,18 @@
                                 <p class="font-pair-label mt-2">Body</p>
                                 <p class="font-pair-name">{{ fp.body }}</p>
                                 <p class="font-pair-description">{{ fp.description }}</p>
+                                <div class="font-pair-select-btn">
+                                    {% if loop_idx == sel_idx %}
+                                    <span class="font-selected-badge">✦ Applied to invitation</span>
+                                    {% else %}
+                                    <form method="POST"
+                                          action="{{ url_for('wedding.select_font', wedding_id=wedding.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="font_index" value="{{ loop_idx }}">
+                                        <button type="submit" class="btn-select-font">Use this pairing</button>
+                                    </form>
+                                    {% endif %}
+                                </div>
                             </div>
                             {% else %}
                             {# Fallback: old string format #}
@@ -875,9 +974,40 @@
 
     {# ── Designs tab ───────────────────────────────────────── #}
     <div class="tab-pane fade" id="designs" role="tabpanel" aria-labelledby="designs-tab">
-        <div class="text-center text-muted py-5">
-            <span style="font-size: 3rem;">&#128196;</span>
-            <p class="mt-3">Invitation designs coming soon.</p>
+        <div class="card border-0 shadow-sm" style="border-radius: var(--ws-card-radius);">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h5 class="fw-semibold mb-1">Wedding Invitation</h5>
+                        <p class="text-muted small mb-0">Print-ready PDF · 5 × 7 in</p>
+                    </div>
+                    {% if theme %}
+                    <form method="POST" action="{{ url_for('wedding.generate_pdf', wedding_id=wedding.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-primary btn-sm">Download PDF</button>
+                    </form>
+                    {% else %}
+                    <button class="btn btn-primary btn-sm" disabled>Download PDF</button>
+                    {% endif %}
+                </div>
+
+                {% if theme %}
+                {# Scaled iframe preview of the invitation #}
+                <div style="width:100%; overflow:hidden; border-radius:8px; border:1px solid #ecdde3; background:#fffdf9;">
+                    <div style="transform: scale(0.55); transform-origin: top left;
+                                width: calc(100% / 0.55); height: calc(672px / 0.55);">
+                        <iframe src="{{ url_for('wedding.invitation_preview', wedding_id=wedding.id) }}"
+                                style="width:480px; height:672px; border:none; display:block;"
+                                scrolling="no"></iframe>
+                    </div>
+                    <div style="height: calc(672px * 0.55);"></div>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-5" style="border-radius:8px; border:1px dashed #ddd;">
+                    <p class="mb-0 small">Generate a theme first before creating your invitation.</p>
+                </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 

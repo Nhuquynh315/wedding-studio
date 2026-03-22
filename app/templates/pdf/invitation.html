@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300&family=Lato:ital,wght@0,300;0,400;1,300&display=swap');
+    {% set hf = heading_font | default('Cormorant Garamond') %}
+    {% set bf = body_font | default('Lato') %}
+    @import url('https://fonts.googleapis.com/css2?family={{ hf | replace(" ", "+") }}:ital,wght@0,300;0,400;1,400&family={{ bf | replace(" ", "+") }}:ital,wght@0,300;0,400;1,300&display=swap');
 
     @page {
         size: 5in 7in;
@@ -21,51 +23,42 @@
         height: 7in;
         overflow: hidden;
         background-color: #fffdf9;
-        font-family: 'Lato', sans-serif;
+        font-family: '{{ body_font | default("Lato") }}', sans-serif;
         font-weight: 300;
         color: #3a2e28;
     }
 
-    /* Outer page — space-evenly distributes gaps uniformly */
+    /* Outer page */
     .page {
         width: 5in;
         height: 7in;
-        padding: 0.42in 0.56in;      /* extra horizontal padding prevents edge overflow */
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: space-evenly;
+        padding: 0.48in 0.52in;
         position: relative;
+        text-align: center;
     }
 
-    /* Outer border frame — equal visual weight on all sides */
-    .page::before {
-        content: '';
-        position: absolute;
-        top: 0.2in;
-        left: 0.2in;
-        right: 0.2in;
-        bottom: 0.2in;
-        border: 1pt solid {{ primary_color }};
-        pointer-events: none;
-    }
+    /* Block spacers — must be div, not span, for height to apply */
+    .spacer-xs  { display: block; height: 0.1in;  line-height: 0; font-size: 0; }
+    .spacer-sm  { display: block; height: 0.14in; line-height: 0; font-size: 0; }
+    .spacer-md  { display: block; height: 0.18in; line-height: 0; font-size: 0; }
 
-    /* Inner fine-line border */
+    /* Single elegant border */
     .page::after {
         content: '';
         position: absolute;
-        top: 0.27in;
-        left: 0.27in;
-        right: 0.27in;
-        bottom: 0.27in;
-        border: 0.5pt solid {{ primary_color }};
-        opacity: 0.5;
+        top: 0.22in;
+        left: 0.22in;
+        right: 0.22in;
+        bottom: 0.22in;
+        border: 0.75pt solid {{ primary_color }};
+        opacity: 0.7;
         pointer-events: none;
     }
 
     /* ── Top ornament ─────────────────────────────────── */
     .ornament {
-        font-size: 16pt;
+        display: block;
+        font-size: 13pt;
         color: {{ primary_color }};
         letter-spacing: 0.12in;
         line-height: 1;
@@ -74,82 +67,91 @@
 
     /* ── Tagline ──────────────────────────────────────── */
     .tagline {
+        display: block;
         font-family: 'Lato', sans-serif;
         font-weight: 300;
-        font-size: 7pt;
-        letter-spacing: 0.08em;
+        font-size: 6pt;
+        letter-spacing: 0.09em;
         text-transform: uppercase;
         color: {{ primary_color }};
         text-align: center;
-        margin: 0.14in 0;            /* breathing room above and below */
+        margin: 0.09in auto;
+        max-width: 3.2in;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
     }
 
-    /* ── Divider ──────────────────────────────────────── */
+    /* ── Divider — must be centered explicitly ────────── */
     .divider {
         display: flex;
         align-items: center;
         gap: 0.07in;
         width: 3in;
+        margin: 0 auto;           /* centers the block element */
     }
     .divider-line {
         flex: 1;
-        height: 0.5pt;               /* consistent weight across all dividers */
+        height: 0.5pt;
         background: {{ primary_color }};
-        opacity: 0.45;
+        opacity: 0.4;
     }
     .divider-diamond {
-        font-size: 5pt;              /* scaled down so it doesn't overpower lines */
+        font-size: 5pt;
         color: {{ primary_color }};
         line-height: 1;
-        opacity: 0.7;
+        opacity: 0.65;
     }
 
     /* ── Names ────────────────────────────────────────── */
     .request-line {
+        display: block;
         font-family: 'Lato', sans-serif;
         font-weight: 300;
-        font-size: 7pt;
-        letter-spacing: 0.06em;      /* tighter — was pulling apart unnaturally */
+        font-size: 6.5pt;
+        letter-spacing: 0.07em;
         text-transform: uppercase;
-        color: #7a6a60;
-        margin-bottom: 0.13in;
+        color: #9a8a80;
+        margin-bottom: 0.1in;
     }
     .names-block {
         text-align: center;
-        line-height: 1.4;
     }
     .partner-name {
-        font-family: 'Cormorant Garamond', serif;
-        font-size: 38px;
+        font-family: '{{ heading_font | default("Cormorant Garamond") }}', serif;
+        font-size: 19pt;
         font-weight: 300;
-        letter-spacing: 0.04em;
+        letter-spacing: 0.03em;
         color: #2c2420;
-        line-height: 1.4;
+        line-height: 1.25;
         display: block;
         width: 100%;
         text-align: center;
     }
     .ampersand {
-        font-family: 'Cormorant Garamond', serif;
+        font-family: '{{ heading_font | default("Cormorant Garamond") }}', serif;
         font-style: italic;
         font-weight: 300;
-        font-size: 20px;
+        font-size: 13pt;
         color: {{ primary_color }};
         display: block;
-        margin: 4px 0;
-        line-height: 1.4;
+        margin: 0.04in 0;
+        line-height: 1;
     }
 
     /* ── Invitation body text ─────────────────────────── */
     .invite-body {
+        display: block;
         font-family: 'Lato', sans-serif;
         font-weight: 300;
-        font-size: 9pt;
-        line-height: 2;              /* consistent spacing across all body lines */
+        font-size: 8.5pt;
+        line-height: 1.75;
         text-align: center;
         color: #4a3e38;
-        max-width: 300px;
-        margin: 0.1in auto 0;
+        max-width: 3.2in;
+        max-height: 1in;
+        overflow: hidden;
+        margin: 0.08in auto 0;
         white-space: pre-line;
     }
 
@@ -161,35 +163,36 @@
         font-family: 'Lato', sans-serif;
         font-style: italic;
         font-weight: 300;
-        font-size: 9pt;
+        font-size: 8.5pt;
         color: #2c2420;
-        line-height: 1.7;
-        margin-bottom: 0.12in;
+        line-height: 1.6;
+        margin-bottom: 0.1in;
     }
     .venue-name {
         font-family: 'Lato', sans-serif;
         font-weight: 400;
-        font-size: 8pt;
-        letter-spacing: 0.08em;
+        font-size: 7.5pt;
+        letter-spacing: 0.09em;
         text-transform: uppercase;
         color: {{ primary_color }};
-        margin-bottom: 6px;
+        margin-bottom: 4px;
     }
     .venue-location {
         font-family: 'Lato', sans-serif;
         font-weight: 300;
-        font-size: 7.5pt;
+        font-size: 7pt;
         color: #7a6a60;
         letter-spacing: 0.04em;
-        margin-bottom: 0.06in;
     }
+
     /* ── RSVP block ───────────────────────────────────── */
     .rsvp-divider {
-        width: 180px;
+        display: block;
+        width: 1.6in;
         height: 0.5pt;
         background: {{ primary_color }};
         opacity: 0.3;
-        margin: 20px auto;
+        margin: 0.14in auto;
     }
     .rsvp-block {
         text-align: center;
@@ -197,10 +200,10 @@
     .rsvp-label {
         font-family: 'Lato', sans-serif;
         font-weight: 400;
-        font-size: 6.5pt;
-        letter-spacing: 0.12em;
+        font-size: 6pt;
+        letter-spacing: 0.13em;
         text-transform: uppercase;
-        color: #7a6a60;
+        color: #9a8a80;
         margin-bottom: 3px;
     }
     .rsvp-info {
@@ -213,64 +216,46 @@
 
     /* ── Footer ornament ──────────────────────────────── */
     .footer-ornament {
-        font-size: 9pt;
+        display: block;
+        font-size: 8pt;
         color: {{ primary_color }};
         letter-spacing: 0.1in;
         text-align: center;
-        margin-top: 28px;
-        padding-bottom: 0.18in;
     }
 </style>
 </head>
 <body>
 <div class="page">
 
-    <!-- Top ornament -->
+    <div class="spacer-sm"></div>
     <div class="ornament">✦</div>
-
-    <!-- Tagline -->
     <div class="tagline">{{ tagline }}</div>
 
-    <!-- Divider -->
-    <div class="divider">
-        <div class="divider-line"></div>
-        <div class="divider-diamond">◆</div>
-        <div class="divider-line"></div>
-    </div>
+    <div class="divider"><div class="divider-line"></div><div class="divider-diamond">◆</div><div class="divider-line"></div></div>
+    <div class="spacer-sm"></div>
 
-    <!-- Names -->
     <div class="names-block">
         <p class="request-line">Together with their families</p>
         <span class="partner-name">{{ partner1_name }}</span>
         <span class="ampersand">&amp;</span>
         <span class="partner-name">{{ partner2_name }}</span>
     </div>
+    <div class="spacer-sm"></div>
 
-    <!-- Divider -->
-    <div class="divider">
-        <div class="divider-line"></div>
-        <div class="divider-diamond">◆</div>
-        <div class="divider-line"></div>
-    </div>
+    <div class="divider"><div class="divider-line"></div><div class="divider-diamond">◆</div><div class="divider-line"></div></div>
 
-    <!-- Invitation body text -->
     <div class="invite-body">{{ invitation_text }}</div>
+    <div class="spacer-md"></div>
 
-    <!-- Divider -->
-    <div class="divider">
-        <div class="divider-line"></div>
-        <div class="divider-diamond">◆</div>
-        <div class="divider-line"></div>
-    </div>
+    <div class="divider"><div class="divider-line"></div><div class="divider-diamond">◆</div><div class="divider-line"></div></div>
+    <div class="spacer-sm"></div>
 
-    <!-- Date & Venue -->
     <div class="details-block">
-        <p class="wedding-date">{{ wedding_date }}<br>{{ ceremony_time }}</p>
+        <p class="wedding-date">{{ wedding_date }}{% if ceremony_time %}<br>{{ ceremony_time }}{% endif %}</p>
         <p class="venue-name">{{ venue_name }}</p>
         <p class="venue-location">{{ location }}</p>
     </div>
 
-    <!-- RSVP -->
     {% if rsvp_info %}
     <div class="rsvp-divider"></div>
     <div class="rsvp-block">
@@ -279,7 +264,7 @@
     </div>
     {% endif %}
 
-    <!-- Footer ornament -->
+    <div class="spacer-md"></div>
     <div class="footer-ornament">✦ · ✦</div>
 
 </div>

@@ -3,13 +3,14 @@ import re
 from collections import defaultdict
 from datetime import date
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, flash, redirect, render_template, request, send_file, url_for
 from flask_login import login_required, current_user
 
 from app import db
 from app.models import Wedding, WEDDING_STYLES
 from app.routes.utils import get_wedding_or_403
 from app.services.ai_service import generate_wedding_theme
+from app.services.pdf_service import generate_invitation_pdf
 
 _HEX_COLOR = re.compile(r'^#[0-9a-fA-F]{6}$')
 
@@ -265,6 +266,107 @@ def test_invitation():
         primary_color='#8B4513',
         ceremony_time='4:30 PM',
         rsvp_info='June 1st, 2025  ·  sarah.michael@gmail.com')
+
+
+@wedding_bp.route('/wedding/<int:wedding_id>/invitation-preview')
+@login_required
+def invitation_preview(wedding_id):
+    wedding = get_wedding_or_403(wedding_id)
+    if not wedding.ai_generated_theme:
+        return ('', 204)
+    theme = json.loads(wedding.ai_generated_theme)
+    from app.services.pdf_service import _format_date
+    rsvp_date = theme.get('rsvp_info') or None
+    rsvp_info = f"{rsvp_date}  ·  {current_user.email}" if rsvp_date else None
+    fonts = theme.get('font_suggestions', [])
+    sel_idx = theme.get('selected_font_index', 0)
+    selected_font = fonts[sel_idx] if fonts and 0 <= sel_idx < len(fonts) else {}
+    return render_template(
+        'pdf/invitation.html',
+        partner1_name=wedding.partner1_name,
+        partner2_name=wedding.partner2_name,
+        wedding_date=_format_date(wedding.wedding_date),
+        location=wedding.location,
+        venue_name=wedding.venue_name,
+        invitation_text=theme.get('invitation_text', ''),
+        tagline=theme.get('tagline', ''),
+        primary_color=theme.get('selected_colour') or wedding.primary_color,
+        ceremony_time=theme.get('ceremony_time') or None,
+        rsvp_info=rsvp_info,
+        heading_font=selected_font.get('heading', 'Cormorant Garamond'),
+        body_font=selected_font.get('body', 'Lato'),
+    )
+
+
+@wedding_bp.route('/wedding/<int:wedding_id>/generate-pdf', methods=['POST'])
+@login_required
+def generate_pdf(wedding_id):
+    wedding = get_wedding_or_403(wedding_id)
+    if not wedding.ai_generated_theme:
+        flash('Please generate a theme first.', 'warning')
+        return redirect(url_for('wedding.wedding_detail', wedding_id=wedding_id))
+    theme = json.loads(wedding.ai_generated_theme)
+    rsvp_date = theme.get('rsvp_info') or None
+    rsvp_info = f"{rsvp_date}  ·  {current_user.email}" if rsvp_date else None
+    fonts = theme.get('font_suggestions', [])
+    sel_idx = theme.get('selected_font_index', 0)
+    selected_font = fonts[sel_idx] if fonts and 0 <= sel_idx < len(fonts) else {}
+    pdf_path = generate_invitation_pdf(wedding, theme,
+                                        ceremony_time=theme.get('ceremony_time') or None,
+                                        rsvp_info=rsvp_info,
+                                        primary_color=theme.get('selected_colour') or wedding.primary_color,
+                                        heading_font=selected_font.get('heading', 'Cormorant Garamond'),
+                                        body_font=selected_font.get('body', 'Lato'))
+    if pdf_path:
+        return send_file(pdf_path, as_attachment=True,
+                         download_name=f'invitation_{wedding.partner1_name}_{wedding.partner2_name}.pdf')
+    flash('PDF generation failed.', 'danger')
+    return redirect(url_for('wedding.wedding_detail', wedding_id=wedding_id))
+
+
+@wedding_bp.route('/wedding/<int:wedding_id>/select-colour', methods=['POST'])
+@login_required
+def select_colour(wedding_id):
+    wedding = get_wedding_or_403(wedding_id)
+    if not wedding.ai_generated_theme:
+        flash('Generate a theme first.', 'warning')
+        return redirect(url_for('wedding.wedding_detail', wedding_id=wedding_id))
+    theme = json.loads(wedding.ai_generated_theme)
+    hex_colour = request.form.get('hex_colour', '').strip()
+    if not _HEX_COLOR.match(hex_colour):
+        flash('Invalid colour value.', 'danger')
+        return redirect(url_for('wedding.wedding_detail', wedding_id=wedding_id, _anchor='theme'))
+    theme['selected_colour'] = hex_colour
+    wedding.ai_generated_theme = json.dumps(theme)
+    try:
+        db.session.commit()
+        flash('Colour applied to your invitation.', 'success')
+    except Exception:
+        db.session.rollback()
+        flash('Could not save colour selection. Please try again.', 'danger')
+    return redirect(url_for('wedding.wedding_detail', wedding_id=wedding_id, _anchor='theme'))
+
+
+@wedding_bp.route('/wedding/<int:wedding_id>/select-font', methods=['POST'])
+@login_required
+def select_font(wedding_id):
+    wedding = get_wedding_or_403(wedding_id)
+    if not wedding.ai_generated_theme:
+        flash('Generate a theme first.', 'warning')
+        return redirect(url_for('wedding.wedding_detail', wedding_id=wedding_id))
+    theme = json.loads(wedding.ai_generated_theme)
+    font_index = request.form.get('font_index', type=int, default=0)
+    fonts = theme.get('font_suggestions', [])
+    if 0 <= font_index < len(fonts):
+        theme['selected_font_index'] = font_index
+        wedding.ai_generated_theme = json.dumps(theme)
+        try:
+            db.session.commit()
+            flash('Font pairing applied to your invitation.', 'success')
+        except Exception:
+            db.session.rollback()
+            flash('Could not save font selection. Please try again.', 'danger')
+    return redirect(url_for('wedding.wedding_detail', wedding_id=wedding_id, _anchor='theme'))
 
 
 @wedding_bp.route('/wedding/<int:wedding_id>/delete', methods=['POST'])
