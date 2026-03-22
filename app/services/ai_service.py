@@ -1,14 +1,7 @@
 import json
 import os
 
-from google import genai
-from google.genai import types
-
-def _get_client():
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise ValueError("GEMINI_API_KEY is not set")
-    return genai.Client(api_key=api_key)
+import google.generativeai as genai
 
 SYSTEM_PROMPT = (
     "You are an expert luxury wedding theme designer. "
@@ -52,14 +45,18 @@ JSON fields required:
 - decor_suggestions: array of 4 strings specific to {venue_name} and {style}"""
 
     try:
-        response = _get_client().models.generate_content(
-            model="gemini-2.5-flash",
-            contents=user_prompt,
-            config=types.GenerateContentConfig(
-                system_instruction=SYSTEM_PROMPT,
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            raise ValueError("GEMINI_API_KEY is not set")
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel(
+            model_name="gemini-2.5-flash",
+            system_instruction=SYSTEM_PROMPT,
+            generation_config=genai.GenerationConfig(
                 response_mime_type="application/json",
             ),
         )
+        response = model.generate_content(user_prompt)
         text = response.text.strip()
         # Strip accidental markdown code fences if present
         if text.startswith("```"):

@@ -252,6 +252,21 @@ def generate_theme(wedding_id):
     return redirect(url_for('wedding.wedding_detail', wedding_id=wedding_id, _anchor='theme'))
 
 
+@wedding_bp.route('/test-invitation')
+def test_invitation():
+    return render_template('pdf/invitation.html',
+        partner1_name='Sarah',
+        partner2_name='Michael',
+        wedding_date='Saturday, June 21st, 2025',
+        location='Napa Valley, California',
+        venue_name='The Grand Vineyard Estate',
+        invitation_text='Together with their families\nSarah and Michael\nrequest the honour of your presence\nat the celebration of their marriage',
+        tagline='Two hearts, one love',
+        primary_color='#8B4513',
+        ceremony_time='4:30 PM',
+        rsvp_info='June 1st, 2025  ·  sarah.michael@gmail.com')
+
+
 @wedding_bp.route('/wedding/<int:wedding_id>/delete', methods=['POST'])
 @login_required
 def delete_wedding(wedding_id):
