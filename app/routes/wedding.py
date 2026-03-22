@@ -217,10 +217,16 @@ def edit_wedding(wedding_id):
     return render_template('wedding/edit.html', wedding=wedding)
 
 
+_VALID_TONES = {'Romantic', 'Formal', 'Playful', 'Poetic', 'Simple'}
+
+
 @wedding_bp.route('/wedding/<int:wedding_id>/generate-theme', methods=['POST'])
 @login_required
 def generate_theme(wedding_id):
     wedding = get_wedding_or_403(wedding_id)
+    tone = request.form.get('tone', 'Romantic').strip()
+    if tone not in _VALID_TONES:
+        tone = 'Romantic'
     theme = generate_wedding_theme(
         partner1_name=wedding.partner1_name,
         partner2_name=wedding.partner2_name,
@@ -230,10 +236,12 @@ def generate_theme(wedding_id):
         style=wedding.style,
         primary_color=wedding.primary_color,
         secondary_color=wedding.secondary_color,
+        tone=tone,
     )
     if theme is None:
         flash('Could not generate theme. Please try again later.', 'danger')
     else:
+        theme['generated_at'] = date.today().strftime('%B %d, %Y')
         wedding.ai_generated_theme = json.dumps(theme)
         try:
             db.session.commit()

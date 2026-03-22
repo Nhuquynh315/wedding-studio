@@ -252,6 +252,16 @@
         border: 1px solid #e0ccc4;
     }
     .btn-regenerate:hover { background: #fdf0eb; color: #8a6050; transform: none; }
+    .tone-select {
+        font-family: 'Jost', sans-serif;
+        font-size: 0.82rem;
+        color: #6b5248;
+        border-color: #e0ccc4;
+        background-color: #fdfaf8;
+        width: auto;
+        min-width: 140px;
+    }
+    .tone-select:focus { border-color: #c4857a; box-shadow: 0 0 0 0.15rem rgba(196,133,122,0.2); }
 
     /* ── Loading overlay ──────────────────────────────────── */
     .loading-overlay {
@@ -418,6 +428,11 @@
             <div class="col-12">
                 <div class="theme-tagline">
                     <p>"{{ theme.tagline }}"</p>
+                    {% if theme.generated_at %}
+                    <small style="font-family:'Jost',sans-serif; font-size:0.75rem; color:#c0a898;">
+                        Theme generated on {{ theme.generated_at }}
+                    </small>
+                    {% endif %}
                 </div>
             </div>
 
@@ -520,8 +535,15 @@
                     </small>
                     <form method="POST"
                           action="{{ url_for('wedding.generate_theme', wedding_id=wedding.id) }}"
-                          class="theme-form">
+                          class="theme-form d-flex align-items-center gap-2">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <select name="tone" class="form-select form-select-sm tone-select">
+                            <option value="Romantic">Romantic</option>
+                            <option value="Formal">Formal</option>
+                            <option value="Playful">Playful</option>
+                            <option value="Poetic">Poetic</option>
+                            <option value="Simple">Simple</option>
+                        </select>
                         <button type="submit" class="btn-regenerate">Regenerate Theme</button>
                     </form>
                 </div>
@@ -539,8 +561,15 @@
             </p>
             <form method="POST"
                   action="{{ url_for('wedding.generate_theme', wedding_id=wedding.id) }}"
-                  class="theme-form">
+                  class="theme-form d-inline-flex flex-column align-items-center gap-2">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <select name="tone" class="form-select form-select-sm tone-select">
+                    <option value="Romantic">Romantic</option>
+                    <option value="Formal">Formal</option>
+                    <option value="Playful">Playful</option>
+                    <option value="Poetic">Poetic</option>
+                    <option value="Simple">Simple</option>
+                </select>
                 <button type="submit" class="btn-generate">Generate Theme with AI</button>
             </form>
         </div>

@@ -4,13 +4,26 @@ import os
 from google import genai
 from google.genai import types
 
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+def _get_client():
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise ValueError("GEMINI_API_KEY is not set")
+    return genai.Client(api_key=api_key)
 
 SYSTEM_PROMPT = (
     "You are an expert luxury wedding theme designer. "
     "You MUST respond with ONLY a valid JSON object — no markdown, no code blocks, "
     "no backticks, no explanatory text. Your entire response must start with { and end with }."
 )
+
+
+_TONE_DESCRIPTIONS = {
+    'Romantic':  'romantic and heartfelt',
+    'Formal':    'formal and sophisticated',
+    'Playful':   'playful and lighthearted',
+    'Poetic':    'poetic and lyrical',
+    'Simple':    'simple, clean, and understated',
+}
 
 
 def generate_wedding_theme(
@@ -22,10 +35,13 @@ def generate_wedding_theme(
     style,
     primary_color,
     secondary_color,
+    tone='Romantic',
 ):
     """Call Gemini to generate a wedding theme and return a parsed dict, or None on failure."""
+    tone_desc = _TONE_DESCRIPTIONS.get(tone, 'romantic and heartfelt')
     user_prompt = f"""Wedding theme for {partner1_name} & {partner2_name}.
 Venue: {venue_name}, {location}. Date: {wedding_date}. Style: {style}. Colours: {primary_color}, {secondary_color}.
+Tone: Use a {tone_desc} tone throughout all text fields.
 
 JSON fields required:
 - tagline: short romantic one-liner for this couple
@@ -36,7 +52,7 @@ JSON fields required:
 - decor_suggestions: array of 4 strings specific to {venue_name} and {style}"""
 
     try:
-        response = client.models.generate_content(
+        response = _get_client().models.generate_content(
             model="gemini-2.5-flash",
             contents=user_prompt,
             config=types.GenerateContentConfig(
@@ -52,9 +68,16 @@ JSON fields required:
                 text = text[4:]
             text = text.strip()
         return json.loads(text)
+    except ValueError as e:
+        print(f"[ai_service] configuration error: {e}")
+        return None
     except json.JSONDecodeError as e:
         print(f"[ai_service] JSON parse error: {e}")
         return None
     except Exception as e:
-        print(f"[ai_service] generate_wedding_theme failed: {e}")
+        status = getattr(e, 'status_code', None) or getattr(e, 'code', None)
+        if status in (401, 403):
+            print(f"[ai_service] invalid or unauthorised API key: {e}")
+        else:
+            print(f"[ai_service] generate_wedding_theme failed: {e}")
         return None
