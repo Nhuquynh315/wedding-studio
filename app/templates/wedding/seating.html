@@ -9,6 +9,80 @@
 /* Override app-body padding for full-bleed layout */
 .app-body { padding: 0 !important; overflow: hidden; }
 
+/* ── Mobile: show list view, hide canvas ─────────────────────────── */
+.mobile-seating-view { display: none; padding: 1.25rem; }
+@media (max-width: 767px) {
+    .app-body { overflow: auto !important; }
+    .seating-wrap { display: none !important; }
+    .mobile-seating-view { display: block; }
+}
+
+/* Mobile table cards */
+.mob-tbl-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    overflow: hidden;
+}
+.mob-tbl-hd {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .75rem 1rem;
+    background: #fdfaf8;
+    border-bottom: 1px solid #f0ebe6;
+}
+.mob-tbl-name {
+    font-family: 'Jost', sans-serif;
+    font-size: .9rem;
+    font-weight: 600;
+    color: var(--text-dark);
+}
+.mob-tbl-cap {
+    font-size: .72rem;
+    color: var(--text-muted);
+}
+.mob-guest-list { padding: .5rem 1rem .75rem; }
+.mob-guest-row {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .35rem 0;
+    border-bottom: 1px solid #f5f0ec;
+    font-size: .84rem;
+    color: var(--text-dark);
+}
+.mob-guest-row:last-child { border-bottom: none; }
+.mob-empty {
+    padding: .75rem 1rem;
+    font-size: .8rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+.mob-toolbar {
+    display: flex;
+    gap: .75rem;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+}
+.mob-btn {
+    font-family: 'Jost', sans-serif;
+    font-size: .8rem;
+    font-weight: 500;
+    padding: .45rem 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--text-dark);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    cursor: pointer;
+}
+.mob-btn.primary { background: var(--rose); border-color: var(--rose); color: #fff; }
+
 /* ── Main layout ─────────────────────────────────────────────────── */
 .seating-wrap {
     display: flex;
@@ -139,6 +213,21 @@
 }
 .pill-meal { font-size: .75rem; flex-shrink: 0; }
 .guest-pill.hidden { display: none; }
+.guest-pill.pill-assigned {
+    background: #f9f7f5;
+    border-color: #e0d8d3;
+    opacity: .72;
+}
+.guest-pill.pill-assigned:hover { border-color: var(--rose); background: #fdf0f2; opacity: 1; }
+.pill-table-badge {
+    font-size: .62rem;
+    color: #8a7060;
+    background: #ede9e5;
+    border-radius: 4px;
+    padding: .1rem .32rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
 
 /* ── Table elements ──────────────────────────────────────────────── */
 .tbl-el {
@@ -465,8 +554,9 @@
              ondragover="unassignedDragOver(event)"
              ondragleave="unassignedDragLeave(event)"
              ondrop="unassignedDrop(event)">
-            {% for g in unassigned %}
-            <div class="guest-pill"
+            {% for g in accepted_guests %}
+            {% set assigned = g.table_id is not none %}
+            <div class="guest-pill{% if assigned %} pill-assigned{% endif %}"
                  id="pill-{{ g.id }}"
                  draggable="true"
                  data-guest-id="{{ g.id }}"
@@ -486,11 +576,17 @@
                 {% if g.group_name %}
                 <span class="pill-group">{{ g.group_name }}</span>
                 {% endif %}
+                {% if assigned %}
+                {% set tbl = g.seating_table %}
+                <span class="pill-table-badge" id="pill-tbl-{{ g.id }}">{{ tbl.display_name() if tbl else '?' }}</span>
+                {% else %}
+                <span class="pill-table-badge" id="pill-tbl-{{ g.id }}" style="display:none"></span>
+                {% endif %}
             </div>
             {% endfor %}
-            {% if not unassigned %}
+            {% if not accepted_guests %}
             <p style="font-family:'Jost',sans-serif; font-size:.78rem; color:var(--text-muted); text-align:center; margin-top:1rem;">
-                All confirmed guests are seated!
+                No confirmed guests yet.
             </p>
             {% endif %}
         </div>
@@ -564,6 +660,65 @@
             </div>
         </div>
     </div>
+</div>
+
+{# ── Mobile list view (shown instead of canvas on small screens) ── #}
+<div class="mobile-seating-view">
+    <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.5rem; font-weight:400; margin:0 0 .25rem;">Seating Chart</h2>
+    <p style="font-size:.78rem; color:var(--text-muted); margin:0 0 1rem;">
+        {{ accepted_count }} confirmed · {{ unassigned|length }} unassigned
+    </p>
+    <div class="mob-toolbar">
+        <a href="{{ url_for('seating.export_csv', wedding_id=wedding.id) }}" class="mob-btn">
+            <i class="bi bi-download"></i> Export CSV
+        </a>
+        <a href="{{ url_for('seating.print_seating', wedding_id=wedding.id) }}" target="_blank" class="mob-btn">
+            <i class="bi bi-printer"></i> Print
+        </a>
+    </div>
+    {% if tables %}
+    {% for t in tables %}
+    <div class="mob-tbl-card">
+        <div class="mob-tbl-hd">
+            <span class="mob-tbl-name">{{ t.display_name() }}</span>
+            <span class="mob-tbl-cap">{{ t.guests|length }}/{{ t.capacity }} seats</span>
+        </div>
+        {% if t.guests %}
+        <div class="mob-guest-list">
+            {% for g in t.guests|sort(attribute='full_name') %}
+            <div class="mob-guest-row">
+                <span style="flex:1;">{{ g.full_name }}</span>
+                {% if g.meal_preference and g.meal_preference not in ('Standard', '') %}
+                <span style="font-size:.7rem; color:var(--text-muted);">{{ g.meal_preference }}</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="mob-empty">No guests assigned</div>
+        {% endif %}
+    </div>
+    {% endfor %}
+    {% if unassigned %}
+    <div class="mob-tbl-card">
+        <div class="mob-tbl-hd" style="background:#fff5f5;">
+            <span class="mob-tbl-name" style="color:#c97a7a;">Unassigned</span>
+            <span class="mob-tbl-cap">{{ unassigned|length }} guests</span>
+        </div>
+        <div class="mob-guest-list">
+            {% for g in unassigned|sort(attribute='full_name') %}
+            <div class="mob-guest-row">{{ g.full_name }}</div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    {% else %}
+    <div style="text-align:center; padding:3rem 1rem; color:var(--text-muted);">
+        <i class="bi bi-grid-3x3-gap" style="font-size:2.5rem; display:block; margin-bottom:1rem; color:#d8cec8;"></i>
+        <p style="font-size:.9rem;">No tables set up yet.</p>
+        <p style="font-size:.78rem;">Open on a desktop to build your seating chart.</p>
+    </div>
+    {% endif %}
 </div>
 
 {# ── Table detail slide panel ──────────────────────────────────── #}
@@ -654,7 +809,7 @@ function escHtml(s) {
 // ── Drag from unassigned pill ────────────────────────────────────
 function pillDragStart(e, guestId) {
     dragGuestId = guestId;
-    dragFromTableId = null;
+    dragFromTableId = (GUESTS[guestId] && GUESTS[guestId].tableId != null) ? GUESTS[guestId].tableId : null;
     e.target.classList.add('dragging');
     e.dataTransfer.effectAllowed = 'move';
 }
@@ -720,10 +875,9 @@ async function tblDrop(e, tableId) {
 
     if (fromTid != null) {
         removeChipFromTable(gid, fromTid);
-    } else {
-        removePillFromUnassigned(gid);
     }
     addChipToTable(gid, tableId);
+    updatePillAssignment(gid, tableId);
 
     if (currentDetailTableId === tableId || currentDetailTableId === fromTid) {
         populateDetailGuests(currentDetailTableId);
@@ -761,7 +915,7 @@ async function unassignedDrop(e) {
         return;
     }
     removeChipFromTable(gid, fromTid);
-    addPillToUnassigned(gid);
+    updatePillAssignment(gid, null);
 
     if (currentDetailTableId === fromTid) {
         populateDetailGuests(currentDetailTableId);
@@ -962,9 +1116,28 @@ function updateCount(tableId) {
 function updateUnassignedCount() {
     const list = document.getElementById('unassignedList');
     if (!list) return;
-    const visible = list.querySelectorAll('.guest-pill:not(.hidden)').length;
+    const visible = list.querySelectorAll('.guest-pill:not(.hidden):not(.pill-assigned)').length;
     const el = document.getElementById('unassignedCount');
     if (el) el.textContent = visible;
+}
+
+function updatePillAssignment(guestId, tableId) {
+    const pill = document.getElementById('pill-' + guestId);
+    const badge = document.getElementById('pill-tbl-' + guestId);
+    if (!pill) return;
+    if (tableId != null) {
+        pill.classList.add('pill-assigned');
+        if (badge) {
+            const tbl = TABLES[tableId];
+            const name = tbl ? (tbl.name || ('Table ' + tbl.number)) : '?';
+            badge.textContent = name;
+            badge.style.display = '';
+        }
+    } else {
+        pill.classList.remove('pill-assigned');
+        if (badge) { badge.textContent = ''; badge.style.display = 'none'; }
+    }
+    updateUnassignedCount();
 }
 
 // ── Remove guest from table ──────────────────────────────────────
@@ -981,7 +1154,7 @@ async function rmGuest(guestId, tableId, e) {
         return;
     }
     removeChipFromTable(guestId, tableId);
-    addPillToUnassigned(guestId);
+    updatePillAssignment(guestId, null);
     if (currentDetailTableId === tableId) {
         populateDetailGuests(tableId);
     }
@@ -1008,7 +1181,7 @@ async function deleteTable(tableId, e) {
             const cid = parseInt(chip.id.replace('chip-', ''));
             if (GUESTS[cid]) {
                 GUESTS[cid].tableId = null;
-                addPillToUnassigned(cid);
+                updatePillAssignment(cid, null);
             }
         });
     }
@@ -1143,7 +1316,7 @@ function filterGuests() {
     const search = document.getElementById('guestSearch').value.toLowerCase();
     const group  = document.getElementById('groupFilter').value;
     const pills  = document.querySelectorAll('#unassignedList .guest-pill');
-    let visible  = 0;
+    let unassignedVisible = 0;
     pills.forEach(function(pill) {
         const name      = pill.dataset.name || '';
         const pillGroup = pill.dataset.group || '';
@@ -1151,13 +1324,13 @@ function filterGuests() {
         const groupMatch = !group  || pillGroup === group;
         if (nameMatch && groupMatch) {
             pill.classList.remove('hidden');
-            visible++;
+            if (!pill.classList.contains('pill-assigned')) unassignedVisible++;
         } else {
             pill.classList.add('hidden');
         }
     });
     const el = document.getElementById('unassignedCount');
-    if (el) el.textContent = visible;
+    if (el) el.textContent = unassignedVisible;
 }
 
 document.getElementById('guestSearch').addEventListener('input', filterGuests);

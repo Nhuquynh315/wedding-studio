@@ -312,9 +312,7 @@
             <div class="metric-icon amber"><i class="bi bi-check2-square"></i></div>
             <div class="metric-number">{{ checklist_pct }}<span style="font-size:1rem;">%</span></div>
             <div class="metric-label">Tasks Completed</div>
-            <div class="metric-sub">
-                {{ checklist_items | selectattr('1') | list | length }} of {{ checklist_items | length }} done
-            </div>
+            <div class="metric-sub">{{ cl_done }} of {{ cl_total }} done</div>
         </div>
     </div>
 </div>
@@ -373,17 +371,40 @@
     {# Planning checklist #}
     <div class="col-lg-4">
         <div class="dash-card">
-            <span class="dash-card-title">Planning Checklist</span>
+            <span class="dash-card-title">Upcoming Tasks</span>
             <div class="task-progress mb-1">
                 <div class="task-progress-fill" style="width:{{ checklist_pct }}%;"></div>
             </div>
-            <p class="task-pct-label">{{ checklist_pct }}% complete</p>
+            <p class="task-pct-label">{{ checklist_pct }}% complete · {{ cl_done }}/{{ cl_total }} done</p>
+            {% if next_tasks %}
+            {% for task in next_tasks %}
+            <div class="task-item">
+                <i class="bi bi-circle"></i>
+                <div style="flex:1; min-width:0;">
+                    <div>{{ task.title }}</div>
+                    {% if task.due_date %}
+                    <div style="font-size:.7rem; color:var(--text-muted); margin-top:.1rem;">
+                        Due {{ task.due_date.strftime('%b %-d, %Y') }}
+                    </div>
+                    {% endif %}
+                    {% if task.category and task.category != 'Other' %}
+                    <div style="font-size:.68rem; color:#b0a8a0;">{{ task.category }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
             {% for label, done in checklist_items %}
             <div class="task-item {% if done %}done{% endif %}">
                 <i class="bi {% if done %}bi-check-circle-fill{% else %}bi-circle{% endif %}"></i>
                 <span>{{ label }}</span>
             </div>
             {% endfor %}
+            {% endif %}
+            <a href="{{ url_for('checklist.checklist', wedding_id=active_wedding.id) }}"
+               style="font-size:.78rem; color:var(--rose); text-decoration:none; display:block; margin-top:1rem;">
+                View full timeline <i class="bi bi-arrow-right"></i>
+            </a>
         </div>
     </div>
 
@@ -426,9 +447,42 @@
     </div>
 </div>
 
-{# ── Row 3: Recent activity ───────────────────────────────────────── #}
+{# ── Row 3: Deposits + Recent activity ───────────────────────────── #}
 <div class="row g-3">
+    {% if upcoming_deposits %}
+    <div class="col-lg-5">
+        <div class="dash-card">
+            <span class="dash-card-title">Upcoming Deposits</span>
+            {% for v in upcoming_deposits %}
+            {% set days_left = (v.deposit_due_date - today).days %}
+            <div class="activity-item">
+                <div class="activity-dot" style="background:{% if days_left <= 7 %}#d47a7a{% elif days_left <= 30 %}#c8a860{% else %}#5fa67a{% endif %};"></div>
+                <span class="activity-text">
+                    <strong>{{ v.business_name }}</strong>
+                    <span style="color:var(--text-muted);">· {{ v.category }}</span><br>
+                    <span style="font-size:.75rem; color:var(--text-muted);">
+                        Deposit: ${{ '{:,.0f}'.format(v.deposit_amount) if v.deposit_amount else 'TBD' }}
+                    </span>
+                </span>
+                <span class="activity-time"
+                      style="color:{% if days_left <= 7 %}#d47a7a{% elif days_left <= 30 %}#c8a860{% else %}var(--text-muted){% endif %}; font-weight:{% if days_left <= 7 %}600{% else %}400{% endif %};">
+                    {% if days_left == 0 %}Today
+                    {% elif days_left == 1 %}Tomorrow
+                    {% elif days_left < 0 %}Overdue
+                    {% else %}{{ v.deposit_due_date.strftime('%b %-d') }}{% endif %}
+                </span>
+            </div>
+            {% endfor %}
+            <a href="{{ url_for('vendors.vendors', wedding_id=active_wedding.id) }}"
+               style="font-size:.78rem; color:var(--rose); text-decoration:none; display:block; margin-top:.75rem;">
+                Manage vendors <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+    <div class="col-lg-7">
+    {% else %}
     <div class="col-12">
+    {% endif %}
         <div class="dash-card">
             <span class="dash-card-title">Recent Activity</span>
             {% if recent_guests %}
@@ -439,9 +493,7 @@
                     <strong>{{ g.full_name }}</strong> added to guest list
                     {% if g.group_name %}<span style="color:var(--text-muted);">· {{ g.group_name }}</span>{% endif %}
                 </span>
-                <span class="activity-time">
-                    {{ g.created_at.strftime('%b %-d') }}
-                </span>
+                <span class="activity-time">{{ g.created_at.strftime('%b %-d') }}</span>
             </div>
             {% endfor %}
             {% else %}

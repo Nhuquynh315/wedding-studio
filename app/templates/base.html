@@ -304,6 +304,9 @@
         .app-topbar { padding: 0 1.25rem; }
     }
 
+    /* Make <form> invisible in flex/grid layouts so it doesn't break dropdown items */
+    .d-contents { display: contents; }
+
     /* ── Bootstrap overrides ──────────────────────────────────────── */
     .btn-primary {
         background: var(--rose);
@@ -364,7 +367,7 @@
                 <i class="bi bi-grid-3x3-gap"></i> Seating
             </a>
             <a href="{{ url_for('budget.budget', wedding_id=aw.id) }}"
-               class="sidebar-link" data-nav="budget">
+               class="sidebar-link {% if request.endpoint == 'budget.budget' %}active{% endif %}" data-nav="budget">
                 <i class="bi bi-currency-dollar"></i> Budget
             </a>
             <a href="{{ url_for('vendors.vendors', wedding_id=aw.id) }}"
@@ -522,6 +525,7 @@
                     <li>
                         <form method="POST" action="{{ url_for('wedding.activate_wedding', wedding_id=w.id) }}" class="d-contents">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="next_endpoint" value="{{ request.endpoint or 'wedding.dashboard' }}">
                             <button type="submit" class="dropdown-item py-2 {% if _active_wedding and w.id == _active_wedding.id %}fw-semibold{% endif %}"
                                     style="font-family:'Jost',sans-serif; font-size:0.85rem;">
                                 {% if _active_wedding and w.id == _active_wedding.id %}

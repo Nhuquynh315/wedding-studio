@@ -52,18 +52,20 @@ def dashboard():
     # Checklist — use real DB items if they exist, else show setup prompts
     from app.models import ChecklistItem
     cl_items  = ChecklistItem.query.filter_by(wedding_id=active.id).all()
+    today = date.today()
     if cl_items:
         cl_total = len(cl_items)
         cl_done  = sum(1 for i in cl_items if i.is_completed)
         checklist_pct = round(cl_done / cl_total * 100) if cl_total else 0
-        # 5 most urgent incomplete items for the overview card
-        upcoming_tasks = sorted(
-            [i for i in cl_items if not i.is_completed and i.due_date],
+        # Next 3 incomplete items sorted by due date (nulls last)
+        incomplete = [i for i in cl_items if not i.is_completed]
+        next_tasks = sorted(
+            [i for i in incomplete if i.due_date],
             key=lambda x: x.due_date
-        )[:5]
+        )[:3] or incomplete[:3]
         checklist_items = [(i.title, i.is_completed) for i in cl_items]
     else:
-        # Fallback setup checklist before first migration
+        # Fallback setup checklist before first real items are added
         theme = None
         if active.ai_generated_theme:
             try:
@@ -79,10 +81,10 @@ def dashboard():
             ('Create invitation PDF', bool(active.designs)),
         ]
         cl_done  = sum(1 for _, v in checklist_items if v)
-        checklist_pct = round(cl_done / len(checklist_items) * 100)
-        upcoming_tasks = []
+        cl_total = len(checklist_items)
+        checklist_pct = round(cl_done / cl_total * 100)
+        next_tasks = []
 
-    today = date.today()
     days_until = (active.wedding_date - today).days if active.wedding_date else None
 
     # Budget stats for active wedding
@@ -99,6 +101,13 @@ def dashboard():
         key=lambda x: x['estimated'], reverse=True
     )[:3]
 
+    # Next 3 vendor deposits not yet paid, sorted by due date
+    upcoming_deposits = sorted(
+        [v for v in active.vendors
+         if v.deposit_due_date and not v.deposit_paid and v.deposit_due_date >= today],
+        key=lambda v: v.deposit_due_date
+    )[:3]
+
     # Recent activity: last 5 guests added across all weddings
     all_guests = []
     for w in weddings:
@@ -112,14 +121,24 @@ def dashboard():
         guest_stats=guest_stats,
         checklist_items=checklist_items,
         checklist_pct=checklist_pct,
-        upcoming_tasks=upcoming_tasks,
+        next_tasks=next_tasks,
+        cl_done=cl_done,
+        cl_total=cl_total,
         days_until=days_until,
         recent_guests=recent_guests,
         total_budget_amount=total_budget_amount,
         total_actual_paid=total_actual_paid,
         budget_pct=budget_pct,
         budget_snapshot=budget_snapshot,
+        upcoming_deposits=upcoming_deposits,
+        today=today,
     )
+
+
+_WEDDING_ID_ENDPOINTS = {
+    'budget.budget', 'vendors.vendors', 'checklist.checklist',
+    'seating.seating', 'wedding.wedding_detail',
+}
 
 
 @wedding_bp.route('/wedding/<int:wedding_id>/activate', methods=['POST'])
@@ -127,6 +146,12 @@ def dashboard():
 def activate_wedding(wedding_id):
     wedding = get_wedding_or_403(wedding_id)
     session['active_wedding_id'] = wedding.id
+    next_ep = request.form.get('next_endpoint', '')
+    if next_ep in _WEDDING_ID_ENDPOINTS:
+        try:
+            return redirect(url_for(next_ep, wedding_id=wedding.id))
+        except Exception:
+            pass
     return redirect(url_for('wedding.dashboard'))
 
 
