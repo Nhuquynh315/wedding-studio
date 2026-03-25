@@ -1,1067 +1,1022 @@
 {% extends "base.html" %}
 
-{% block title %}{{ wedding.partner1_name }} & {{ wedding.partner2_name }} - AI Wedding Studio{% endblock %}
+{% block title %}{{ wedding.partner1_name }} & {{ wedding.partner2_name }} – AI Wedding Studio{% endblock %}
 
 {% block extra_css %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <style>
-    /* ── Page chrome ──────────────────────────────────────── */
-    .color-swatch {
-        display: inline-block;
-        width: 1.25rem;
-        height: 1.25rem;
-        border-radius: 0.25rem;
-        border: 1px solid rgba(0,0,0,0.15);
-        vertical-align: middle;
-    }
-    .detail-header {
-        padding-bottom: 1.25rem;
-        border-bottom: 1px solid #ecdde3;
-        margin-bottom: 2rem;
-    }
-    .nav-tabs .nav-link.active {
-        font-weight: 600;
-        color: var(--ws-rose);
-        border-bottom-color: #fff;
-    }
-    .nav-tabs .nav-link:not(.active) { color: var(--ws-muted); }
-    .nav-tabs .nav-link:hover:not(.active) { color: var(--ws-rose-dark); }
+/* ── Detail page action buttons ──────────────────────────────────── */
+.sidebar-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'Jost', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 400;
+    padding: 0.4rem 0.75rem;
+    border-radius: 8px;
+    border: 1px solid #ecdde3;
+    background: transparent;
+    color: #7a6a60;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.sidebar-action-btn:hover { background: #fdf3ee; border-color: var(--ws-rose); color: var(--ws-rose); }
+.sidebar-action-btn.danger:hover { background: #fff5f5; border-color: #e57373; color: #c62828; }
 
-    /* ── Theme: shared card ───────────────────────────────── */
-    .theme-card {
-        background: #fff;
-        border-radius: 16px;
-        padding: 1.75rem 2rem;
-        box-shadow: 0 1px 3px rgba(0,0,0,.05), 0 4px 20px rgba(0,0,0,.04);
-        height: 100%;
-    }
-    .theme-card-title {
-        font-family: 'Jost', sans-serif;
-        font-size: 0.68rem;
-        font-weight: 500;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: #b89a8a;
-        margin-bottom: 1.25rem;
-    }
+/* ── Section visibility ──────────────────────────────────────────── */
+.planner-section { display: none; }
+.planner-section.active { display: block; }
 
-    /* ── Tagline ──────────────────────────────────────────── */
-    .theme-tagline {
-        background: linear-gradient(135deg, #fdf8f5 0%, #fdf3ee 100%);
-        border-radius: 16px;
-        padding: 2.5rem 2rem;
-        text-align: center;
-    }
-    .theme-tagline p {
-        font-family: 'Cormorant Garamond', serif;
-        font-size: clamp(1.4rem, 3vw, 2rem);
-        font-weight: 300;
-        font-style: italic;
-        color: #4a3728;
-        margin: 0;
-        line-height: 1.5;
-    }
+.section-hd {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+.section-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.7rem;
+    font-weight: 400;
+    color: #3a2e28;
+    margin: 0;
+    line-height: 1.2;
+}
+.section-subtitle {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.8rem;
+    color: #b89a8a;
+    margin-top: 0.15rem;
+}
 
-    /* ── Colour palette swatches ──────────────────────────── */
-    .palette-swatches {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1.25rem;
-    }
-    .swatch-item {
-        display: flex;
-        align-items: center;
-        gap: 0.85rem;
-        flex: 1 1 160px;
-    }
-    .swatch-circle {
-        width: 52px;
-        height: 52px;
-        border-radius: 50%;
-        flex-shrink: 0;
-        box-shadow: 0 2px 8px rgba(0,0,0,.12);
-    }
-    .swatch-info { line-height: 1.3; }
-    .swatch-role {
-        display: block;
-        font-family: 'Jost', sans-serif;
-        font-size: 0.65rem;
-        font-weight: 500;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        color: #b89a8a;
-    }
-    .swatch-name {
-        display: block;
-        font-family: 'Jost', sans-serif;
-        font-size: 0.85rem;
-        color: #3a2e28;
-    }
-    .swatch-hex {
-        display: block;
-        font-family: monospace;
-        font-size: 0.72rem;
-        color: #a09080;
-    }
-    .swatch-item.selected .swatch-circle {
-        outline: 2.5px solid var(--rose-medium);
-        outline-offset: 3px;
-    }
-    .btn-select-colour {
-        font-family: 'Jost', sans-serif;
-        font-size: 0.68rem;
-        font-weight: 500;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        border: 1px solid #d4b8ac;
-        background: transparent;
-        color: #a09080;
-        border-radius: 4px;
-        padding: 0.2rem 0.6rem;
-        cursor: pointer;
-        margin-top: 0.3rem;
-        transition: background 0.15s, color 0.15s, border-color 0.15s;
-    }
-    .btn-select-colour:hover {
-        border-color: var(--rose-medium);
-        color: var(--rose-medium);
-    }
-    .colour-selected-badge {
-        display: block;
-        font-family: 'Jost', sans-serif;
-        font-size: 0.68rem;
-        font-weight: 500;
-        letter-spacing: 0.05em;
-        color: var(--rose-medium);
-        margin-top: 0.3rem;
-    }
+/* ── KPI row ─────────────────────────────────────────────────────── */
+.kpi-row {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.kpi-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 1.25rem 1.4rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 2px 12px rgba(0,0,0,.04);
+}
+.kpi-card.kpi-featured {
+    background: linear-gradient(135deg, #4a3728 0%, #6b4c3a 100%);
+    color: #fff;
+}
+.kpi-number {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.6rem;
+    font-weight: 300;
+    line-height: 1;
+    color: inherit;
+}
+.kpi-featured .kpi-number { font-size: 3rem; color: #fff; }
+.kpi-unit {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 400;
+    margin-left: 2px;
+    opacity: 0.7;
+}
+.kpi-label {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #b89a8a;
+    margin-top: 0.25rem;
+    margin-bottom: 0.6rem;
+}
+.kpi-featured .kpi-label { color: rgba(255,255,255,0.6); }
+.kpi-sub {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.75);
+    margin-top: 0.5rem;
+}
+.kpi-bar {
+    height: 4px;
+    background: #f0e8e4;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+}
+.kpi-bar-fill {
+    height: 100%;
+    background: var(--ws-rose);
+    border-radius: 2px;
+    transition: width 0.5s ease;
+}
+.kpi-secondary {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.75rem;
+    color: #a09080;
+    margin-top: 0.35rem;
+}
 
-    /* ── Style keywords ───────────────────────────────────── */
-    .theme-badge {
-        display: inline-block;
-        padding: 0.35em 1em;
-        border-radius: 2em;
-        background: #fdf0f3;
-        color: var(--ws-rose);
-        font-family: 'Jost', sans-serif;
-        font-size: 0.78rem;
-        font-weight: 500;
-        letter-spacing: 0.04em;
-    }
+/* ── Overview lower grid ─────────────────────────────────────────── */
+.overview-lower {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
 
-    /* ── Font pairings ────────────────────────────────────── */
-    .font-pairing-card {
-        background: #fdfaf7;
-        border-radius: 12px;
-        padding: 1.5rem;
-        border: 1px solid #f0e6de;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-    }
-    .font-pairing-card.selected {
-        border-color: var(--rose-medium);
-        background: #fff8f5;
-        box-shadow: 0 0 0 2px rgba(196, 137, 110, 0.15);
-    }
-    .font-pair-select-btn {
-        margin-top: auto;
-        padding-top: 1rem;
-    }
-    .btn-select-font {
-        font-family: 'Jost', sans-serif;
-        font-size: 0.72rem;
-        font-weight: 500;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        border: 1px solid var(--rose-medium);
-        background: transparent;
-        color: var(--rose-medium);
-        border-radius: 6px;
-        padding: 0.35rem 0.9rem;
-        cursor: pointer;
-        width: 100%;
-        transition: background 0.15s, color 0.15s;
-    }
-    .btn-select-font:hover {
-        background: var(--rose-medium);
-        color: #fff;
-    }
-    .font-selected-badge {
-        font-family: 'Jost', sans-serif;
-        font-size: 0.7rem;
-        font-weight: 500;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        color: var(--rose-medium);
-        display: flex;
-        align-items: center;
-        gap: 0.3rem;
-    }
-    .font-pair-label {
-        font-family: 'Jost', sans-serif;
-        font-size: 0.65rem;
-        font-weight: 500;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        color: #c4a898;
-        margin-bottom: 0.3rem;
-    }
-    .font-pair-name {
-        font-size: 0.8rem;
-        color: #8a7060;
-        font-family: 'Jost', sans-serif;
-        margin-bottom: 0.75rem;
-    }
-    .font-pair-sample {
-        font-size: 1.5rem;
-        color: #3a2e28;
-        line-height: 1.3;
-        margin-bottom: 0.5rem;
-    }
-    .font-pair-description {
-        font-family: 'Jost', sans-serif;
-        font-size: 0.78rem;
-        color: #a09080;
-        margin: 0;
-        line-height: 1.5;
-    }
+/* ── Planner cards ───────────────────────────────────────────────── */
+.planner-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 2px 12px rgba(0,0,0,.04);
+    height: 100%;
+}
+.planner-card-title {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #b89a8a;
+    margin-bottom: 1.1rem;
+}
 
-    /* ── Decor list ───────────────────────────────────────── */
-    .decor-list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-    .decor-list li {
-        font-family: 'Jost', sans-serif;
-        font-size: 0.9rem;
-        color: #6a5a52;
-        padding: 0.6rem 0;
-        border-bottom: 1px solid #f5ede8;
-        line-height: 1.5;
-    }
-    .decor-list li:last-child { border-bottom: none; }
-    .decor-list li::before {
-        content: '✦';
-        color: #d4a8a0;
-        margin-right: 0.6rem;
-        font-size: 0.6rem;
-        vertical-align: middle;
-    }
+/* ── Checklist ───────────────────────────────────────────────────── */
+.checklist-item {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.45rem 0;
+    border-bottom: 1px solid #f7f3f0;
+    font-family: 'Jost', sans-serif;
+    font-size: 0.85rem;
+    color: #4a3e38;
+}
+.checklist-item:last-child { border-bottom: none; }
+.checklist-item i { font-size: 1rem; flex-shrink: 0; }
+.checklist-item.done i { color: #5fa67a; }
+.checklist-item.done span { color: #3a2e28; }
+.checklist-item:not(.done) i { color: #d0c4bc; }
+.checklist-item:not(.done) span { color: #b09a90; }
 
-    /* ── Invitation card ──────────────────────────────────── */
-    .invitation-card {
-        background: linear-gradient(160deg, #fdfaf7 0%, #fdf5ef 100%);
-        border: 1px solid #e8d5c4;
-        text-align: center;
-        padding: 2.5rem;
-    }
-    .invitation-body {
-        font-family: 'Cormorant Garamond', serif;
-        font-size: clamp(1rem, 2vw, 1.2rem);
-        font-weight: 300;
-        line-height: 2.2;
-        color: #3a2e28;
-        white-space: pre-wrap;
-        max-width: 540px;
-        margin: 0 auto;
-    }
-    .btn-copy {
-        font-family: 'Jost', sans-serif;
-        font-size: 0.75rem;
-        font-weight: 500;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: #b89a8a;
-        background: none;
-        border: 1px solid #e8d5c4;
-        border-radius: 2em;
-        padding: 0.35em 1.1em;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-    .btn-copy:hover { background: #fdf0eb; border-color: #d4a8a0; color: #8a6050; }
-    .btn-copy.copied { color: #6aaa80; border-color: #b8ddc8; }
+/* ── Wedding details dl ──────────────────────────────────────────── */
+.detail-dl dt {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #b89a8a;
+    margin-bottom: 0.1rem;
+    margin-top: 0.75rem;
+}
+.detail-dl dt:first-child { margin-top: 0; }
+.detail-dl dd {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.88rem;
+    color: #3a2e28;
+    margin: 0;
+}
 
-    /* ── Generate CTA ─────────────────────────────────────── */
-    .generate-cta { padding: 3rem 1rem; }
-    .generate-icon {
-        font-size: 2.5rem;
-        color: #d4b0a8;
-        display: block;
-    }
-    .generate-title {
-        font-family: 'Cormorant Garamond', serif;
-        font-weight: 400;
-        color: #4a3728;
-        margin-bottom: 0.5rem;
-    }
-    .generate-subtitle {
-        font-family: 'Jost', sans-serif;
-        font-size: 0.9rem;
-        margin-bottom: 2rem;
-    }
-    .btn-generate, .btn-regenerate {
-        font-family: 'Jost', sans-serif;
-        font-size: 0.82rem;
-        font-weight: 500;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        color: #fff;
-        background: linear-gradient(135deg, #c4857a, #b06070);
-        border: none;
-        border-radius: 2em;
-        padding: 0.7em 2.2em;
-        cursor: pointer;
-        transition: opacity 0.2s, transform 0.15s;
-    }
-    .btn-generate:hover, .btn-regenerate:hover { opacity: 0.88; transform: translateY(-1px); }
-    .btn-regenerate {
-        background: none;
-        color: #b89a8a;
-        border: 1px solid #e0ccc4;
-    }
-    .btn-regenerate:hover { background: #fdf0eb; color: #8a6050; transform: none; }
-    .tone-select {
-        font-family: 'Jost', sans-serif;
-        font-size: 0.82rem;
-        color: #6b5248;
-        border-color: #e0ccc4;
-        background-color: #fdfaf8;
-        width: auto;
-        min-width: 140px;
-    }
-    .tone-select:focus { border-color: #c4857a; box-shadow: 0 0 0 0.15rem rgba(196,133,122,0.2); }
+/* ── RSVP mini-bars ──────────────────────────────────────────────── */
+.rsvp-stat-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.3rem;
+}
+.rsvp-stat-label {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.78rem;
+    color: #7a6a60;
+}
+.rsvp-stat-val {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: #3a2e28;
+}
+.rsvp-stacked { height: 8px; border-radius: 4px; overflow: hidden; background: #f0e8e4; display: flex; }
+.rsvp-stacked-confirmed { background: #5fa67a; }
+.rsvp-stacked-pending   { background: #d4c4b8; }
+.rsvp-stacked-declined  { background: #d47a7a; }
 
-    /* ── Loading overlay ──────────────────────────────────── */
-    .loading-overlay {
-        display: none;
-        position: fixed;
-        inset: 0;
-        background: rgba(253,250,247,0.92);
-        backdrop-filter: blur(6px);
-        z-index: 9999;
-        justify-content: center;
-        align-items: center;
-        flex-direction: column;
-        gap: 1.5rem;
-    }
-    .loading-overlay.active { display: flex; }
-    .loading-spinner {
-        width: 48px;
-        height: 48px;
-        border: 2px solid #f0e0d8;
-        border-top-color: #c4857a;
-        border-radius: 50%;
-        animation: spin 0.9s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-text {
-        font-family: 'Cormorant Garamond', serif;
-        font-size: 1.1rem;
-        font-style: italic;
-        color: #8a7060;
-        margin: 0;
-    }
+/* ── Placeholder sections ────────────────────────────────────────── */
+.placeholder-section {
+    background: #fff;
+    border-radius: 14px;
+    padding: 3rem 2rem;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 2px 12px rgba(0,0,0,.04);
+}
+.placeholder-icon {
+    font-size: 2.5rem;
+    color: #ddd0c8;
+    margin-bottom: 1rem;
+}
+.placeholder-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem;
+    font-weight: 400;
+    color: #5a4e48;
+    margin-bottom: 0.5rem;
+}
+.placeholder-text {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.85rem;
+    color: #b89a8a;
+    max-width: 320px;
+    margin: 0 auto;
+}
 
-    /* ── Mobile ───────────────────────────────────────────── */
-    @media (max-width: 576px) {
-        .theme-card { padding: 1.25rem; }
-        .invitation-card { padding: 1.5rem; }
-        .palette-swatches { gap: 1rem; }
-        .swatch-circle { width: 40px; height: 40px; }
-    }
+/* ── Invitation section ──────────────────────────────────────────── */
+.invitation-preview-wrap {
+    width: 100%;
+    overflow: hidden;
+    border-radius: 10px;
+    border: 1px solid #ecdde3;
+    background: #fffdf9;
+    margin-bottom: 1.25rem;
+}
+.invitation-scaled {
+    transform: scale(0.55);
+    transform-origin: top left;
+    width: calc(100% / 0.55);
+    height: calc(672px / 0.55);
+}
+.invitation-spacer { height: calc(672px * 0.55); }
+
+/* ── Theme styles (carried over) ─────────────────────────────────── */
+.theme-tagline {
+    background: linear-gradient(135deg, #fdf8f5 0%, #fdf3ee 100%);
+    border-radius: 14px;
+    padding: 2rem 1.75rem;
+    text-align: center;
+    margin-bottom: 1rem;
+}
+.theme-tagline p {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.3rem, 2.5vw, 1.8rem);
+    font-weight: 300;
+    font-style: italic;
+    color: #4a3728;
+    margin: 0;
+    line-height: 1.5;
+}
+.theme-tagline small { font-family: 'Jost', sans-serif; font-size: 0.72rem; color: #c0a898; }
+
+.palette-swatches { display: flex; flex-wrap: wrap; gap: 1.1rem; }
+.swatch-item { display: flex; align-items: center; gap: 0.75rem; flex: 1 1 140px; }
+.swatch-item.selected .swatch-circle { outline: 2.5px solid var(--ws-rose); outline-offset: 3px; }
+.swatch-circle { width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+.swatch-info { line-height: 1.3; }
+.swatch-role { display: block; font-family: 'Jost', sans-serif; font-size: 0.62rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: #b89a8a; }
+.swatch-name { display: block; font-family: 'Jost', sans-serif; font-size: 0.82rem; color: #3a2e28; }
+.swatch-hex  { display: block; font-family: monospace; font-size: 0.7rem; color: #a09080; }
+.colour-selected-badge { display: block; font-family: 'Jost', sans-serif; font-size: 0.68rem; font-weight: 500; letter-spacing: 0.05em; color: var(--ws-rose); margin-top: 0.25rem; }
+.btn-select-colour { font-family: 'Jost', sans-serif; font-size: 0.68rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; border: 1px solid #d4b8ac; background: transparent; color: #a09080; border-radius: 4px; padding: 0.18rem 0.55rem; cursor: pointer; margin-top: 0.25rem; transition: all 0.15s; }
+.btn-select-colour:hover { border-color: var(--ws-rose); color: var(--ws-rose); }
+
+.font-pairing-card { border-radius: 12px; padding: 1.25rem; background: #fdf9f7; border: 1.5px solid #f0e4df; transition: border-color 0.15s; }
+.font-pairing-card.selected { border-color: var(--ws-rose); }
+.font-pair-label { font-family: 'Jost', sans-serif; font-size: 0.62rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: #b89a8a; margin-bottom: 0.15rem; }
+.font-pair-name  { font-family: 'Jost', sans-serif; font-size: 0.82rem; color: #5a4e48; margin-bottom: 0.35rem; }
+.font-pair-sample { font-size: 1.15rem; color: #3a2e28; margin-bottom: 0.75rem; }
+.font-pair-description { font-family: 'Jost', sans-serif; font-size: 0.78rem; color: #8a7a70; line-height: 1.5; }
+.font-pair-select-btn { margin-top: 0.75rem; }
+.btn-select-font { font-family: 'Jost', sans-serif; font-size: 0.72rem; font-weight: 500; letter-spacing: 0.06em; border: 1px solid #d4b8ac; background: transparent; color: #a09080; border-radius: 6px; padding: 0.3rem 0.8rem; cursor: pointer; transition: all 0.15s; }
+.btn-select-font:hover { border-color: var(--ws-rose); color: var(--ws-rose); }
+.font-selected-badge { font-family: 'Jost', sans-serif; font-size: 0.72rem; font-weight: 500; color: var(--ws-rose); }
+
+.invitation-body { font-family: 'Jost', sans-serif; font-size: 0.9rem; line-height: 1.8; color: #4a3e38; white-space: pre-line; }
+.theme-badge { display: inline-block; padding: 0.3em 0.9em; border-radius: 2em; background: #fdf0f3; color: var(--ws-rose); font-family: 'Jost', sans-serif; font-size: 0.78rem; font-weight: 400; }
+.decor-list { list-style: none; padding: 0; margin: 0; }
+.decor-list li { font-family: 'Jost', sans-serif; font-size: 0.85rem; color: #5a4e48; padding: 0.4rem 0; border-bottom: 1px solid #f5eae7; }
+.decor-list li:last-child { border-bottom: none; }
+
+.btn-copy { font-family: 'Jost', sans-serif; font-size: 0.72rem; font-weight: 500; letter-spacing: 0.06em; border: 1px solid #d4b8ac; background: transparent; color: #a09080; border-radius: 6px; padding: 0.3rem 0.8rem; cursor: pointer; transition: all 0.15s; }
+.btn-copy:hover { border-color: var(--ws-rose); color: var(--ws-rose); }
+.btn-copy.copied { background: var(--ws-rose); color: #fff; border-color: var(--ws-rose); }
+
+.btn-generate { font-family: 'Jost', sans-serif; font-size: 0.85rem; font-weight: 500; letter-spacing: 0.04em; background: var(--ws-rose); color: #fff; border: none; border-radius: 8px; padding: 0.65rem 1.5rem; cursor: pointer; transition: opacity 0.15s; }
+.btn-generate:hover { opacity: 0.88; }
+.btn-regenerate { font-family: 'Jost', sans-serif; font-size: 0.8rem; font-weight: 500; letter-spacing: 0.04em; background: transparent; color: var(--ws-rose); border: 1.5px solid var(--ws-rose); border-radius: 8px; padding: 0.45rem 1.1rem; cursor: pointer; transition: all 0.15s; }
+.btn-regenerate:hover { background: var(--ws-rose); color: #fff; }
+.tone-select { font-family: 'Jost', sans-serif; font-size: 0.82rem; border-color: #d4b8ac; border-radius: 8px; }
+.tone-select:focus { box-shadow: 0 0 0 0.2rem rgba(196,133,122,.25); border-color: var(--ws-rose); }
+
+.generate-cta { padding: 3rem 1rem; }
+.generate-icon { font-size: 2rem; color: var(--ws-rose); display: block; margin-bottom: 1rem; }
+.generate-title { font-family: 'Cormorant Garamond', serif; font-size: 1.6rem; font-weight: 400; color: #3a2e28; }
+.generate-subtitle { font-family: 'Jost', sans-serif; }
+
+/* ── Loading overlay ─────────────────────────────────────────────── */
+.loading-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(253,250,247,0.92); backdrop-filter: blur(6px);
+    z-index: 9999; justify-content: center; align-items: center;
+    flex-direction: column; gap: 1.5rem;
+}
+.loading-overlay.active { display: flex; }
+.loading-spinner { width: 48px; height: 48px; border: 2px solid #f0e0d8; border-top-color: #c4857a; border-radius: 50%; animation: spin 0.9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-style: italic; color: #8a7060; margin: 0; }
+
+/* ── Guest table styles ──────────────────────────────────────────── */
+.color-swatch { display: inline-block; width: 1.1rem; height: 1.1rem; border-radius: 0.2rem; border: 1px solid rgba(0,0,0,0.12); vertical-align: middle; }
+
+/* ── Responsive ──────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+    .kpi-row { grid-template-columns: 1fr 1fr; }
+    .kpi-card.kpi-featured { grid-column: span 2; }
+}
+@media (max-width: 640px) {
+    .overview-lower { grid-template-columns: 1fr; }
+    .kpi-row { grid-template-columns: 1fr 1fr; }
+    .kpi-card.kpi-featured { grid-column: span 2; }
+}
 </style>
 {% endblock %}
 
+{% block page_title %}{{ wedding.partner1_name }} &amp; {{ wedding.partner2_name }}{% endblock %}
+
 {% block content %}
+<div>
 
-{# ── Header row ────────────────────────────────────────────── #}
-<div class="detail-header d-flex justify-content-between align-items-start">
-    <div>
-        <h1 class="mb-1 fw-bold">
-            {{ wedding.partner1_name }} &amp; {{ wedding.partner2_name }}
-        </h1>
-        <div class="d-flex align-items-center gap-3 text-muted">
-            <span>&#128197; {{ wedding.wedding_date.strftime('%B %d, %Y') if wedding.wedding_date else 'Date TBD' }}</span>
-            <span>&#128205; {{ wedding.location }}</span>
-            <span>&#127968; {{ wedding.venue_name }}</span>
+{# ═══════════════════════ OVERVIEW ═══════════════════════════════ #}
+<section id="sec-overview" class="planner-section active">
+    <div class="section-hd">
+        <div>
+            <h2 class="section-title">{{ wedding.partner1_name }} &amp; {{ wedding.partner2_name }}</h2>
+            <div class="section-subtitle">
+                <i class="bi bi-geo-alt"></i> {{ wedding.venue_name }}, {{ wedding.location }}
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('wedding.edit_wedding', wedding_id=wedding.id) }}"
+               class="sidebar-action-btn">
+                <i class="bi bi-pencil"></i> Edit
+            </a>
+            <button type="button" class="sidebar-action-btn danger"
+                    data-bs-toggle="modal" data-bs-target="#deleteModal">
+                <i class="bi bi-trash3"></i> Delete
+            </button>
         </div>
     </div>
-    <div class="d-flex gap-2 mt-1">
-        <a href="{{ url_for('wedding.edit_wedding', wedding_id=wedding.id) }}" class="btn btn-outline-primary btn-sm">
-            Edit
-        </a>
-        <button type="button" class="btn btn-outline-danger btn-sm"
-                data-bs-toggle="modal" data-bs-target="#deleteModal">Delete</button>
-    </div>
-</div>
 
-{# ── Tabs ──────────────────────────────────────────────────── #}
-<ul class="nav nav-tabs mb-4" id="weddingTabs" role="tablist">
-    <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="overview-tab" data-bs-toggle="tab"
-                data-bs-target="#overview" type="button" role="tab"
-                aria-controls="overview" aria-selected="true">Overview</button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" id="theme-tab" data-bs-toggle="tab"
-                data-bs-target="#theme" type="button" role="tab"
-                aria-controls="theme" aria-selected="false">Theme</button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" id="guests-tab" data-bs-toggle="tab"
-                data-bs-target="#guests" type="button" role="tab"
-                aria-controls="guests" aria-selected="false">Guest List</button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" id="designs-tab" data-bs-toggle="tab"
-                data-bs-target="#designs" type="button" role="tab"
-                aria-controls="designs" aria-selected="false">Designs</button>
-    </li>
-</ul>
+    {# KPI row #}
+    <div class="kpi-row">
+        {# Countdown #}
+        <div class="kpi-card kpi-featured">
+            {% if days_until is not none %}
+                {% if days_until > 0 %}
+                <div class="kpi-number">{{ days_until }}<span class="kpi-unit">days</span></div>
+                <div class="kpi-label">Until the wedding</div>
+                <div class="kpi-sub">{{ wedding.wedding_date.strftime('%B %-d, %Y') }}</div>
+                {% elif days_until == 0 %}
+                <div class="kpi-number" style="font-size:2rem;">Today!</div>
+                <div class="kpi-label">Your wedding day</div>
+                {% else %}
+                <div class="kpi-number" style="font-size:2rem;">{{ days_until | abs }}</div>
+                <div class="kpi-label">Days since the wedding</div>
+                {% endif %}
+            {% else %}
+            <div class="kpi-number">—</div>
+            <div class="kpi-label">Date not set</div>
+            {% endif %}
+        </div>
 
-<div class="tab-content" id="weddingTabsContent">
-
-    {# ── Overview tab ──────────────────────────────────────── #}
-    <div class="tab-pane fade show active" id="overview" role="tabpanel" aria-labelledby="overview-tab">
-        {% set style_colors = {
-            'rustic':     'warning',
-            'modern':     'primary',
-            'luxury':     'dark',
-            'beach':      'info',
-            'vintage':    'danger',
-            'minimalist': 'secondary'
-        } %}
-
-        <div class="row g-4">
-            {# Wedding details card #}
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm h-100" style="border-radius: var(--ws-card-radius);">
-                    <div class="card-body">
-                        <h5 class="card-title fw-semibold mb-3">Wedding Details</h5>
-                        <dl class="row mb-0">
-                            <dt class="col-sm-4 text-muted fw-normal">Date</dt>
-                            <dd class="col-sm-8">
-                                {{ wedding.wedding_date.strftime('%B %d, %Y') if wedding.wedding_date else '—' }}
-                            </dd>
-
-                            <dt class="col-sm-4 text-muted fw-normal">Location</dt>
-                            <dd class="col-sm-8">{{ wedding.location }}</dd>
-
-                            <dt class="col-sm-4 text-muted fw-normal">Venue</dt>
-                            <dd class="col-sm-8">{{ wedding.venue_name }}</dd>
-
-                            <dt class="col-sm-4 text-muted fw-normal">Style</dt>
-                            <dd class="col-sm-8">
-                                <span class="badge bg-{{ style_colors.get(wedding.style | lower, 'secondary') }} text-capitalize">
-                                    {{ wedding.style }}
-                                </span>
-                            </dd>
-
-                            <dt class="col-sm-4 text-muted fw-normal">Created</dt>
-                            <dd class="col-sm-8 mb-0">{{ wedding.created_at.strftime('%B %d, %Y') }}</dd>
-                        </dl>
-                    </div>
-                </div>
+        {# RSVP #}
+        <div class="kpi-card">
+            <div class="kpi-number">{{ guest_stats.response_rate }}<span class="kpi-unit">%</span></div>
+            <div class="kpi-label">RSVP rate</div>
+            <div class="kpi-bar">
+                <div class="kpi-bar-fill" style="width:{{ guest_stats.response_rate }}%;"></div>
             </div>
+            <div class="kpi-secondary">{{ guest_stats.accepted }} confirmed · {{ guest_stats.pending }} pending</div>
+        </div>
 
-            {# Colour palette card #}
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm h-100" style="border-radius: var(--ws-card-radius);">
-                    <div class="card-body">
-                        <h5 class="card-title fw-semibold mb-3">Colour Palette</h5>
-                        <div class="d-flex flex-column gap-3">
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="color-swatch" style="background-color: {{ wedding.primary_color }};"></span>
-                                <span class="text-muted small">Primary</span>
-                                <code class="ms-1">{{ wedding.primary_color }}</code>
-                            </div>
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="color-swatch" style="background-color: {{ wedding.secondary_color }};"></span>
-                                <span class="text-muted small">Secondary</span>
-                                <code class="ms-1">{{ wedding.secondary_color }}</code>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        {# Budget #}
+        <div class="kpi-card">
+            <div class="kpi-number">0<span class="kpi-unit">%</span></div>
+            <div class="kpi-label">Budget tracked</div>
+            <div class="kpi-bar">
+                <div class="kpi-bar-fill" style="width:0%;"></div>
+            </div>
+            <div class="kpi-secondary">Add budget in Budget tab</div>
+        </div>
+
+        {# Checklist #}
+        <div class="kpi-card">
+            <div class="kpi-number">{{ checklist_pct }}<span class="kpi-unit">%</span></div>
+            <div class="kpi-label">Tasks complete</div>
+            <div class="kpi-bar">
+                <div class="kpi-bar-fill" style="width:{{ checklist_pct }}%;"></div>
+            </div>
+            <div class="kpi-secondary">
+                {{ checklist_items | selectattr('1') | list | length }} of {{ checklist_items | length }} done
             </div>
         </div>
     </div>
 
-    {# ── Theme tab ─────────────────────────────────────────── #}
-    <div class="tab-pane fade" id="theme" role="tabpanel" aria-labelledby="theme-tab">
-        {% if theme %}
-        <div class="row g-4">
+    {# Lower grid #}
+    <div class="overview-lower">
+        {# Checklist card #}
+        <div class="planner-card">
+            <p class="planner-card-title">Planning Checklist</p>
+            {% for label, done in checklist_items %}
+            <div class="checklist-item {% if done %}done{% endif %}">
+                <i class="bi {% if done %}bi-check-circle-fill{% else %}bi-circle{% endif %}"></i>
+                <span>{{ label }}</span>
+            </div>
+            {% endfor %}
+        </div>
 
-            {# Tagline #}
-            <div class="col-12">
-                <div class="theme-tagline">
-                    <p>"{{ theme.tagline }}"</p>
-                    {% if theme.generated_at %}
-                    <small style="font-family:'Jost',sans-serif; font-size:0.75rem; color:#c0a898;">
-                        Theme generated on {{ theme.generated_at }}
-                    </small>
+        {# Wedding details #}
+        <div class="planner-card">
+            <p class="planner-card-title">Wedding Details</p>
+            <dl class="detail-dl mb-0">
+                <dt>Date</dt>
+                <dd>{{ wedding.wedding_date.strftime('%B %-d, %Y') if wedding.wedding_date else '—' }}</dd>
+                <dt>Venue</dt>
+                <dd>{{ wedding.venue_name }}</dd>
+                <dt>Location</dt>
+                <dd>{{ wedding.location }}</dd>
+                <dt>Style</dt>
+                <dd class="text-capitalize">{{ wedding.style }}</dd>
+                <dt>Colours</dt>
+                <dd>
+                    <span class="color-swatch me-1" style="background:{{ wedding.primary_color }};"></span>{{ wedding.primary_color }}
+                    &nbsp;
+                    <span class="color-swatch me-1" style="background:{{ wedding.secondary_color }};"></span>{{ wedding.secondary_color }}
+                </dd>
+            </dl>
+        </div>
+
+        {# RSVP summary #}
+        <div class="planner-card" style="grid-column: span 2;">
+            <p class="planner-card-title">RSVP Summary</p>
+            {% if guest_stats.total > 0 %}
+            <div class="d-flex gap-4 mb-3">
+                <div>
+                    <div style="font-family:'Cormorant Garamond',serif; font-size:1.8rem; font-weight:300; line-height:1;">{{ guest_stats.total }}</div>
+                    <div style="font-family:'Jost',sans-serif; font-size:0.72rem; color:#b89a8a; text-transform:uppercase; letter-spacing:.06em;">Total Guests</div>
+                </div>
+                <div>
+                    <div style="font-family:'Cormorant Garamond',serif; font-size:1.8rem; font-weight:300; color:#5fa67a; line-height:1;">{{ guest_stats.accepted }}</div>
+                    <div style="font-family:'Jost',sans-serif; font-size:0.72rem; color:#b89a8a; text-transform:uppercase; letter-spacing:.06em;">Confirmed</div>
+                </div>
+                <div>
+                    <div style="font-family:'Cormorant Garamond',serif; font-size:1.8rem; font-weight:300; color:#c0a898; line-height:1;">{{ guest_stats.pending }}</div>
+                    <div style="font-family:'Jost',sans-serif; font-size:0.72rem; color:#b89a8a; text-transform:uppercase; letter-spacing:.06em;">Pending</div>
+                </div>
+                <div>
+                    <div style="font-family:'Cormorant Garamond',serif; font-size:1.8rem; font-weight:300; color:#d47a7a; line-height:1;">{{ guest_stats.declined }}</div>
+                    <div style="font-family:'Jost',sans-serif; font-size:0.72rem; color:#b89a8a; text-transform:uppercase; letter-spacing:.06em;">Declined</div>
+                </div>
+            </div>
+            <div class="rsvp-stacked mb-1">
+                {% if guest_stats.total > 0 %}
+                <div class="rsvp-stacked-confirmed" style="width:{{ (guest_stats.accepted / guest_stats.total * 100) | round | int }}%;"></div>
+                <div class="rsvp-stacked-pending"   style="width:{{ (guest_stats.pending  / guest_stats.total * 100) | round | int }}%;"></div>
+                <div class="rsvp-stacked-declined"  style="width:{{ (guest_stats.declined / guest_stats.total * 100) | round | int }}%;"></div>
+                {% endif %}
+            </div>
+            <div style="font-family:'Jost',sans-serif; font-size:0.72rem; color:#b89a8a;">
+                {{ guest_stats.response_rate }}% responded
+            </div>
+            {% else %}
+            <p style="font-family:'Jost',sans-serif; font-size:0.85rem; color:#b89a8a; margin:0;">
+                No guests added yet. Go to <button class="sidebar-link" data-section="guests" style="display:inline; padding:0; margin:0; text-decoration:underline; color:var(--ws-rose); font-size:inherit;">Guests</button> to start your list.
+            </p>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+{# ═══════════════════════ GUESTS ═════════════════════════════════ #}
+<section id="sec-guests" class="planner-section">
+    <div class="section-hd">
+        <div>
+            <h2 class="section-title">Guest List</h2>
+            <div class="section-subtitle">{{ guest_stats.total }} guests · {{ guest_stats.accepted }} confirmed</div>
+        </div>
+    </div>
+
+    {# Summary card #}
+    <div class="card border-0 shadow-sm mb-4" style="border-radius:14px;">
+        <div class="card-body p-4">
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-3 text-center">
+                    <div class="fs-2 fw-bold">{{ guest_stats.total }}</div>
+                    <div class="text-muted small">Total</div>
+                </div>
+                <div class="col-6 col-md-3 text-center">
+                    <div class="fs-2 fw-bold text-success">{{ guest_stats.accepted }}</div>
+                    <div class="text-muted small">Confirmed</div>
+                </div>
+                <div class="col-6 col-md-3 text-center">
+                    <div class="fs-2 fw-bold text-secondary">{{ guest_stats.pending }}</div>
+                    <div class="text-muted small">Pending</div>
+                </div>
+                <div class="col-6 col-md-3 text-center">
+                    <div class="fs-2 fw-bold text-danger">{{ guest_stats.declined }}</div>
+                    <div class="text-muted small">Declined</div>
+                </div>
+            </div>
+            {% if guest_stats.total > 0 %}
+            <div class="d-flex justify-content-between mb-1">
+                <span class="small text-muted fw-semibold">RSVP Progress</span>
+                <span class="small text-muted">{{ guest_stats.response_rate }}% responded</span>
+            </div>
+            <div class="progress mb-4" style="height:8px; border-radius:4px;">
+                <div class="progress-bar bg-success" style="width:{{ (guest_stats.accepted / guest_stats.total * 100) | round | int }}%;"></div>
+                <div class="progress-bar bg-secondary" style="width:{{ (guest_stats.pending  / guest_stats.total * 100) | round | int }}%;"></div>
+                <div class="progress-bar bg-danger"  style="width:{{ (guest_stats.declined / guest_stats.total * 100) | round | int }}%;"></div>
+            </div>
+            {% endif %}
+            <div class="row g-4">
+                <div class="col-md-5">
+                    <h6 class="text-muted text-uppercase fw-semibold mb-2" style="font-size:0.72rem;letter-spacing:.05em;">Meal Preferences</h6>
+                    {% if guest_stats.meal_counts %}
+                    <ul class="list-unstyled mb-0 small">
+                        {% for meal, count in guest_stats.meal_counts.items() %}
+                        <li class="d-flex justify-content-between py-1 border-bottom">
+                            <span>{{ meal }}</span><span class="fw-semibold">{{ count }}</span>
+                        </li>
+                        {% endfor %}
+                        {% if guest_stats.no_meal %}
+                        <li class="d-flex justify-content-between py-1 text-muted">
+                            <span>Not specified</span><span>{{ guest_stats.no_meal }}</span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted small mb-0">No meal preferences recorded.</p>
                     {% endif %}
                 </div>
-            </div>
-
-            {# Colour palette #}
-            <div class="col-12">
-                <div class="theme-card">
-                    <p class="theme-card-title">Colour Palette</p>
-                    <div class="palette-swatches">
-                        {% if theme.color_palette is iterable and theme.color_palette is not string %}
-                            {% set sel_colour = theme.selected_colour if theme.selected_colour is defined else '' %}
-                            {% for color in theme.color_palette %}
-                            {% if color is mapping %}
-                            <div class="swatch-item{% if color.hex | lower == sel_colour | lower %} selected{% endif %}">
-                                <div class="swatch-circle" style="background-color: {{ color.hex }};"></div>
-                                <div class="swatch-info">
-                                    <span class="swatch-role">{{ color.role }}</span>
-                                    <span class="swatch-name">{{ color.name }}</span>
-                                    <span class="swatch-hex">{{ color.hex }}</span>
-                                    {% if color.hex | lower == sel_colour | lower %}
-                                    <span class="colour-selected-badge">✦ Applied</span>
-                                    {% else %}
-                                    <form method="POST"
-                                          action="{{ url_for('wedding.select_colour', wedding_id=wedding.id) }}"
-                                          style="display:inline;">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <input type="hidden" name="hex_colour" value="{{ color.hex }}">
-                                        <button type="submit" class="btn-select-colour">Use</button>
-                                    </form>
-                                    {% endif %}
-                                </div>
+                {% if group_stats %}
+                <div class="col-md-7">
+                    <h6 class="text-muted text-uppercase fw-semibold mb-2" style="font-size:0.72rem;letter-spacing:.05em;">By Group</h6>
+                    <div class="d-flex flex-column gap-2">
+                        {% for group, s in group_stats.items() %}
+                        <div>
+                            <div class="d-flex justify-content-between align-items-baseline mb-1">
+                                <span class="fw-medium small">{{ group }}</span>
+                                <span class="text-muted small">
+                                    {{ s.total }} &middot;
+                                    <span class="text-success">{{ s.accepted }}</span> /
+                                    <span>{{ s.pending }}</span> /
+                                    <span class="text-danger">{{ s.declined }}</span>
+                                </span>
                             </div>
-                            {% endif %}
-                            {% endfor %}
-                        {% else %}
-                            {# Fallback: old string format #}
-                            <p class="text-muted mb-0" style="font-family:'Jost',sans-serif; font-size:0.9rem;">{{ theme.color_palette }}</p>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-
-            {# Style keywords #}
-            <div class="col-md-6">
-                <div class="theme-card">
-                    <p class="theme-card-title">Aesthetic Keywords</p>
-                    <div class="d-flex flex-wrap gap-2">
-                        {% for kw in theme.style_keywords %}
-                        <span class="theme-badge">{{ kw }}</span>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-
-            {# Decor suggestions #}
-            <div class="col-md-6">
-                <div class="theme-card">
-                    <p class="theme-card-title">Decor Ideas</p>
-                    <ul class="decor-list">
-                        {% for idea in theme.decor_suggestions %}
-                        <li>{{ idea }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            </div>
-
-            {# Font pairings #}
-            <div class="col-12">
-                <div class="theme-card">
-                    <p class="theme-card-title">Typography Pairings</p>
-                    <div class="row g-3 mt-1" id="fontPairings">
-                        {% set sel_idx = theme.selected_font_index if theme.selected_font_index is defined else 0 %}
-                        {% for fp in theme.font_suggestions %}
-                        {% set loop_idx = loop.index0 %}
-                        <div class="col-md-4">
-                            {% if fp is mapping %}
-                            <div class="font-pairing-card{% if loop_idx == sel_idx %} selected{% endif %}"
-                                 data-heading="{{ fp.heading }}"
-                                 data-body="{{ fp.body }}">
-                                <p class="font-pair-label">Heading</p>
-                                <p class="font-pair-name">{{ fp.heading }}</p>
-                                <p class="font-pair-sample">A love written in time</p>
-                                <p class="font-pair-label mt-2">Body</p>
-                                <p class="font-pair-name">{{ fp.body }}</p>
-                                <p class="font-pair-description">{{ fp.description }}</p>
-                                <div class="font-pair-select-btn">
-                                    {% if loop_idx == sel_idx %}
-                                    <span class="font-selected-badge">✦ Applied to invitation</span>
-                                    {% else %}
-                                    <form method="POST"
-                                          action="{{ url_for('wedding.select_font', wedding_id=wedding.id) }}">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <input type="hidden" name="font_index" value="{{ loop_idx }}">
-                                        <button type="submit" class="btn-select-font">Use this pairing</button>
-                                    </form>
-                                    {% endif %}
-                                </div>
+                            <div class="progress" style="height:5px; border-radius:3px;">
+                                {% if s.total > 0 %}
+                                <div class="progress-bar bg-success" style="width:{{ (s.accepted / s.total * 100) | round | int }}%;"></div>
+                                <div class="progress-bar bg-secondary" style="width:{{ (s.pending  / s.total * 100) | round | int }}%;"></div>
+                                <div class="progress-bar bg-danger"  style="width:{{ (s.declined / s.total * 100) | round | int }}%;"></div>
+                                {% endif %}
                             </div>
-                            {% else %}
-                            {# Fallback: old string format #}
-                            <div class="font-pairing-card">
-                                <p class="font-pair-sample">{{ fp }}</p>
-                            </div>
-                            {% endif %}
                         </div>
                         {% endfor %}
                     </div>
                 </div>
+                {% endif %}
             </div>
-
-            {# Invitation wording #}
-            <div class="col-12">
-                <div class="theme-card invitation-card">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <p class="theme-card-title mb-0">Invitation Wording</p>
-                        <button class="btn-copy" id="copyBtn" onclick="copyInvitation()">Copy text</button>
-                    </div>
-                    <div class="invitation-body" id="invitationText">{{ theme.invitation_text }}</div>
-                </div>
-            </div>
-
-            {# Regenerate #}
-            <div class="col-12">
-                <div class="d-flex justify-content-end align-items-center gap-3 flex-wrap">
-                    <small style="font-family:'Jost',sans-serif; font-size:0.78rem; color:#b89a8a;">
-                        This will replace your current theme.
-                    </small>
-                    <form method="POST"
-                          action="{{ url_for('wedding.generate_theme', wedding_id=wedding.id) }}"
-                          class="theme-form d-flex align-items-center gap-2">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <select name="tone" class="form-select form-select-sm tone-select">
-                            <option value="Romantic">Romantic</option>
-                            <option value="Formal">Formal</option>
-                            <option value="Playful">Playful</option>
-                            <option value="Poetic">Poetic</option>
-                            <option value="Simple">Simple</option>
-                        </select>
-                        <button type="submit" class="btn-regenerate">Regenerate Theme</button>
-                    </form>
-                </div>
-            </div>
-
         </div>
-        {% else %}
+    </div>
 
-        {# No theme yet #}
-        <div class="generate-cta text-center">
-            <span class="generate-icon">✦</span>
-            <h4 class="generate-title">Create Your Wedding Theme</h4>
-            <p class="generate-subtitle text-muted">
-                Let AI design a personalised theme for {{ wedding.partner1_name }} &amp; {{ wedding.partner2_name }}
+    {# Import from CSV #}
+    <div class="card border-0 shadow-sm mb-3" style="border-radius:14px;">
+        <div class="card-body p-4">
+            <h5 class="card-title fw-semibold mb-1">Import from CSV</h5>
+            <p class="text-muted small mb-3">
+                Upload a <code>.csv</code> file with columns:
+                <code>full_name, email, phone, group_name, meal_preference, rsvp_status</code>.
+                <a href="{{ url_for('static', filename='sample_guests.csv') }}" download>Download Template</a>
             </p>
-            <form method="POST"
-                  action="{{ url_for('wedding.generate_theme', wedding_id=wedding.id) }}"
-                  class="theme-form d-inline-flex flex-column align-items-center gap-2">
+            <form method="POST" action="{{ url_for('guests.import_guests', wedding_id=wedding.id) }}"
+                  enctype="multipart/form-data" novalidate>
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <select name="tone" class="form-select form-select-sm tone-select">
-                    <option value="Romantic">Romantic</option>
-                    <option value="Formal">Formal</option>
-                    <option value="Playful">Playful</option>
-                    <option value="Poetic">Poetic</option>
-                    <option value="Simple">Simple</option>
-                </select>
-                <button type="submit" class="btn-generate">Generate Theme with AI</button>
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+                    <input type="file" class="form-control w-auto" id="csv_file" name="csv_file" accept=".csv" required>
+                    <button type="submit" class="btn btn-outline-primary">Import</button>
+                </div>
             </form>
         </div>
-
-        {% endif %}
-
-        {# Loading overlay — shown while form submits #}
-        <div class="loading-overlay" id="loadingOverlay">
-            <div class="loading-spinner"></div>
-            <p class="loading-text">Designing your wedding theme…</p>
-        </div>
-
     </div>
 
-    {# ── Guest List tab ────────────────────────────────────── #}
-    <div class="tab-pane fade" id="guests" role="tabpanel" aria-labelledby="guests-tab">
-
-        {# ── Guest summary card ─────────────────────────────── #}
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-body p-4">
-
-                {# Top row: four KPI tiles #}
-                <div class="row g-3 mb-4">
-                    <div class="col-6 col-md-3 text-center">
-                        <div class="fs-2 fw-bold">{{ guest_stats.total }}</div>
-                        <div class="text-muted small">Total Guests</div>
+    {# Add guest #}
+    <div class="card border-0 shadow-sm mb-4" style="border-radius:14px;">
+        <div class="card-body p-4">
+            <h5 class="card-title fw-semibold mb-3">Add Guest</h5>
+            <form method="POST" action="{{ url_for('guests.add_guest', wedding_id=wedding.id) }}" novalidate>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Full Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="full_name" placeholder="e.g. Jane Smith" required>
                     </div>
-                    <div class="col-6 col-md-3 text-center">
-                        <div class="fs-2 fw-bold text-success">{{ guest_stats.accepted }}</div>
-                        <div class="text-muted small">Accepted</div>
+                    <div class="col-md-4">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" name="email" placeholder="e.g. jane@example.com">
                     </div>
-                    <div class="col-6 col-md-3 text-center">
-                        <div class="fs-2 fw-bold text-secondary">{{ guest_stats.pending }}</div>
-                        <div class="text-muted small">Pending</div>
+                    <div class="col-md-4">
+                        <label class="form-label">Phone</label>
+                        <input type="text" class="form-control" name="phone" placeholder="e.g. +1 555 000 1234">
                     </div>
-                    <div class="col-6 col-md-3 text-center">
-                        <div class="fs-2 fw-bold text-danger">{{ guest_stats.declined }}</div>
-                        <div class="text-muted small">Declined</div>
+                    <div class="col-md-4">
+                        <label class="form-label">Group</label>
+                        <select class="form-select" name="group_name">
+                            <option value="">— Select group —</option>
+                            <option>Bride's Family</option><option>Groom's Family</option>
+                            <option>Friends</option><option>Colleagues</option><option>Other</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Meal Preference</label>
+                        <select class="form-select" name="meal_preference">
+                            <option value="">— Select meal —</option>
+                            <option>Standard</option><option>Vegetarian</option><option>Vegan</option>
+                            <option>Halal</option><option>Kosher</option><option>Other</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">RSVP Status</label>
+                        <select class="form-select" name="rsvp_status">
+                            <option value="pending" selected>Pending</option>
+                            <option value="confirmed">Accepted</option>
+                            <option value="declined">Declined</option>
+                        </select>
                     </div>
                 </div>
-
-                {# Overall RSVP progress bar #}
-                {% if guest_stats.total > 0 %}
-                <div class="mb-1 d-flex justify-content-between">
-                    <span class="small text-muted fw-semibold">RSVP Progress</span>
-                    <span class="small text-muted">{{ guest_stats.response_rate }}% responded</span>
+                <div class="mt-3 text-end">
+                    <button type="submit" class="btn btn-primary px-4">Add Guest</button>
                 </div>
-                <div class="progress mb-4" style="height: 10px;">
-                    <div class="progress-bar bg-success"
-                         style="width: {{ (guest_stats.accepted / guest_stats.total * 100) | round | int }}%"
-                         title="{{ guest_stats.accepted }} accepted"></div>
-                    <div class="progress-bar bg-secondary"
-                         style="width: {{ (guest_stats.pending  / guest_stats.total * 100) | round | int }}%"
-                         title="{{ guest_stats.pending }} pending"></div>
-                    <div class="progress-bar bg-danger"
-                         style="width: {{ (guest_stats.declined / guest_stats.total * 100) | round | int }}%"
-                         title="{{ guest_stats.declined }} declined"></div>
-                </div>
-                {% endif %}
+            </form>
+        </div>
+    </div>
 
-                <div class="row g-4">
-                    {# Meal breakdown #}
-                    <div class="col-md-5">
-                        <h6 class="text-muted text-uppercase fw-semibold mb-2" style="font-size:0.72rem;letter-spacing:.05em;">Meal Preferences</h6>
-                        {% if guest_stats.meal_counts %}
-                        <ul class="list-unstyled mb-0 small">
-                            {% for meal, count in guest_stats.meal_counts.items() %}
-                            <li class="d-flex justify-content-between py-1 border-bottom">
-                                <span>{{ meal }}</span>
-                                <span class="fw-semibold">{{ count }}</span>
-                            </li>
-                            {% endfor %}
-                            {% if guest_stats.no_meal %}
-                            <li class="d-flex justify-content-between py-1 text-muted">
-                                <span>Not specified</span>
-                                <span>{{ guest_stats.no_meal }}</span>
-                            </li>
-                            {% endif %}
-                        </ul>
-                        {% if guest_stats.dietary_count %}
-                        <p class="text-muted small mt-2 mb-0">
-                            {{ guest_stats.dietary_count }} guest{{ 's' if guest_stats.dietary_count != 1 else '' }}
-                            with dietary requirements
-                        </p>
-                        {% endif %}
-                        {% else %}
-                        <p class="text-muted small mb-0">No meal preferences recorded.</p>
-                        {% endif %}
-                    </div>
-
-                    {# Per-group breakdown #}
-                    {% if group_stats %}
-                    <div class="col-md-7">
-                        <h6 class="text-muted text-uppercase fw-semibold mb-2" style="font-size:0.72rem;letter-spacing:.05em;">By Group</h6>
-                        <div class="d-flex flex-column gap-3">
-                            {% for group, s in group_stats.items() %}
-                            <div>
-                                <div class="d-flex justify-content-between align-items-baseline mb-1">
-                                    <span class="fw-medium small">{{ group }}</span>
-                                    <span class="text-muted small">
-                                        {{ s.total }} &middot;
-                                        <span class="text-success">{{ s.accepted }}</span> /
-                                        <span>{{ s.pending }}</span> /
-                                        <span class="text-danger">{{ s.declined }}</span>
-                                    </span>
-                                </div>
-                                <div class="progress" style="height: 6px;">
-                                    {% if s.total > 0 %}
-                                    <div class="progress-bar bg-success" style="width: {{ (s.accepted / s.total * 100) | round | int }}%"></div>
-                                    <div class="progress-bar bg-secondary" style="width: {{ (s.pending  / s.total * 100) | round | int }}%"></div>
-                                    <div class="progress-bar bg-danger"  style="width: {{ (s.declined / s.total * 100) | round | int }}%"></div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
-
+    {# Guest table #}
+    {% if wedding.guests %}
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+        <div class="d-flex align-items-center gap-2">
+            <label class="form-label mb-0 text-muted small fw-semibold">Filter:</label>
+            <select id="groupFilter" class="form-select form-select-sm w-auto">
+                <option value="">All groups</option>
+                {% set groups = wedding.guests | map(attribute='group_name') | select | unique | sort %}
+                {% for group in groups %}<option>{{ group }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('guests.export_guests', wedding_id=wedding.id) }}"
+               class="btn btn-outline-secondary btn-sm">&#8595; Export CSV</a>
+            <button type="button" class="btn btn-outline-danger btn-sm"
+                    data-bs-toggle="modal" data-bs-target="#deleteAllGuestsModal">Delete All</button>
+        </div>
+    </div>
+    <div class="card border-0 shadow-sm" style="border-radius:14px;">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Name</th><th>Email</th><th>Phone</th>
+                            <th>Group</th><th>Meal</th><th>RSVP</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="guestTableBody">
+                        {% set rsvp_badges = {'pending':'secondary','confirmed':'success','declined':'danger'} %}
+                        {% set rsvp_labels = {'pending':'Pending','confirmed':'Accepted','declined':'Declined'} %}
+                        {% for guest in wedding.guests %}
+                        <tr data-group="{{ guest.group_name or '' }}">
+                            <td class="fw-medium">{{ guest.full_name }}</td>
+                            <td class="text-muted">{{ guest.email or '—' }}</td>
+                            <td class="text-muted">{{ guest.phone or '—' }}</td>
+                            <td>{{ guest.group_name or '—' }}</td>
+                            <td>{{ guest.meal_preference or '—' }}</td>
+                            <td>
+                                <span class="badge bg-{{ rsvp_badges.get(guest.rsvp_status,'secondary') }}">
+                                    {{ rsvp_labels.get(guest.rsvp_status, guest.rsvp_status | capitalize) }}
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <button type="button" class="btn btn-outline-primary btn-sm"
+                                        data-bs-toggle="modal" data-bs-target="#editGuestModal"
+                                        data-guest-id="{{ guest.id }}"
+                                        data-full-name="{{ guest.full_name }}"
+                                        data-email="{{ guest.email or '' }}"
+                                        data-phone="{{ guest.phone or '' }}"
+                                        data-group="{{ guest.group_name or '' }}"
+                                        data-meal="{{ guest.meal_preference or '' }}"
+                                        data-rsvp="{{ guest.rsvp_status }}">Edit</button>
+                                <button type="button" class="btn btn-outline-danger btn-sm"
+                                        data-bs-toggle="modal" data-bs-target="#deleteGuestModal"
+                                        data-guest-id="{{ guest.id }}"
+                                        data-guest-name="{{ guest.full_name }}">Delete</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
+    </div>
+    {% else %}
+    <div class="text-center text-muted py-4">
+        <p class="mb-0">No guests added yet. Use the form above to add your first guest.</p>
+    </div>
+    {% endif %}
+</section>
 
-    {# Import guests from CSV #}
-        <div class="card border-0 shadow-sm mb-3">
-            <div class="card-body p-4">
-                <h5 class="card-title fw-semibold mb-1">Import from CSV</h5>
-                <p class="text-muted small mb-3">
-                    Upload a <code>.csv</code> file with columns:
-                    <code>full_name, email, phone, group_name, meal_preference, rsvp_status</code>.
-                    <a href="{{ url_for('static', filename='sample_guests.csv') }}" download>Download Template</a>
-                </p>
-                <form method="POST"
-                      action="{{ url_for('guests.import_guests', wedding_id=wedding.id) }}"
-                      enctype="multipart/form-data"
-                      novalidate>
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <div class="d-flex align-items-center gap-3 flex-wrap">
-                        <input type="file" class="form-control w-auto" id="csv_file" name="csv_file"
-                               accept=".csv" required>
-                        <button type="submit" class="btn btn-outline-primary">Import</button>
-                    </div>
-                </form>
-            </div>
-        </div>
+{# ═══════════════════════ BUDGET ═════════════════════════════════ #}
+<section id="sec-budget" class="planner-section">
+    <div class="section-hd">
+        <h2 class="section-title">Budget</h2>
+    </div>
+    <div class="placeholder-section">
+        <div class="placeholder-icon"><i class="bi bi-wallet2"></i></div>
+        <div class="placeholder-title">Budget Tracking</div>
+        <p class="placeholder-text">Track your wedding spend, set category budgets, and see how much you have left. Coming soon.</p>
+    </div>
+</section>
 
-    {# Add guest form #}
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-body p-4">
-                <h5 class="card-title fw-semibold mb-3">Add Guest</h5>
-                <form method="POST" action="{{ url_for('guests.add_guest', wedding_id=wedding.id) }}" novalidate>
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label for="full_name" class="form-label">Full Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="full_name" name="full_name"
-                                   placeholder="e.g. Jane Smith" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="email" name="email"
-                                   placeholder="e.g. jane@example.com">
-                        </div>
-                        <div class="col-md-4">
-                            <label for="phone" class="form-label">Phone</label>
-                            <input type="text" class="form-control" id="phone" name="phone"
-                                   placeholder="e.g. +1 555 000 1234">
-                        </div>
-                        <div class="col-md-4">
-                            <label for="group_name" class="form-label">Group</label>
-                            <select class="form-select" id="group_name" name="group_name">
-                                <option value="">— Select group —</option>
-                                <option>Bride's Family</option>
-                                <option>Groom's Family</option>
-                                <option>Friends</option>
-                                <option>Colleagues</option>
-                                <option>Other</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="meal_preference" class="form-label">Meal Preference</label>
-                            <select class="form-select" id="meal_preference" name="meal_preference">
-                                <option value="">— Select meal —</option>
-                                <option>Standard</option>
-                                <option>Vegetarian</option>
-                                <option>Vegan</option>
-                                <option>Halal</option>
-                                <option>Kosher</option>
-                                <option>Other</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="rsvp_status" class="form-label">RSVP Status</label>
-                            <select class="form-select" id="rsvp_status" name="rsvp_status">
-                                <option value="pending" selected>Pending</option>
-                                <option value="confirmed">Accepted</option>
-                                <option value="declined">Declined</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="mt-3 text-end">
-                        <button type="submit" class="btn btn-primary px-4">Add Guest</button>
-                    </div>
-                </form>
-            </div>
-        </div>
+{# ═══════════════════════ VENDORS ════════════════════════════════ #}
+<section id="sec-vendors" class="planner-section">
+    <div class="section-hd">
+        <h2 class="section-title">Vendors</h2>
+    </div>
+    <div class="placeholder-section">
+        <div class="placeholder-icon"><i class="bi bi-shop"></i></div>
+        <div class="placeholder-title">Vendor Management</div>
+        <p class="placeholder-text">Keep all your vendor contacts, contracts, and payment deadlines in one place. Coming soon.</p>
+    </div>
+</section>
 
-        {# Group filter #}
-        {% if wedding.guests %}
-        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-            <div class="d-flex align-items-center gap-2">
-                <label for="groupFilter" class="form-label mb-0 text-muted small fw-semibold">Filter by group:</label>
-                <select id="groupFilter" class="form-select form-select-sm w-auto">
-                    <option value="">All groups</option>
-                    {% set groups = wedding.guests | map(attribute='group_name') | select | unique | sort %}
-                    {% for group in groups %}
-                    <option>{{ group }}</option>
-                    {% endfor %}
-                </select>
+{# ═══════════════════════ TIMELINE ═══════════════════════════════ #}
+<section id="sec-timeline" class="planner-section">
+    <div class="section-hd">
+        <h2 class="section-title">Timeline</h2>
+    </div>
+    <div class="placeholder-section">
+        <div class="placeholder-icon"><i class="bi bi-calendar-check"></i></div>
+        <div class="placeholder-title">Wedding Timeline</div>
+        <p class="placeholder-text">Build your day-of schedule and planning milestones leading up to the big day. Coming soon.</p>
+    </div>
+</section>
+
+{# ═══════════════════════ INVITATION ═════════════════════════════ #}
+<section id="sec-invitation" class="planner-section">
+    <div class="section-hd">
+        <h2 class="section-title">Invitation</h2>
+        <div class="section-subtitle">AI-generated theme &amp; print-ready design</div>
+    </div>
+
+    {# If theme exists, show preview first #}
+    {% if theme %}
+
+    {# Invitation preview #}
+    <div class="planner-card mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <p class="planner-card-title mb-0">Preview</p>
+                <small style="font-family:'Jost',sans-serif; font-size:0.75rem; color:#b89a8a;">5 × 7 in print-ready</small>
             </div>
-            <div class="d-flex gap-2">
-                <a href="{{ url_for('guests.export_guests', wedding_id=wedding.id) }}"
-                   class="btn btn-outline-secondary btn-sm">
-                    &#8595; Export CSV
-                </a>
-<button type="button" class="btn btn-outline-danger btn-sm"
-                        data-bs-toggle="modal" data-bs-target="#deleteAllGuestsModal">
-                    Delete All
+            <form method="POST" action="{{ url_for('wedding.generate_pdf', wedding_id=wedding.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="bi bi-download me-1"></i>Download PDF
                 </button>
+            </form>
+        </div>
+        <div class="invitation-preview-wrap">
+            <div class="invitation-scaled">
+                <iframe src="{{ url_for('wedding.invitation_preview', wedding_id=wedding.id) }}"
+                        style="width:480px; height:672px; border:none; display:block;"
+                        scrolling="no"></iframe>
             </div>
+            <div class="invitation-spacer"></div>
         </div>
-        {% endif %}
-
-        {# Guest table #}
-        {% if wedding.guests %}
-        <div class="card border-0 shadow-sm">
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th>Phone</th>
-                                <th>Group</th>
-                                <th>Meal</th>
-                                <th>RSVP</th>
-                                <th class="text-end">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="guestTableBody">
-                            {% set rsvp_badges = {
-                                'pending':   'secondary',
-                                'confirmed': 'success',
-                                'declined':  'danger'
-                            } %}
-                            {% set rsvp_labels = {
-                                'pending':   'Pending',
-                                'confirmed': 'Accepted',
-                                'declined':  'Declined'
-                            } %}
-                            {% for guest in wedding.guests %}
-                            <tr data-group="{{ guest.group_name or '' }}">
-                                <td class="fw-medium">{{ guest.full_name }}</td>
-                                <td class="text-muted">{{ guest.email or '—' }}</td>
-                                <td class="text-muted">{{ guest.phone or '—' }}</td>
-                                <td>{{ guest.group_name or '—' }}</td>
-                                <td>{{ guest.meal_preference or '—' }}</td>
-                                <td>
-                                    <span class="badge bg-{{ rsvp_badges.get(guest.rsvp_status, 'secondary') }}">
-                                        {{ rsvp_labels.get(guest.rsvp_status, guest.rsvp_status | capitalize) }}
-                                    </span>
-                                </td>
-                                <td class="text-end">
-                                    <button type="button" class="btn btn-outline-primary btn-sm"
-                                            data-bs-toggle="modal" data-bs-target="#editGuestModal"
-                                            data-guest-id="{{ guest.id }}"
-                                            data-full-name="{{ guest.full_name }}"
-                                            data-email="{{ guest.email or '' }}"
-                                            data-phone="{{ guest.phone or '' }}"
-                                            data-group="{{ guest.group_name or '' }}"
-                                            data-meal="{{ guest.meal_preference or '' }}"
-                                            data-rsvp="{{ guest.rsvp_status }}">Edit</button>
-                                    <button type="button" class="btn btn-outline-danger btn-sm"
-                                            data-bs-toggle="modal" data-bs-target="#deleteGuestModal"
-                                            data-guest-id="{{ guest.id }}"
-                                            data-guest-name="{{ guest.full_name }}">Delete</button>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        {% else %}
-        <div class="text-center text-muted py-4">
-            <p class="mb-0">No guests added yet. Use the form above to add your first guest.</p>
-        </div>
-        {% endif %}
-
     </div>
 
-    {# ── Designs tab ───────────────────────────────────────── #}
-    <div class="tab-pane fade" id="designs" role="tabpanel" aria-labelledby="designs-tab">
-        <div class="card border-0 shadow-sm" style="border-radius: var(--ws-card-radius);">
-            <div class="card-body p-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div>
-                        <h5 class="fw-semibold mb-1">Wedding Invitation</h5>
-                        <p class="text-muted small mb-0">Print-ready PDF · 5 × 7 in</p>
-                    </div>
-                    {% if theme %}
-                    <form method="POST" action="{{ url_for('wedding.generate_pdf', wedding_id=wedding.id) }}">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-primary btn-sm">Download PDF</button>
-                    </form>
-                    {% else %}
-                    <button class="btn btn-primary btn-sm" disabled>Download PDF</button>
+    {# Theme tagline #}
+    <div class="theme-tagline mb-4">
+        <p>"{{ theme.tagline }}"</p>
+        {% if theme.generated_at %}
+        <small>Theme generated {{ theme.generated_at }}</small>
+        {% endif %}
+    </div>
+
+    <div class="row g-3 mb-3">
+        {# Colour palette #}
+        <div class="col-12">
+            <div class="planner-card">
+                <p class="planner-card-title">Colour Palette</p>
+                <div class="palette-swatches">
+                    {% if theme.color_palette is iterable and theme.color_palette is not string %}
+                        {% set sel_colour = theme.selected_colour if theme.selected_colour is defined else '' %}
+                        {% for color in theme.color_palette %}
+                        {% if color is mapping %}
+                        <div class="swatch-item{% if color.hex | lower == sel_colour | lower %} selected{% endif %}">
+                            <div class="swatch-circle" style="background-color: {{ color.hex }};"></div>
+                            <div class="swatch-info">
+                                <span class="swatch-role">{{ color.role }}</span>
+                                <span class="swatch-name">{{ color.name }}</span>
+                                <span class="swatch-hex">{{ color.hex }}</span>
+                                {% if color.hex | lower == sel_colour | lower %}
+                                <span class="colour-selected-badge">✦ Applied</span>
+                                {% else %}
+                                <form method="POST" action="{{ url_for('wedding.select_colour', wedding_id=wedding.id) }}" style="display:inline;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="hex_colour" value="{{ color.hex }}">
+                                    <button type="submit" class="btn-select-colour">Use</button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
                     {% endif %}
                 </div>
+            </div>
+        </div>
 
-                {% if theme %}
-                {# Scaled iframe preview of the invitation #}
-                <div style="width:100%; overflow:hidden; border-radius:8px; border:1px solid #ecdde3; background:#fffdf9;">
-                    <div style="transform: scale(0.55); transform-origin: top left;
-                                width: calc(100% / 0.55); height: calc(672px / 0.55);">
-                        <iframe src="{{ url_for('wedding.invitation_preview', wedding_id=wedding.id) }}"
-                                style="width:480px; height:672px; border:none; display:block;"
-                                scrolling="no"></iframe>
+        {# Typography pairings #}
+        <div class="col-12">
+            <div class="planner-card">
+                <p class="planner-card-title">Typography Pairings</p>
+                <div class="row g-3" id="fontPairings">
+                    {% set sel_idx = theme.selected_font_index if theme.selected_font_index is defined else 0 %}
+                    {% for fp in theme.font_suggestions %}
+                    {% set loop_idx = loop.index0 %}
+                    <div class="col-md-4">
+                        {% if fp is mapping %}
+                        <div class="font-pairing-card{% if loop_idx == sel_idx %} selected{% endif %}"
+                             data-heading="{{ fp.heading }}" data-body="{{ fp.body }}">
+                            <p class="font-pair-label">Heading</p>
+                            <p class="font-pair-name">{{ fp.heading }}</p>
+                            <p class="font-pair-sample">A love written in time</p>
+                            <p class="font-pair-label mt-2">Body</p>
+                            <p class="font-pair-name">{{ fp.body }}</p>
+                            <p class="font-pair-description">{{ fp.description }}</p>
+                            <div class="font-pair-select-btn">
+                                {% if loop_idx == sel_idx %}
+                                <span class="font-selected-badge">✦ Applied to invitation</span>
+                                {% else %}
+                                <form method="POST" action="{{ url_for('wedding.select_font', wedding_id=wedding.id) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="font_index" value="{{ loop_idx }}">
+                                    <button type="submit" class="btn-select-font">Use this pairing</button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
-                    <div style="height: calc(672px * 0.55);"></div>
+                    {% endfor %}
                 </div>
-                {% else %}
-                <div class="text-center text-muted py-5" style="border-radius:8px; border:1px dashed #ddd;">
-                    <p class="mb-0 small">Generate a theme first before creating your invitation.</p>
+            </div>
+        </div>
+
+        {# Aesthetic keywords #}
+        <div class="col-md-6">
+            <div class="planner-card">
+                <p class="planner-card-title">Aesthetic Keywords</p>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for kw in theme.style_keywords %}<span class="theme-badge">{{ kw }}</span>{% endfor %}
                 </div>
-                {% endif %}
+            </div>
+        </div>
+
+        {# Decor ideas #}
+        <div class="col-md-6">
+            <div class="planner-card">
+                <p class="planner-card-title">Decor Ideas</p>
+                <ul class="decor-list">
+                    {% for idea in theme.decor_suggestions %}<li>{{ idea }}</li>{% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        {# Invitation wording #}
+        <div class="col-12">
+            <div class="planner-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <p class="planner-card-title mb-0">Invitation Wording</p>
+                    <button class="btn-copy" id="copyBtn" onclick="copyInvitation()">Copy text</button>
+                </div>
+                <div class="invitation-body" id="invitationText">{{ theme.invitation_text }}</div>
             </div>
         </div>
     </div>
+
+    {# Regenerate #}
+    <div class="d-flex justify-content-end align-items-center gap-3 flex-wrap mb-2">
+        <small style="font-family:'Jost',sans-serif; font-size:0.78rem; color:#b89a8a;">
+            Regenerating will replace your current theme.
+        </small>
+        <form method="POST" action="{{ url_for('wedding.generate_theme', wedding_id=wedding.id) }}"
+              class="theme-form d-flex align-items-center gap-2">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            {% set saved_tone = theme.tone if theme.tone is defined else '' %}
+            <select name="tone" class="form-select form-select-sm tone-select"
+                    {% if saved_tone %}data-server-tone="{{ saved_tone }}"{% endif %}>
+                <option value="Romantic" {% if saved_tone == 'Romantic' or not saved_tone %}selected{% endif %}>Romantic</option>
+                <option value="Formal"   {% if saved_tone == 'Formal'   %}selected{% endif %}>Formal</option>
+                <option value="Playful"  {% if saved_tone == 'Playful'  %}selected{% endif %}>Playful</option>
+                <option value="Poetic"   {% if saved_tone == 'Poetic'   %}selected{% endif %}>Poetic</option>
+                <option value="Simple"   {% if saved_tone == 'Simple'   %}selected{% endif %}>Simple</option>
+            </select>
+            <button type="submit" class="btn-regenerate">Regenerate Theme</button>
+        </form>
+    </div>
+
+    {% else %}
+
+    {# No theme yet — generate CTA #}
+    <div class="planner-card text-center generate-cta">
+        <span class="generate-icon">✦</span>
+        <h4 class="generate-title">Create Your Wedding Theme</h4>
+        <p class="generate-subtitle text-muted">
+            Let AI design a personalised theme for {{ wedding.partner1_name }} &amp; {{ wedding.partner2_name }}
+        </p>
+        <form method="POST" action="{{ url_for('wedding.generate_theme', wedding_id=wedding.id) }}"
+              class="theme-form d-inline-flex flex-column align-items-center gap-2">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <select name="tone" class="form-select form-select-sm tone-select">
+                <option value="Romantic">Romantic</option>
+                <option value="Formal">Formal</option>
+                <option value="Playful">Playful</option>
+                <option value="Poetic">Poetic</option>
+                <option value="Simple">Simple</option>
+            </select>
+            <button type="submit" class="btn-generate">Generate Theme with AI</button>
+        </form>
+    </div>
+
+    {% endif %}
+
+    {# Loading overlay #}
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <p class="loading-text">Designing your wedding theme…</p>
+    </div>
+</section>
 
 </div>
 
-{# ── Edit guest modal ──────────────────────────────────────── #}
-<div class="modal fade" id="editGuestModal" tabindex="-1" aria-labelledby="editGuestModalLabel" aria-hidden="true">
+{# ──────────────────────── MODALS ────────────────────────────────── #}
+
+{# Edit guest modal #}
+<div class="modal fade" id="editGuestModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
             <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-semibold" id="editGuestModalLabel">Edit Guest</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title fw-semibold">Edit Guest</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form method="POST" id="editGuestForm" novalidate>
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-body">
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <label for="edit_full_name" class="form-label">Full Name <span class="text-danger">*</span></label>
+                            <label class="form-label">Full Name <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="edit_full_name" name="full_name" required>
                         </div>
                         <div class="col-md-4">
-                            <label for="edit_email" class="form-label">Email</label>
+                            <label class="form-label">Email</label>
                             <input type="email" class="form-control" id="edit_email" name="email">
                         </div>
                         <div class="col-md-4">
-                            <label for="edit_phone" class="form-label">Phone</label>
+                            <label class="form-label">Phone</label>
                             <input type="text" class="form-control" id="edit_phone" name="phone">
                         </div>
                         <div class="col-md-4">
-                            <label for="edit_group_name" class="form-label">Group</label>
+                            <label class="form-label">Group</label>
                             <select class="form-select" id="edit_group_name" name="group_name">
                                 <option value="">— Select group —</option>
-                                <option>Bride's Family</option>
-                                <option>Groom's Family</option>
-                                <option>Friends</option>
-                                <option>Colleagues</option>
-                                <option>Other</option>
+                                <option>Bride's Family</option><option>Groom's Family</option>
+                                <option>Friends</option><option>Colleagues</option><option>Other</option>
                             </select>
                         </div>
                         <div class="col-md-4">
-                            <label for="edit_meal_preference" class="form-label">Meal Preference</label>
+                            <label class="form-label">Meal Preference</label>
                             <select class="form-select" id="edit_meal_preference" name="meal_preference">
                                 <option value="">— Select meal —</option>
-                                <option>Standard</option>
-                                <option>Vegetarian</option>
-                                <option>Vegan</option>
-                                <option>Halal</option>
-                                <option>Kosher</option>
-                                <option>Other</option>
+                                <option>Standard</option><option>Vegetarian</option><option>Vegan</option>
+                                <option>Halal</option><option>Kosher</option><option>Other</option>
                             </select>
                         </div>
                         <div class="col-md-4">
-                            <label for="edit_rsvp_status" class="form-label">RSVP Status</label>
+                            <label class="form-label">RSVP Status</label>
                             <select class="form-select" id="edit_rsvp_status" name="rsvp_status">
                                 <option value="pending">Pending</option>
                                 <option value="confirmed">Accepted</option>
@@ -1079,13 +1034,13 @@
     </div>
 </div>
 
-{# ── Delete guest modal ────────────────────────────────────── #}
-<div class="modal fade" id="deleteGuestModal" tabindex="-1" aria-labelledby="deleteGuestModalLabel" aria-hidden="true">
+{# Delete guest modal #}
+<div class="modal fade" id="deleteGuestModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-semibold" id="deleteGuestModalLabel">Remove Guest</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title fw-semibold">Remove Guest</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 Are you sure you want to remove <strong id="deleteGuestName"></strong> from the guest list?
@@ -1101,13 +1056,13 @@
     </div>
 </div>
 
-{# ── Delete all guests modal ───────────────────────────────── #}
-<div class="modal fade" id="deleteAllGuestsModal" tabindex="-1" aria-labelledby="deleteAllGuestsModalLabel" aria-hidden="true">
+{# Delete all guests modal #}
+<div class="modal fade" id="deleteAllGuestsModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-semibold" id="deleteAllGuestsModalLabel">Delete All Guests</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title fw-semibold">Delete All Guests</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 This will permanently remove all <strong>{{ guest_stats.total }}</strong>
@@ -1124,13 +1079,13 @@
     </div>
 </div>
 
-{# ── Delete confirmation modal ─────────────────────────────── #}
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+{# Delete wedding modal #}
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-semibold" id="deleteModalLabel">Delete Wedding</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title fw-semibold">Delete Wedding</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 Are you sure you want to delete
@@ -1147,104 +1102,124 @@
         </div>
     </div>
 </div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    const hash = window.location.hash;
-    if (hash) {
-        const tabBtn = document.querySelector(`button[data-bs-target="${hash}"]`);
-        if (tabBtn) bootstrap.Tab.getOrCreateInstance(tabBtn).show();
-    }
-
-    const groupFilter = document.getElementById('groupFilter');
-    if (groupFilter) {
-        groupFilter.addEventListener('change', function () {
-            const selected = this.value;
-            document.querySelectorAll('#guestTableBody tr').forEach(function (row) {
-                row.style.display = (!selected || row.dataset.group === selected) ? '' : 'none';
-            });
+/* ── Section switching (hash-driven) ────────────────────────────── */
+(function () {
+    function activateSection(hash) {
+        const sectionId = hash || 'overview';
+        document.querySelectorAll('.planner-section').forEach(function (s) {
+            s.classList.toggle('active', s.id === 'sec-' + sectionId);
         });
     }
+    window.addEventListener('hashchange', function () {
+        activateSection(location.hash.replace('#', ''));
+    });
+    activateSection(location.hash.replace('#', ''));
+})();
 
-    const deleteGuestModal = document.getElementById('deleteGuestModal');
+/* ── Group filter ───────────────────────────────────────────────── */
+const groupFilter = document.getElementById('groupFilter');
+if (groupFilter) {
+    groupFilter.addEventListener('change', function () {
+        const selected = this.value;
+        document.querySelectorAll('#guestTableBody tr').forEach(function (row) {
+            row.style.display = (!selected || row.dataset.group === selected) ? '' : 'none';
+        });
+    });
+}
+
+/* ── Delete guest modal ─────────────────────────────────────────── */
+const deleteGuestModal = document.getElementById('deleteGuestModal');
+if (deleteGuestModal) {
     deleteGuestModal.addEventListener('show.bs.modal', function (event) {
         const btn = event.relatedTarget;
         document.getElementById('deleteGuestName').textContent = btn.dataset.guestName;
         document.getElementById('deleteGuestForm').action = '/guest/' + btn.dataset.guestId + '/delete';
     });
+}
 
-    const editGuestModal = document.getElementById('editGuestModal');
+/* ── Edit guest modal ───────────────────────────────────────────── */
+const editGuestModal = document.getElementById('editGuestModal');
+if (editGuestModal) {
     editGuestModal.addEventListener('show.bs.modal', function (event) {
         const btn  = event.relatedTarget;
-        const form = document.getElementById('editGuestForm');
-
-        form.action = '/guest/' + btn.dataset.guestId + '/edit';
-
-        document.getElementById('edit_full_name').value   = btn.dataset.fullName;
-        document.getElementById('edit_email').value       = btn.dataset.email;
-        document.getElementById('edit_phone').value       = btn.dataset.phone;
-        document.getElementById('edit_rsvp_status').value = btn.dataset.rsvp;
+        document.getElementById('editGuestForm').action = '/guest/' + btn.dataset.guestId + '/edit';
+        document.getElementById('edit_full_name').value        = btn.dataset.fullName;
+        document.getElementById('edit_email').value            = btn.dataset.email;
+        document.getElementById('edit_phone').value            = btn.dataset.phone;
+        document.getElementById('edit_rsvp_status').value      = btn.dataset.rsvp;
         document.getElementById('edit_group_name').value       = btn.dataset.group;
         document.getElementById('edit_meal_preference').value  = btn.dataset.meal;
     });
+}
 
-    /* ── Loading overlay on theme form submit ─────────────── */
-    document.querySelectorAll('.theme-form').forEach(function (form) {
-        form.addEventListener('submit', function () {
-            document.getElementById('loadingOverlay').classList.add('active');
+/* ── Persist tone selection across redirects ────────────────────── */
+(function () {
+    const TONE_KEY = 'ws_tone_{{ wedding.id }}';
+    document.querySelectorAll('.tone-select').forEach(function (sel) {
+        // Restore saved tone (server-rendered value takes precedence if theme has one)
+        const saved = localStorage.getItem(TONE_KEY);
+        if (saved && !sel.dataset.serverTone) {
+            sel.value = saved;
+        }
+        sel.addEventListener('change', function () {
+            localStorage.setItem(TONE_KEY, this.value);
         });
     });
+})();
 
-    /* ── Copy invitation text to clipboard ────────────────── */
-    function copyInvitation() {
-        const text = document.getElementById('invitationText');
-        if (!text) return;
-        navigator.clipboard.writeText(text.innerText).then(function () {
-            const btn = document.getElementById('copyBtn');
-            btn.textContent = 'Copied!';
-            btn.classList.add('copied');
-            setTimeout(function () {
-                btn.textContent = 'Copy text';
-                btn.classList.remove('copied');
-            }, 2500);
-        });
+/* ── Loading overlay on theme form submit ───────────────────────── */
+document.querySelectorAll('.theme-form').forEach(function (form) {
+    form.addEventListener('submit', function () {
+        document.getElementById('loadingOverlay').classList.add('active');
+    });
+});
+/* Clear overlay if browser restores page from bfcache (back button) */
+window.addEventListener('pageshow', function (e) {
+    if (e.persisted) {
+        document.getElementById('loadingOverlay').classList.remove('active');
     }
+});
 
-    /* ── Load Google Fonts for font pairing previews ─────── */
-    (function loadFontPreviews() {
-        const cards = document.querySelectorAll('#fontPairings .font-pairing-card[data-heading]');
-        if (!cards.length) return;
+/* ── Copy invitation text ───────────────────────────────────────── */
+function copyInvitation() {
+    const text = document.getElementById('invitationText');
+    if (!text) return;
+    navigator.clipboard.writeText(text.innerText).then(function () {
+        const btn = document.getElementById('copyBtn');
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(function () { btn.textContent = 'Copy text'; btn.classList.remove('copied'); }, 2500);
+    });
+}
 
-        const families = new Set();
+/* ── Load Google Fonts for font pairing previews ────────────────── */
+(function loadFontPreviews() {
+    const cards = document.querySelectorAll('#fontPairings .font-pairing-card[data-heading]');
+    if (!cards.length) return;
+    const families = new Set();
+    cards.forEach(function (card) {
+        if (card.dataset.heading) families.add(card.dataset.heading.replace(/ /g, '+'));
+        if (card.dataset.body)    families.add(card.dataset.body.replace(/ /g, '+'));
+    });
+    if (!families.size) return;
+    const link = document.createElement('link');
+    link.rel  = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?' + Array.from(families).map(f => 'family=' + f + ':wght@300;400').join('&') + '&display=swap';
+    document.head.appendChild(link);
+    link.onload = function () {
         cards.forEach(function (card) {
-            if (card.dataset.heading) families.add(card.dataset.heading.replace(/ /g, '+'));
-            if (card.dataset.body)    families.add(card.dataset.body.replace(/ /g, '+'));
-        });
-
-        if (!families.size) return;
-        const href = 'https://fonts.googleapis.com/css2?'
-            + Array.from(families).map(f => 'family=' + f + ':wght@300;400').join('&')
-            + '&display=swap';
-        const link = document.createElement('link');
-        link.rel  = 'stylesheet';
-        link.href = href;
-        document.head.appendChild(link);
-
-        // Apply fonts once loaded
-        link.onload = function () {
-            cards.forEach(function (card) {
-                const heading = card.dataset.heading;
-                const body    = card.dataset.body;
-                const sample  = card.querySelector('.font-pair-sample');
-                if (sample && heading) sample.style.fontFamily = "'" + heading + "', serif";
-                card.querySelectorAll('.font-pair-name').forEach(function (el, i) {
-                    el.style.fontFamily = i === 0
-                        ? "'" + heading + "', serif"
-                        : "'" + body    + "', sans-serif";
-                });
+            const sample = card.querySelector('.font-pair-sample');
+            if (sample && card.dataset.heading) sample.style.fontFamily = "'" + card.dataset.heading + "', serif";
+            card.querySelectorAll('.font-pair-name').forEach(function (el, i) {
+                el.style.fontFamily = i === 0 ? "'" + card.dataset.heading + "', serif" : "'" + card.dataset.body + "', sans-serif";
             });
-        };
-    })();
+        });
+    };
+})();
 </script>
 {% endblock %}

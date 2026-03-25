@@ -1,63 +1,491 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - AI Wedding Studio{% endblock %}
+{% block title %}Overview – AI Wedding Studio{% endblock %}
+{% block page_title %}Overview{% endblock %}
 
-{% block content %}
-<div class="d-flex justify-content-between align-items-center dashboard-header">
-    {% if not current_user.is_authenticated %}
-    <h1 class="mb-0">Welcome back</h1>
-    {% endif %}
-    {% if current_user.is_authenticated %}
-        <a href="{{ url_for('wedding.create_wedding') }}" class="btn btn-primary btn-lg">
-            + Create New Wedding
-        </a>
-    {% endif %}
-</div>
+{% block extra_css %}
+<style>
+/* ── Dashboard layout ─────────────────────────────────────────────── */
+.dash-section-label {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted, #8a7f7a);
+    margin-bottom: 0.75rem;
+    display: block;
+}
 
-{% if weddings %}
-    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
-        {% for wedding in weddings %}
-        <div class="col">
-            <a href="{{ url_for('wedding.wedding_detail', wedding_id=wedding.id) }}" class="text-decoration-none">
-                <div class="card h-100 shadow-sm border-0 wedding-card">
-                    <div class="card-body">
-                        <h5 class="card-title text-dark mb-1">
-                            {{ wedding.partner1_name }} &amp; {{ wedding.partner2_name }}
-                        </h5>
-                        <p class="text-muted small mb-3">
-                            {{ wedding.wedding_date.strftime('%B %d, %Y') if wedding.wedding_date else 'Date TBD' }}
-                        </p>
-                        <ul class="list-unstyled mb-3">
-                            <li class="mb-1 text-secondary">
-                                <span class="me-1">&#128205;</span>{{ wedding.location or 'Location TBD' }}
-                            </li>
-                        </ul>
-                        {% if wedding.style %}
-                            {% set style_colors = {
-                                'rustic':     'warning',
-                                'modern':     'primary',
-                                'luxury':     'dark',
-                                'beach':      'info',
-                                'vintage':    'danger',
-                                'minimalist': 'secondary'
-                            } %}
-                            <span class="badge bg-{{ style_colors.get(wedding.style | lower, 'secondary') }} text-capitalize">
-                                {{ wedding.style }}
-                            </span>
-                        {% endif %}
-                    </div>
-                </div>
-            </a>
-        </div>
-        {% endfor %}
-    </div>
-{% else %}
-    <div class="text-center empty-state">
-        <span class="empty-icon">&#128149;</span>
-        <h4 class="mt-3">No weddings yet</h4>
-        <p class="mb-4">Get started by creating your first wedding project.</p>
-        <a href="{{ url_for('wedding.create_wedding') }}" class="btn btn-primary">Create Your First Wedding</a>
-    </div>
-{% endif %}
+/* ── Metric cards ─────────────────────────────────────────────────── */
+.metric-card {
+    background: #fff;
+    border: 1px solid var(--border, #e8e0d8);
+    border-radius: 12px;
+    padding: 1.35rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+.metric-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem;
+    margin-bottom: 0.6rem;
+    flex-shrink: 0;
+}
+.metric-icon.rose  { background: var(--rose-bg, #fdf0f2); color: var(--rose, #c9687a); }
+.metric-icon.green { background: #eef7f2; color: #3a8a5a; }
+.metric-icon.blue  { background: #eff4fb; color: #3a68a8; }
+.metric-icon.amber { background: #fdf7ee; color: #a87832; }
+.metric-number {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.2rem;
+    font-weight: 300;
+    line-height: 1;
+    color: var(--text-dark, #2d2420);
+}
+.metric-label {
+    font-size: 0.78rem;
+    font-weight: 400;
+    color: var(--text-muted, #8a7f7a);
+    margin-top: 0.2rem;
+}
+.metric-sub {
+    font-size: 0.72rem;
+    color: #b0a8a0;
+    margin-top: 0.1rem;
+}
+
+/* ── Content cards ────────────────────────────────────────────────── */
+.dash-card {
+    background: #fff;
+    border: 1px solid var(--border, #e8e0d8);
+    border-radius: 12px;
+    padding: 1.5rem;
+    height: 100%;
+}
+.dash-card-title {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted, #8a7f7a);
+    margin-bottom: 1.1rem;
+    display: block;
+}
+
+/* ── RSVP stacked bar ─────────────────────────────────────────────── */
+.rsvp-stacked {
+    height: 10px;
+    border-radius: 5px;
+    overflow: hidden;
+    background: #f0e8e4;
+    display: flex;
+    margin-bottom: 1rem;
+}
+.rsvp-seg-confirmed { background: #5fa67a; }
+.rsvp-seg-pending   { background: #c8bdb8; }
+.rsvp-seg-declined  { background: #c97a7a; }
+.rsvp-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.rsvp-legend-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.82rem;
+}
+.rsvp-legend-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+    flex-shrink: 0;
+}
+.rsvp-legend-label { color: var(--text-dark); flex: 1; }
+.rsvp-legend-count { font-weight: 500; color: var(--text-dark); }
+.rsvp-legend-pct   { color: var(--text-muted); font-size: 0.72rem; margin-left: 0.5rem; width: 2.5rem; text-align: right; }
+
+/* ── Checklist ─────────────────────────────────────────────────────── */
+.task-item {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f5f0ec;
+    font-size: 0.85rem;
+}
+.task-item:last-child { border-bottom: none; }
+.task-item i { font-size: 0.95rem; flex-shrink: 0; }
+.task-item.done i    { color: #5fa67a; }
+.task-item.done span { color: var(--text-dark); }
+.task-item:not(.done) i    { color: #d8cec8; }
+.task-item:not(.done) span { color: var(--text-muted); }
+.task-pct-label {
+    font-size: 0.72rem;
+    color: var(--rose, #c9687a);
+    font-weight: 500;
+    margin-top: -0.5rem;
+    margin-bottom: 0.75rem;
+}
+.task-progress { height: 4px; border-radius: 2px; background: #f0e8e4; margin-bottom: 0.5rem; }
+.task-progress-fill { height: 100%; border-radius: 2px; background: var(--rose, #c9687a); }
+
+/* ── Budget snapshot ──────────────────────────────────────────────── */
+.budget-zero {
+    text-align: center;
+    padding: 1.5rem 0;
+}
+.budget-zero i { font-size: 2rem; color: #d8cec8; }
+.budget-zero p { font-size: 0.82rem; color: var(--text-muted); margin: 0.5rem 0 0; }
+
+/* ── Activity feed ────────────────────────────────────────────────── */
+.activity-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.65rem 0;
+    border-bottom: 1px solid #f5f0ec;
+}
+.activity-item:last-child { border-bottom: none; }
+.activity-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--rose, #c9687a);
+    margin-top: 0.35rem;
+    flex-shrink: 0;
+}
+.activity-text { font-size: 0.85rem; color: var(--text-dark); flex: 1; }
+.activity-time { font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; }
+
+/* ── Empty state ──────────────────────────────────────────────────── */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+.empty-state-icon {
+    font-size: 4rem;
+    color: #e0d4ce;
+    display: block;
+    margin-bottom: 1.5rem;
+}
+.empty-state h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2rem;
+    font-weight: 400;
+    color: var(--text-dark);
+    margin-bottom: 0.5rem;
+}
+.empty-state p {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    max-width: 380px;
+    margin: 0 auto 2rem;
+    line-height: 1.65;
+}
+.btn-create-wedding {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    background: var(--rose, #c9687a);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 0.75rem 2rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background 0.12s;
+}
+.btn-create-wedding:hover { background: var(--rose-dark, #a8566a); color: #fff; }
+
+/* ── Wedding list (when no active wedding but weddings exist) ─────── */
+.wedding-list-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: #fff;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.12s, box-shadow 0.12s;
+    margin-bottom: 0.75rem;
+}
+.wedding-list-item:hover {
+    border-color: var(--rose);
+    box-shadow: 0 2px 12px rgba(201,104,122,.1);
+    color: inherit;
+}
+</style>
 {% endblock %}
 
+{% block content %}
+{% if not current_user.is_authenticated %}
+
+{# ── Not logged in ─────────────────────────────────────────────────── #}
+<div class="empty-state">
+    <i class="bi bi-heart empty-state-icon"></i>
+    <h2>Plan your perfect day</h2>
+    <p>AI Wedding Studio helps you manage guests, design invitations, and keep every detail in one beautiful place.</p>
+    <a href="{{ url_for('auth.register') }}" class="btn-create-wedding">Get Started</a>
+</div>
+
+{% elif not active_wedding %}
+
+{# ── Logged in but no weddings ─────────────────────────────────────── #}
+<div class="empty-state">
+    <i class="bi bi-heart empty-state-icon"></i>
+    <h2>Start planning your perfect day</h2>
+    <p>Create your first wedding project to get started with AI theme generation, guest management, and beautiful invitations.</p>
+    <a href="{{ url_for('wedding.create_wedding') }}" class="btn-create-wedding">
+        <i class="bi bi-plus-lg"></i> Create Your First Wedding
+    </a>
+</div>
+
+{% else %}
+
+{# ── Command center ────────────────────────────────────────────────── #}
+
+{# ── Row 1: Wedding heading ───────────────────────────────────────── #}
+<div class="mb-4">
+    <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.8rem; font-weight:400; color:var(--text-dark); margin:0 0 0.2rem;">
+        {{ active_wedding.partner1_name }} &amp; {{ active_wedding.partner2_name }}
+    </h2>
+    <span style="font-size:0.82rem; color:var(--text-muted);">
+        <i class="bi bi-geo-alt me-1"></i>{{ active_wedding.venue_name }}, {{ active_wedding.location }}
+        &nbsp;·&nbsp;
+        <i class="bi bi-calendar3 me-1"></i>{{ active_wedding.wedding_date.strftime('%B %-d, %Y') if active_wedding.wedding_date else 'Date TBD' }}
+        {% if days_until is not none %}
+        &nbsp;·&nbsp;
+        {% if days_until > 0 %}
+        <span style="color:var(--rose); font-weight:500;">{{ days_until }} days to go</span>
+        {% elif days_until == 0 %}
+        <span style="color:var(--rose); font-weight:500;">Today!</span>
+        {% else %}
+        <span style="color:var(--text-muted);">{{ days_until | abs }} days ago</span>
+        {% endif %}
+        {% endif %}
+    </span>
+</div>
+
+{# ── Row 1: Metric cards ──────────────────────────────────────────── #}
+<div class="row g-3 mb-4">
+    <div class="col-6 col-xl-3">
+        <div class="metric-card">
+            <div class="metric-icon rose"><i class="bi bi-people"></i></div>
+            <div class="metric-number">{{ guest_stats.total }}</div>
+            <div class="metric-label">Total Guests</div>
+            <div class="metric-sub">across all groups</div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="metric-card">
+            <div class="metric-icon green"><i class="bi bi-check-circle"></i></div>
+            <div class="metric-number">{{ guest_stats.accepted }}</div>
+            <div class="metric-label">RSVPs Confirmed</div>
+            <div class="metric-sub">{{ guest_stats.response_rate }}% response rate</div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="metric-card">
+            <div class="metric-icon blue"><i class="bi bi-currency-dollar"></i></div>
+            <div class="metric-number">{{ budget_pct }}<span style="font-size:1rem;">%</span></div>
+            <div class="metric-label">Budget Used</div>
+            <div class="metric-sub">
+                {% if total_budget_amount %}
+                ${{ '{:,.0f}'.format(total_actual_paid) }} of ${{ '{:,.0f}'.format(total_budget_amount) }}
+                {% else %}
+                no budget set yet
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="metric-card">
+            <div class="metric-icon amber"><i class="bi bi-check2-square"></i></div>
+            <div class="metric-number">{{ checklist_pct }}<span style="font-size:1rem;">%</span></div>
+            <div class="metric-label">Tasks Completed</div>
+            <div class="metric-sub">
+                {{ checklist_items | selectattr('1') | list | length }} of {{ checklist_items | length }} done
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ── Row 2: RSVP + Tasks + Budget ────────────────────────────────── #}
+<div class="row g-3 mb-4">
+
+    {# RSVP breakdown #}
+    <div class="col-lg-5">
+        <div class="dash-card">
+            <span class="dash-card-title">RSVP Breakdown</span>
+            {% if guest_stats.total > 0 %}
+            <div class="rsvp-stacked">
+                <div class="rsvp-seg-confirmed"
+                     style="width:{{ (guest_stats.accepted / guest_stats.total * 100) | round | int }}%;"></div>
+                <div class="rsvp-seg-pending"
+                     style="width:{{ (guest_stats.pending  / guest_stats.total * 100) | round | int }}%;"></div>
+                <div class="rsvp-seg-declined"
+                     style="width:{{ (guest_stats.declined / guest_stats.total * 100) | round | int }}%;"></div>
+            </div>
+            <div class="rsvp-legend">
+                <div class="rsvp-legend-item">
+                    <span class="rsvp-legend-dot" style="background:#5fa67a;"></span>
+                    <span class="rsvp-legend-label">Confirmed</span>
+                    <span class="rsvp-legend-count">{{ guest_stats.accepted }}</span>
+                    <span class="rsvp-legend-pct">{{ (guest_stats.accepted / guest_stats.total * 100) | round | int }}%</span>
+                </div>
+                <div class="rsvp-legend-item">
+                    <span class="rsvp-legend-dot" style="background:#c8bdb8;"></span>
+                    <span class="rsvp-legend-label">Pending</span>
+                    <span class="rsvp-legend-count">{{ guest_stats.pending }}</span>
+                    <span class="rsvp-legend-pct">{{ (guest_stats.pending  / guest_stats.total * 100) | round | int }}%</span>
+                </div>
+                <div class="rsvp-legend-item">
+                    <span class="rsvp-legend-dot" style="background:#c97a7a;"></span>
+                    <span class="rsvp-legend-label">Declined</span>
+                    <span class="rsvp-legend-count">{{ guest_stats.declined }}</span>
+                    <span class="rsvp-legend-pct">{{ (guest_stats.declined / guest_stats.total * 100) | round | int }}%</span>
+                </div>
+            </div>
+            <a href="{{ url_for('wedding.wedding_detail', wedding_id=active_wedding.id) }}#guests"
+               style="font-size:0.78rem; color:var(--rose); text-decoration:none; display:block; margin-top:1rem;">
+                View all guests <i class="bi bi-arrow-right"></i>
+            </a>
+            {% else %}
+            <div style="text-align:center; padding:1.5rem 0;">
+                <i class="bi bi-people" style="font-size:2rem; color:#d8cec8;"></i>
+                <p style="font-size:0.82rem; color:var(--text-muted); margin:.5rem 0 0;">No guests added yet.</p>
+                <a href="{{ url_for('wedding.wedding_detail', wedding_id=active_wedding.id) }}#guests"
+                   style="font-size:0.78rem; color:var(--rose);">Add your first guest →</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Planning checklist #}
+    <div class="col-lg-4">
+        <div class="dash-card">
+            <span class="dash-card-title">Planning Checklist</span>
+            <div class="task-progress mb-1">
+                <div class="task-progress-fill" style="width:{{ checklist_pct }}%;"></div>
+            </div>
+            <p class="task-pct-label">{{ checklist_pct }}% complete</p>
+            {% for label, done in checklist_items %}
+            <div class="task-item {% if done %}done{% endif %}">
+                <i class="bi {% if done %}bi-check-circle-fill{% else %}bi-circle{% endif %}"></i>
+                <span>{{ label }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    {# Budget snapshot #}
+    <div class="col-lg-3">
+        <div class="dash-card">
+            <span class="dash-card-title">Budget Snapshot</span>
+            {% if budget_snapshot %}
+            {% for cat in budget_snapshot %}
+            <div style="margin-bottom:0.85rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.2rem;">
+                    <span style="font-size:0.8rem; display:flex; align-items:center; gap:0.4rem;">
+                        <span style="width:8px;height:8px;border-radius:50%;background:{{ cat.color }};display:inline-block;flex-shrink:0;"></span>
+                        {{ cat.name }}
+                    </span>
+                    <span style="font-size:0.75rem; color:var(--text-muted);">
+                        ${{ '{:,.0f}'.format(cat.actual) }} / ${{ '{:,.0f}'.format(cat.allocated) }}
+                    </span>
+                </div>
+                <div style="height:4px;border-radius:2px;background:#f0e8e4;">
+                    <div style="height:100%;border-radius:2px;background:{{ cat.color }};width:{{ [((cat.actual / cat.allocated * 100) | round | int), 100] | min if cat.allocated else 0 }}%;"></div>
+                </div>
+            </div>
+            {% endfor %}
+            <a href="{{ url_for('budget.budget', wedding_id=active_wedding.id) }}"
+               style="font-size:0.78rem; color:var(--rose); text-decoration:none; display:block; margin-top:0.75rem;">
+                View full budget <i class="bi bi-arrow-right"></i>
+            </a>
+            {% else %}
+            <div class="budget-zero">
+                <i class="bi bi-wallet2"></i>
+                <p>No budget set up yet.</p>
+            </div>
+            <a href="{{ url_for('budget.budget', wedding_id=active_wedding.id) }}"
+               style="font-size:0.78rem; color:var(--rose); text-decoration:none;">
+                Set up budget <i class="bi bi-arrow-right"></i>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{# ── Row 3: Recent activity ───────────────────────────────────────── #}
+<div class="row g-3">
+    <div class="col-12">
+        <div class="dash-card">
+            <span class="dash-card-title">Recent Activity</span>
+            {% if recent_guests %}
+            {% for g in recent_guests %}
+            <div class="activity-item">
+                <div class="activity-dot"></div>
+                <span class="activity-text">
+                    <strong>{{ g.full_name }}</strong> added to guest list
+                    {% if g.group_name %}<span style="color:var(--text-muted);">· {{ g.group_name }}</span>{% endif %}
+                </span>
+                <span class="activity-time">
+                    {{ g.created_at.strftime('%b %-d') }}
+                </span>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div style="text-align:center; padding:1.5rem 0; color:var(--text-muted); font-size:.85rem;">
+                <i class="bi bi-clock-history" style="font-size:1.5rem; display:block; margin-bottom:.5rem; color:#d8cec8;"></i>
+                No activity yet. Start by adding guests or generating your AI theme.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if weddings | length > 1 %}
+{# Other weddings quick links #}
+<div class="mt-4">
+    <span class="dash-section-label">Your Other Weddings</span>
+    {% for w in weddings %}
+    {% if w.id != active_wedding.id %}
+    <div class="wedding-list-item">
+        <div style="width:36px; height:36px; border-radius:8px; background:var(--rose-bg); display:flex; align-items:center; justify-content:center;">
+            <i class="bi bi-heart-fill" style="color:var(--rose); font-size:.85rem;"></i>
+        </div>
+        <div style="flex:1; min-width:0;">
+            <div style="font-weight:500; font-size:.9rem;">{{ w.partner1_name }} &amp; {{ w.partner2_name }}</div>
+            <div style="font-size:.75rem; color:var(--text-muted);">
+                {{ w.wedding_date.strftime('%B %-d, %Y') if w.wedding_date else 'Date TBD' }}
+                · {{ w.location }}
+            </div>
+        </div>
+        <form method="POST" action="{{ url_for('wedding.activate_wedding', wedding_id=w.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" style="font-family:'Jost',sans-serif; font-size:.78rem; background:transparent; border:1px solid var(--border); border-radius:6px; padding:.3rem .75rem; color:var(--text-muted); cursor:pointer; white-space:nowrap;">
+                Switch
+            </button>
+        </form>
+        <a href="{{ url_for('wedding.wedding_detail', wedding_id=w.id) }}"
+           style="font-size:.78rem; color:var(--rose); text-decoration:none; white-space:nowrap;">
+            View <i class="bi bi-arrow-right"></i>
+        </a>
+    </div>
+    {% endif %}
+    {% endfor %}
+</div>
+{% endif %}
+
+{% endif %}{# end active_wedding #}
+{% endblock %}

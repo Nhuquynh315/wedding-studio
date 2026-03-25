@@ -1,32 +1,35 @@
 /* ============================================================
-   AI Wedding Studio — Custom Styles
+   AI Wedding Studio — Global Styles
    ============================================================ */
 
 /* ---------- Brand palette ---------- */
 :root {
-    --ws-rose:        #c9748f;
-    --ws-rose-dark:   #a85470;
-    --ws-blush:       #f9eff2;
+    --ws-rose:        #c9687a;
+    --ws-rose-dark:   #a8566a;
+    --ws-blush:       #fdf0f2;
     --ws-gold:        #c9a84c;
-    --ws-charcoal:    #2d2d2d;
-    --ws-muted:       #6c757d;
-    --ws-card-radius: 0.75rem;
-    --ws-transition:  0.18s ease;
+    --ws-charcoal:    #2d2420;
+    --ws-muted:       #8a7f7a;
+    --ws-card-radius: 12px;
+    --ws-transition:  0.15s ease;
+
+    /* Align with base.html CSS vars */
+    --rose:       #c9687a;
+    --rose-bg:    #fdf0f2;
+    --rose-dark:  #a8566a;
+    --cream:      #faf8f5;
+    --border:     #e8e0d8;
+    --text-dark:  #2d2420;
+    --text-muted: #8a7f7a;
 }
 
 /* ---------- Global ---------- */
 body {
     color: var(--ws-charcoal);
-    background-color: #fafafa;
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-family: 'Jost', 'Segoe UI', system-ui, sans-serif;
 }
 
-/* ---------- Navbar ---------- */
-.navbar.bg-primary {
-    background-color: var(--ws-rose) !important;
-}
-
-/* ---------- Buttons ---------- */
+/* ---------- Bootstrap primary overrides ---------- */
 .btn-primary {
     background-color: var(--ws-rose);
     border-color: var(--ws-rose);
@@ -43,67 +46,75 @@ body {
 .btn-outline-primary:hover {
     background-color: var(--ws-rose);
     border-color: var(--ws-rose);
+    color: #fff;
 }
 
-/* ---------- Dashboard heading row ---------- */
-.dashboard-header {
-    padding-bottom: 1.25rem;
-    border-bottom: 1px solid #ecdde3;
-    margin-bottom: 2rem;
-}
-.dashboard-header h1 {
-    font-weight: 700;
-    letter-spacing: -0.5px;
-}
-
-/* ---------- Wedding cards ---------- */
-.wedding-card {
+/* ---------- Cards ---------- */
+.card {
     border-radius: var(--ws-card-radius) !important;
-    border: 1px solid #ecdde3 !important;
-    transition:
-        transform var(--ws-transition),
-        box-shadow var(--ws-transition),
-        border-color var(--ws-transition);
-    background-color: #fff;
-}
-.wedding-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(201, 116, 143, 0.15) !important;
-    border-color: var(--ws-rose) !important;
-}
-.wedding-card .card-title {
-    font-weight: 600;
-    font-size: 1.05rem;
+    border-color: var(--border) !important;
 }
 
-/* ---------- Style badges (override Bootstrap colors) ---------- */
-.badge.bg-danger   { background-color: #d9718a !important; }   /* romantic */
-.badge.bg-warning  { background-color: var(--ws-gold) !important; color: #fff !important; } /* rustic */
-.badge.bg-info     { background-color: #4fa8c7 !important; color: #fff !important; } /* beach */
+/* ---------- Progress bars ---------- */
+.progress { border-radius: 6px; }
+.progress-bar { transition: width 0.4s ease; }
 
-/* ---------- Empty state ---------- */
-.empty-state {
-    padding: 5rem 1rem;
-    color: var(--ws-muted);
+/* ---------- Badges ---------- */
+.badge.bg-danger   { background-color: #d9718a !important; }
+.badge.bg-warning  { background-color: var(--ws-gold) !important; color: #fff !important; }
+.badge.bg-info     { background-color: #4fa8c7 !important; color: #fff !important; }
+
+/* ---------- Tables ---------- */
+.table { font-family: 'Jost', sans-serif; font-size: 0.875rem; }
+.table thead th { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+
+/* ---------- Forms ---------- */
+.form-control, .form-select {
+    border-color: var(--border);
+    border-radius: 8px;
+    font-family: 'Jost', sans-serif;
+    font-size: 0.9rem;
 }
-.empty-state .empty-icon {
-    font-size: 4rem;
-    line-height: 1;
-    margin-bottom: 1rem;
-    display: block;
+.form-control:focus, .form-select:focus {
+    border-color: var(--ws-rose);
+    box-shadow: 0 0 0 0.2rem rgba(201,104,122,.2);
+}
+.form-label {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text-dark);
+}
+
+/* ---------- Modals ---------- */
+.modal-content { border-radius: 14px !important; border: none; }
+.modal-header  { border-bottom: none; padding-bottom: 0; }
+.modal-footer  { border-top: none; }
+
+/* ---------- Auth pages ---------- */
+.auth-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2.5rem;
+    max-width: 420px;
+    margin: 0 auto;
+}
+.auth-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2rem;
+    font-weight: 400;
+    color: var(--text-dark);
+    margin-bottom: 0.25rem;
+}
+.auth-subtitle {
+    font-size: 0.85rem;
+    color: var(--text-muted);
 }
 
 /* ---------- Footer ---------- */
 footer {
     color: var(--ws-muted);
     font-size: 0.875rem;
+    font-family: 'Jost', sans-serif;
 }
-
-/* ---------- Alerts ---------- */
-.alert {
-    border-radius: var(--ws-card-radius);
-    border: none;
-}
-.alert-danger  { background-color: #fdecea; color: #8b1a2a; }
-.alert-success { background-color: #edf7ed; color: #1e5631; }
-.alert-warning { background-color: #fdf6e3; color: #7a5c00; }

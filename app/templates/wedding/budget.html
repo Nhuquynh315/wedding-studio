@@ -1,0 +1,937 @@
+{% extends "base.html" %}
+
+{% block title %}Budget – {{ wedding.partner1_name }} & {{ wedding.partner2_name }}{% endblock %}
+{% block page_title %}Budget{% endblock %}
+
+{% block extra_css %}
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ── Summary bar ──────────────────────────────────────────────────── */
+.budget-summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+}
+.summary-card {
+    background: #fff;
+    border: 1px solid var(--border, #e8e0d8);
+    border-radius: 12px;
+    padding: 1.1rem 1.25rem;
+}
+.summary-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #8a7f7a;
+    display: block;
+    margin-bottom: 0.4rem;
+}
+.summary-amount {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.6rem;
+    font-weight: 300;
+    line-height: 1;
+    color: #2d2420;
+}
+.summary-amount.editable {
+    cursor: pointer;
+    border-bottom: 1px dashed #c8bdb8;
+    transition: border-color 0.12s;
+}
+.summary-amount.editable:hover { border-color: var(--rose, #c9687a); }
+.summary-amount.over-budget { color: #c9687a; }
+.summary-sub {
+    font-size: 0.72rem;
+    color: #a09080;
+    margin-top: 0.3rem;
+}
+.summary-edit-input {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.6rem;
+    font-weight: 300;
+    border: none;
+    border-bottom: 2px solid var(--rose, #c9687a);
+    outline: none;
+    background: transparent;
+    width: 160px;
+    color: #2d2420;
+}
+
+/* ── Charts ───────────────────────────────────────────────────────── */
+.charts-row {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+}
+.chart-card {
+    background: #fff;
+    border: 1px solid var(--border, #e8e0d8);
+    border-radius: 12px;
+    padding: 1.25rem;
+}
+.chart-title {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #8a7f7a;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+/* ── Accordion categories ─────────────────────────────────────────── */
+.budget-accordion .accordion-item {
+    border: 1px solid var(--border, #e8e0d8) !important;
+    border-radius: 12px !important;
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+}
+.budget-accordion .accordion-button {
+    background: #faf8f5;
+    padding: 0.9rem 1.1rem;
+    font-family: 'Jost', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #2d2420;
+    box-shadow: none !important;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+.budget-accordion .accordion-button:not(.collapsed) {
+    background: #fff;
+    color: #2d2420;
+}
+.budget-accordion .accordion-button::after {
+    margin-left: auto;
+    flex-shrink: 0;
+}
+.cat-dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: inline-block;
+}
+.cat-header-stats {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    font-size: 0.78rem;
+    color: #8a7f7a;
+    flex: 1;
+    flex-wrap: wrap;
+}
+.cat-stat strong { color: #2d2420; }
+.cat-progress {
+    width: 80px;
+    height: 4px;
+    background: #f0e8e4;
+    border-radius: 2px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.cat-progress-fill {
+    height: 100%;
+    border-radius: 2px;
+}
+.cat-header-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-shrink: 0;
+}
+.btn-cat-action {
+    font-size: 0.72rem;
+    color: #a09080;
+    background: transparent;
+    border: 1px solid #e8e0d8;
+    border-radius: 6px;
+    padding: 0.2rem 0.55rem;
+    cursor: pointer;
+    transition: all 0.12s;
+    text-decoration: none;
+}
+.btn-cat-action:hover { border-color: var(--rose); color: var(--rose); }
+.btn-cat-action.del:hover { border-color: #e57373; color: #c62828; }
+
+/* ── Expense table ────────────────────────────────────────────────── */
+.expense-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.84rem;
+}
+.expense-table th {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #a09080;
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #f0e8e4;
+}
+.expense-table td {
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid #f7f3f0;
+    vertical-align: middle;
+    color: #2d2420;
+}
+.expense-table tr:last-child td { border-bottom: none; }
+.expense-table tr.is-paid td { opacity: 0.6; }
+.expense-table tr.is-paid .expense-title { text-decoration: line-through; color: #a09080; }
+.expense-table tr.is-paid { background: #f0faf4; }
+.expense-amount { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.expense-amount.actual { color: #3a8a5a; font-weight: 500; }
+.due-overdue { color: #c9687a; font-weight: 500; }
+.due-soon    { color: #c9a84c; font-weight: 500; }
+.btn-paid {
+    font-size: 0.72rem;
+    font-weight: 500;
+    border-radius: 6px;
+    padding: 0.25rem 0.65rem;
+    cursor: pointer;
+    border: 1px solid;
+    transition: all 0.12s;
+    white-space: nowrap;
+    background: transparent;
+}
+.btn-paid.unpaid { border-color: #c8bdb8; color: #8a7f7a; }
+.btn-paid.unpaid:hover { border-color: #5fa67a; color: #5fa67a; }
+.btn-paid.paid { border-color: #5fa67a; color: #5fa67a; background: #eef7f2; }
+.btn-icon {
+    background: none; border: none;
+    color: #c8bdb8; cursor: pointer;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    transition: color 0.12s;
+    font-size: 0.85rem;
+}
+.btn-icon:hover { color: var(--rose); }
+.btn-icon.del:hover { color: #c62828; }
+
+/* ── Add expense form ─────────────────────────────────────────────── */
+.add-expense-form {
+    background: #faf8f5;
+    border-top: 1px solid #f0e8e4;
+    padding: 0.9rem 1rem;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+.add-expense-form .form-control,
+.add-expense-form .form-select {
+    font-size: 0.82rem;
+    padding: 0.35rem 0.6rem;
+    border-radius: 7px;
+    border-color: #e8e0d8;
+}
+.add-expense-form label {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: #8a7f7a;
+    display: block;
+    margin-bottom: 0.2rem;
+}
+.add-expense-form .field { display: flex; flex-direction: column; }
+.add-expense-form .field.grow { flex: 1; min-width: 140px; }
+.add-expense-form .field.sm   { width: 110px; }
+.add-expense-form .field.xs   { width: 90px; }
+.btn-add-expense {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    background: var(--rose, #c9687a);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.4rem 1rem;
+    cursor: pointer;
+    white-space: nowrap;
+    align-self: flex-end;
+    transition: background 0.12s;
+}
+.btn-add-expense:hover { background: #a8566a; }
+
+/* ── Add category form ────────────────────────────────────────────── */
+.add-cat-form {
+    background: #fff;
+    border: 1px solid #e8e0d8;
+    border-radius: 12px;
+    padding: 1.1rem 1.25rem;
+    margin-bottom: 1rem;
+    display: flex;
+    gap: 0.6rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+.add-cat-form label { font-size: 0.75rem; font-weight: 500; color: #8a7f7a; display: block; margin-bottom: 0.2rem; }
+.add-cat-form .form-control, .add-cat-form .form-select { font-size: 0.82rem; }
+.add-cat-form .field { display: flex; flex-direction: column; }
+.add-cat-form .field.grow { flex: 1; min-width: 160px; }
+
+/* ── Payment timeline ─────────────────────────────────────────────── */
+.payment-timeline {
+    background: #fff;
+    border: 1px solid var(--border, #e8e0d8);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-top: 1.75rem;
+}
+.payment-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid #f7f3f0;
+    font-size: 0.84rem;
+}
+.payment-row:last-child { border-bottom: none; }
+.payment-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.payment-dot.overdue { background: #c9687a; }
+.payment-dot.soon    { background: #c9a84c; }
+.payment-dot.normal  { background: #a8d8a8; }
+.payment-title { flex: 1; color: #2d2420; }
+.payment-cat   { font-size: 0.72rem; color: #a09080; }
+.payment-due   { font-size: 0.78rem; white-space: nowrap; }
+.payment-amount { font-variant-numeric: tabular-nums; font-size: 0.82rem; color: #5a4a40; font-weight: 500; white-space: nowrap; }
+
+/* ── Section header with toggle ───────────────────────────────────── */
+.section-hdr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+.section-hdr-title {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #8a7f7a;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+    .budget-summary { grid-template-columns: 1fr 1fr; }
+    .charts-row     { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+    .budget-summary   { grid-template-columns: 1fr 1fr; }
+    .cat-header-stats { display: none; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ── Summary bar ──────────────────────────────────────────────────── #}
+<div class="budget-summary">
+    {# Total budget — inline editable #}
+    <div class="summary-card">
+        <span class="summary-label">Total Budget</span>
+        <div class="summary-amount editable"
+             id="totalBudgetDisplay"
+             data-amount="{{ total_budget }}"
+             data-wedding-id="{{ wedding.id }}"
+             title="Click to edit">
+            ${{ '{:,.0f}'.format(total_budget) }}
+        </div>
+        <div class="summary-sub">Click to edit</div>
+    </div>
+    {# Total estimated #}
+    <div class="summary-card">
+        <span class="summary-label">Estimated Cost</span>
+        <div class="summary-amount" id="summaryEstimated">
+            ${{ '{:,.0f}'.format(total_estimated) }}
+        </div>
+        <div class="summary-sub">across all expenses</div>
+    </div>
+    {# Total paid #}
+    <div class="summary-card">
+        <span class="summary-label">Total Paid</span>
+        <div class="summary-amount" id="summaryPaid">
+            ${{ '{:,.0f}'.format(total_actual_paid) }}
+        </div>
+        <div class="summary-sub">{{ budget_pct if budget_pct is defined else 0 }}% of budget</div>
+    </div>
+    {# Remaining #}
+    <div class="summary-card">
+        <span class="summary-label">Remaining</span>
+        <div class="summary-amount {% if remaining < 0 %}over-budget{% endif %}" id="summaryRemaining">
+            {% if remaining < 0 %}
+            <i class="bi bi-exclamation-triangle-fill" style="font-size:1.1rem; vertical-align:middle;"></i>
+            {% endif %}
+            ${{ '{:,.0f}'.format(remaining | abs) }}
+        </div>
+        <div class="summary-sub">
+            {% if remaining < 0 %}over budget{% else %}left to spend{% endif %}
+        </div>
+    </div>
+</div>
+
+{# ── Charts ───────────────────────────────────────────────────────── #}
+{% if categories %}
+<div class="charts-row">
+    <div class="chart-card">
+        <span class="chart-title">Allocation by Category</span>
+        <canvas id="doughnutChart" height="220"></canvas>
+    </div>
+    <div class="chart-card">
+        <span class="chart-title">Allocated vs Estimated vs Paid</span>
+        <canvas id="barChart" height="180"></canvas>
+    </div>
+</div>
+{% endif %}
+
+{# ── Category sections ────────────────────────────────────────────── #}
+<div class="section-hdr">
+    <span class="section-hdr-title">Categories &amp; Expenses</span>
+    <button class="btn-cat-action" data-bs-toggle="collapse" data-bs-target="#addCatForm">
+        <i class="bi bi-plus-lg"></i> Add Category
+    </button>
+</div>
+
+{# Add category form (collapsed by default) #}
+<div class="collapse mb-3" id="addCatForm">
+    <form class="add-cat-form" method="POST"
+          action="{{ url_for('budget.add_category', wedding_id=wedding.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="field grow">
+            <label>Category Name</label>
+            <input type="text" name="name" class="form-control" placeholder="e.g. Hair & Makeup" required>
+        </div>
+        <div class="field" style="width:130px;">
+            <label>Allocated ($)</label>
+            <input type="number" name="allocated_amount" class="form-control" placeholder="0" min="0" step="50">
+        </div>
+        <div class="field" style="width:80px;">
+            <label>Colour</label>
+            <input type="color" name="color" class="form-control form-control-color p-1" value="#c9687a">
+        </div>
+        <button type="submit" class="btn-add-expense">Add</button>
+    </form>
+</div>
+
+<div class="accordion budget-accordion" id="budgetAccordion">
+{% if categories %}
+    {% for cat in categories %}
+    {% set cat_estimated = cat.expenses | sum(attribute='estimated_cost') %}
+    {% set cat_paid      = namespace(v=0) %}
+    {% for e in cat.expenses %}{% if e.is_paid %}{% set cat_paid.v = cat_paid.v + (e.actual_cost or 0) %}{% endif %}{% endfor %}
+    {% set spent_pct = [((cat_paid.v / cat.allocated_amount * 100) | round | int), 100] | min if cat.allocated_amount else 0 %}
+
+    <div class="accordion-item" id="cat-{{ cat.id }}">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#catBody-{{ cat.id }}">
+                <span class="cat-dot" style="background:{{ cat.color }};"></span>
+                <span style="font-weight:600; min-width:110px;">{{ cat.name }}</span>
+                <span class="cat-header-stats">
+                    <span>Allocated: <strong>${{ '{:,.0f}'.format(cat.allocated_amount) }}</strong></span>
+                    <span>Estimated: <strong>${{ '{:,.0f}'.format(cat_estimated) }}</strong></span>
+                    <span>Paid: <strong>${{ '{:,.0f}'.format(cat_paid.v) }}</strong></span>
+                    <span class="cat-progress">
+                        <span class="cat-progress-fill"
+                              style="width:{{ spent_pct }}%; background:{{ cat.color }};"></span>
+                    </span>
+                    <span style="font-size:0.7rem;">{{ spent_pct }}%</span>
+                </span>
+                {# Stop click from toggling the accordion #}
+                <span class="cat-header-actions" onclick="event.stopPropagation()">
+                    <button type="button" class="btn-cat-action"
+                            data-bs-toggle="modal" data-bs-target="#editCatModal"
+                            data-cat-id="{{ cat.id }}"
+                            data-name="{{ cat.name | e }}"
+                            data-allocated="{{ cat.allocated_amount }}"
+                            data-color="{{ cat.color }}">
+                        Edit
+                    </button>
+                    <form method="POST"
+                          action="{{ url_for('budget.delete_category', cat_id=cat.id) }}"
+                          onsubmit="return confirm('Delete this category and all its expenses?');"
+                          style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn-cat-action del">Delete</button>
+                    </form>
+                </span>
+            </button>
+        </h2>
+        <div id="catBody-{{ cat.id }}" class="accordion-collapse collapse"
+             data-bs-parent="">
+            <div class="accordion-body p-0">
+                {% if cat.expenses %}
+                <table class="expense-table">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Estimated</th>
+                            <th>Actual</th>
+                            <th>Due Date</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for exp in cat.expenses | sort(attribute='created_at') %}
+                    <tr class="expense-row {% if exp.is_paid %}is-paid{% endif %}"
+                        data-expense-id="{{ exp.id }}">
+                        <td>
+                            <span class="expense-title">{{ exp.title }}</span>
+                            {% if exp.notes %}
+                            <div style="font-size:0.72rem; color:#a09080;">{{ exp.notes }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="expense-amount">${{ '{:,.0f}'.format(exp.estimated_cost or 0) }}</td>
+                        <td class="expense-amount actual">
+                            {{ ('$' + '{:,.0f}'.format(exp.actual_cost)) if exp.actual_cost is not none else '—' }}
+                        </td>
+                        <td>
+                            {% if exp.due_date %}
+                            {% set today = now.date() if now is defined else none %}
+                            <span class="payment-due
+                                {% if exp.due_date < date_today %}due-overdue
+                                {% elif (exp.due_date - date_today).days <= 7 %}due-soon
+                                {% endif %}">
+                                {{ exp.due_date.strftime('%b %-d, %Y') }}
+                            </span>
+                            {% else %}—{% endif %}
+                        </td>
+                        <td>
+                            <button class="btn-paid {% if exp.is_paid %}paid{% else %}unpaid{% endif %}"
+                                    data-expense-id="{{ exp.id }}">
+                                {% if exp.is_paid %}
+                                <i class="bi bi-check-circle-fill"></i> Paid
+                                {% else %}
+                                Mark Paid
+                                {% endif %}
+                            </button>
+                        </td>
+                        <td style="white-space:nowrap;">
+                            <button class="btn-icon"
+                                    data-bs-toggle="modal" data-bs-target="#editExpenseModal"
+                                    data-expense-id="{{ exp.id }}"
+                                    data-title="{{ exp.title | e }}"
+                                    data-estimated="{{ exp.estimated_cost or 0 }}"
+                                    data-actual="{{ exp.actual_cost if exp.actual_cost is not none else '' }}"
+                                    data-due="{{ exp.due_date.isoformat() if exp.due_date else '' }}"
+                                    data-notes="{{ exp.notes | e if exp.notes else '' }}"
+                                    data-cat-id="{{ exp.category_id or '' }}">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <form method="POST"
+                                  action="{{ url_for('budget.delete_expense', expense_id=exp.id) }}"
+                                  onsubmit="return confirm('Delete this expense?');"
+                                  style="display:inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn-icon del"><i class="bi bi-trash3"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div style="padding:1rem 1.25rem; font-size:0.84rem; color:#a09080;">
+                    No expenses yet. Add one below.
+                </div>
+                {% endif %}
+
+                {# Inline add expense form #}
+                <form class="add-expense-form" method="POST"
+                      action="{{ url_for('budget.add_expense', wedding_id=wedding.id) }}">
+                    <input type="hidden" name="csrf_token"   value="{{ csrf_token() }}">
+                    <input type="hidden" name="category_id"  value="{{ cat.id }}">
+                    <input type="hidden" name="anchor"        value="cat-{{ cat.id }}">
+                    <div class="field grow">
+                        <label>Item</label>
+                        <input type="text" name="title" class="form-control" placeholder="Expense name" required>
+                    </div>
+                    <div class="field sm">
+                        <label>Estimated ($)</label>
+                        <input type="number" name="estimated_cost" class="form-control" placeholder="0" min="0" step="10">
+                    </div>
+                    <div class="field sm">
+                        <label>Actual ($)</label>
+                        <input type="number" name="actual_cost" class="form-control" placeholder="—" min="0" step="10">
+                    </div>
+                    <div class="field" style="width:130px;">
+                        <label>Due Date</label>
+                        <input type="date" name="due_date" class="form-control">
+                    </div>
+                    <div class="field grow">
+                        <label>Notes</label>
+                        <input type="text" name="notes" class="form-control" placeholder="Optional">
+                    </div>
+                    <button type="submit" class="btn-add-expense">
+                        <i class="bi bi-plus-lg"></i> Add
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div style="text-align:center; padding:2.5rem; color:#a09080;">
+        <i class="bi bi-wallet2" style="font-size:2.5rem; display:block; margin-bottom:0.75rem; color:#d8cec8;"></i>
+        <p>No budget categories yet. Add one above to get started.</p>
+    </div>
+{% endif %}
+</div>
+
+{# ── Payment timeline ─────────────────────────────────────────────── #}
+{% if upcoming %}
+<div class="payment-timeline">
+    <span class="chart-title">Upcoming Payments</span>
+    {% for exp in upcoming %}
+    {% set today = date_today %}
+    {% set diff  = (exp.due_date - today).days %}
+    {% if diff < 0 %}
+    {% set dot_cls = 'overdue' %}
+    {% elif diff <= 7 %}
+    {% set dot_cls = 'soon' %}
+    {% else %}
+    {% set dot_cls = 'normal' %}
+    {% endif %}
+    <div class="payment-row">
+        <span class="payment-dot {{ dot_cls }}"></span>
+        <span class="payment-title">{{ exp.title }}</span>
+        <span class="payment-cat">{{ exp.category.name if exp.category else '—' }}</span>
+        <span class="payment-due
+            {% if diff < 0 %}due-overdue{% elif diff <= 7 %}due-soon{% endif %}">
+            {{ exp.due_date.strftime('%b %-d, %Y') }}
+            {% if diff < 0 %}&nbsp;(overdue){% elif diff == 0 %}&nbsp;(today){% elif diff <= 7 %}&nbsp;({{ diff }}d){% endif %}
+        </span>
+        <span class="payment-amount">
+            ${{ '{:,.0f}'.format(exp.estimated_cost or 0) }}
+        </span>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{# ── Edit Category Modal ──────────────────────────────────────────── #}
+<div class="modal fade" id="editCatModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <form class="modal-content" method="POST" id="editCatForm" action="#">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="modal-header">
+                <h5 class="modal-title" style="font-family:'Cormorant Garamond',serif; font-weight:400; font-size:1.35rem;">Edit Category</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Name</label>
+                    <input type="text" name="name" id="editCatName" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Allocated Amount ($)</label>
+                    <input type="number" name="allocated_amount" id="editCatAllocated" class="form-control" min="0" step="50">
+                </div>
+                <div class="mb-1">
+                    <label class="form-label">Colour</label>
+                    <input type="color" name="color" id="editCatColor" class="form-control form-control-color" style="height:36px;">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-sm">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# ── Edit Expense Modal ───────────────────────────────────────────── #}
+<div class="modal fade" id="editExpenseModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form class="modal-content" method="POST" id="editExpenseForm" action="#">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="category_id" id="editExpCatId" value="">
+            <div class="modal-header">
+                <h5 class="modal-title" style="font-family:'Cormorant Garamond',serif; font-weight:400; font-size:1.35rem;">Edit Expense</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Title</label>
+                    <input type="text" name="title" id="editExpTitle" class="form-control" required>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-6">
+                        <label class="form-label">Estimated ($)</label>
+                        <input type="number" name="estimated_cost" id="editExpEstimated" class="form-control" min="0" step="10">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Actual ($)</label>
+                        <input type="number" name="actual_cost" id="editExpActual" class="form-control" min="0" step="10" placeholder="Leave blank if unknown">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Due Date</label>
+                    <input type="date" name="due_date" id="editExpDue" class="form-control">
+                </div>
+                <div class="mb-1">
+                    <label class="form-label">Notes</label>
+                    <textarea name="notes" id="editExpNotes" class="form-control" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-sm">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    'use strict';
+
+    const csrf = document.querySelector('meta[name="csrf-token"]').content;
+    const weddingId = {{ wedding.id }};
+    const today = new Date(); today.setHours(0,0,0,0);
+
+    /* ── Overdue highlighting for due dates ─────────────────────── */
+    document.querySelectorAll('[class*="due-"]').forEach(function(el) {
+        // already styled by server
+    });
+
+    /* ── Inline budget total edit ───────────────────────────────── */
+    const totalDisplay = document.getElementById('totalBudgetDisplay');
+    if (totalDisplay) {
+        totalDisplay.addEventListener('click', function () {
+            const currentAmt = parseFloat(this.dataset.amount) || 0;
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.className = 'summary-edit-input';
+            input.value = currentAmt;
+            input.min = '0';
+            input.step = '100';
+            this.replaceWith(input);
+            input.focus();
+            input.select();
+
+            function save() {
+                const amount = Math.max(0, parseFloat(input.value) || 0);
+                fetch('/wedding/' + weddingId + '/budget/set-total', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount }),
+                })
+                .then(r => r.json())
+                .then(function (data) {
+                    if (!data.ok) return;
+                    totalDisplay.dataset.amount = data.total_budget;
+                    totalDisplay.textContent = '$' + fmt(data.total_budget);
+                    input.replaceWith(totalDisplay);
+                    // Update remaining
+                    const remEl = document.getElementById('summaryRemaining');
+                    if (remEl) {
+                        const rem = data.remaining;
+                        remEl.textContent = '$' + fmt(Math.abs(rem));
+                        remEl.classList.toggle('over-budget', rem < 0);
+                    }
+                })
+                .catch(function () { input.replaceWith(totalDisplay); });
+            }
+            input.addEventListener('blur',    save);
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter')  { input.blur(); }
+                if (e.key === 'Escape') { input.replaceWith(totalDisplay); }
+            });
+        });
+    }
+
+    /* ── Paid toggle (AJAX) ─────────────────────────────────────── */
+    document.querySelectorAll('.btn-paid').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const expId = this.dataset.expenseId;
+            fetch('/budget/expense/' + expId + '/toggle-paid', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' },
+                body: JSON.stringify({}),
+            })
+            .then(r => r.json())
+            .then(function (data) {
+                if (!data.ok) return;
+                const row = btn.closest('tr');
+                if (data.is_paid) {
+                    row.classList.add('is-paid');
+                    btn.classList.replace('unpaid', 'paid');
+                    btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Paid';
+                } else {
+                    row.classList.remove('is-paid');
+                    btn.classList.replace('paid', 'unpaid');
+                    btn.innerHTML = 'Mark Paid';
+                }
+                // Update summary bar
+                const paidEl = document.getElementById('summaryPaid');
+                if (paidEl) paidEl.textContent = '$' + fmt(data.total_actual_paid);
+                const remEl = document.getElementById('summaryRemaining');
+                if (remEl) {
+                    remEl.textContent = '$' + fmt(Math.abs(data.remaining));
+                    remEl.classList.toggle('over-budget', data.remaining < 0);
+                }
+            });
+        });
+    });
+
+    /* ── Edit category modal ────────────────────────────────────── */
+    const editCatModal = document.getElementById('editCatModal');
+    if (editCatModal) {
+        editCatModal.addEventListener('show.bs.modal', function (e) {
+            const btn = e.relatedTarget;
+            const catId = btn.dataset.catId;
+            document.getElementById('editCatForm').action = '/budget/category/' + catId + '/edit';
+            document.getElementById('editCatName').value      = btn.dataset.name      || '';
+            document.getElementById('editCatAllocated').value = btn.dataset.allocated || '0';
+            document.getElementById('editCatColor').value     = btn.dataset.color     || '#c9687a';
+        });
+    }
+
+    /* ── Edit expense modal ─────────────────────────────────────── */
+    const editExpModal = document.getElementById('editExpenseModal');
+    if (editExpModal) {
+        editExpModal.addEventListener('show.bs.modal', function (e) {
+            const btn = e.relatedTarget;
+            const expId = btn.dataset.expenseId;
+            document.getElementById('editExpenseForm').action = '/budget/expense/' + expId + '/edit';
+            document.getElementById('editExpTitle').value     = btn.dataset.title     || '';
+            document.getElementById('editExpEstimated').value = btn.dataset.estimated || '0';
+            document.getElementById('editExpActual').value    = btn.dataset.actual    || '';
+            document.getElementById('editExpDue').value       = btn.dataset.due       || '';
+            document.getElementById('editExpNotes').value     = btn.dataset.notes     || '';
+            document.getElementById('editExpCatId').value     = btn.dataset.catId     || '';
+        });
+    }
+
+    /* ── Auto-open accordion from URL hash ──────────────────────── */
+    const hash = location.hash.replace('#', '');
+    if (hash) {
+        const collapseEl = document.getElementById('catBody-' + hash.replace('cat-', ''));
+        if (collapseEl) {
+            bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false }).show();
+        }
+    }
+
+    /* ── Chart.js ───────────────────────────────────────────────── */
+    {% if categories %}
+    const chartLabels    = {{ chart_labels    | tojson }};
+    const chartColors    = {{ chart_colors    | tojson }};
+    const chartAllocated = {{ chart_allocated | tojson }};
+    const chartEstimated = {{ chart_estimated | tojson }};
+    const chartActual    = {{ chart_actual    | tojson }};
+
+    // Doughnut: allocation by category
+    const dCtx = document.getElementById('doughnutChart');
+    if (dCtx && chartLabels.length) {
+        new Chart(dCtx, {
+            type: 'doughnut',
+            data: {
+                labels: chartLabels,
+                datasets: [{
+                    data: chartAllocated,
+                    backgroundColor: chartColors,
+                    borderWidth: 2,
+                    borderColor: '#fff',
+                    hoverOffset: 6,
+                }]
+            },
+            options: {
+                cutout: '62%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            font: { family: 'Jost', size: 11 },
+                            boxWidth: 10,
+                            padding: 10,
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                const val = ctx.parsed;
+                                return ' $' + val.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Horizontal bar: allocated vs estimated vs actual per category
+    const bCtx = document.getElementById('barChart');
+    if (bCtx && chartLabels.length) {
+        new Chart(bCtx, {
+            type: 'bar',
+            data: {
+                labels: chartLabels,
+                datasets: [
+                    {
+                        label: 'Allocated',
+                        data: chartAllocated,
+                        backgroundColor: chartColors.map(c => c + '55'),
+                        borderColor: chartColors,
+                        borderWidth: 1,
+                    },
+                    {
+                        label: 'Estimated',
+                        data: chartEstimated,
+                        backgroundColor: chartColors.map(c => c + '99'),
+                        borderColor: chartColors,
+                        borderWidth: 1,
+                    },
+                    {
+                        label: 'Paid',
+                        data: chartActual,
+                        backgroundColor: chartColors,
+                        borderRadius: 3,
+                    },
+                ]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { font: { family: 'Jost', size: 11 }, boxWidth: 10 }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                return ' ' + ctx.dataset.label + ': $' + ctx.parsed.x.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: { ticks: { callback: v => '$' + v.toLocaleString(), font: { family: 'Jost', size: 11 } } },
+                    y: { ticks: { font: { family: 'Jost', size: 11 } } }
+                }
+            }
+        });
+    }
+    {% endif %}
+
+    /* ── Helpers ────────────────────────────────────────────────── */
+    function fmt(n) {
+        return Math.round(n).toLocaleString('en-US');
+    }
+
+})();
+</script>
+{% endblock %}

@@ -4,6 +4,38 @@ import os
 from google import genai
 from google.genai import types
 
+
+def _repair_json(text):
+    """Strip code fences and escape bare newlines inside JSON string literals."""
+    # Strip markdown code fences
+    if "```" in text:
+        text = text.split("```")[1]
+        if text.startswith("json"):
+            text = text[4:]
+        text = text.strip()
+
+    # Walk the text and escape bare newlines/carriage returns inside strings
+    result = []
+    in_string = False
+    escape_next = False
+    for ch in text:
+        if escape_next:
+            result.append(ch)
+            escape_next = False
+        elif ch == '\\':
+            result.append(ch)
+            escape_next = True
+        elif ch == '"':
+            in_string = not in_string
+            result.append(ch)
+        elif in_string and ch == '\n':
+            result.append('\\n')
+        elif in_string and ch == '\r':
+            result.append('\\r')
+        else:
+            result.append(ch)
+    return ''.join(result)
+
 SYSTEM_PROMPT = (
     "You are an expert luxury wedding theme designer. "
     "You MUST respond with ONLY a valid JSON object — no markdown, no code blocks, "
@@ -52,30 +84,29 @@ JSON fields required:
 - rsvp_info: a short string with only the RSVP deadline date. Example: "March 15, 2026"
 """
 
-    try:
-        client = genai.Client(api_key=api_key)
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=user_prompt,
-            config=types.GenerateContentConfig(
-                system_instruction=SYSTEM_PROMPT,
-                response_mime_type="application/json",
-            ),
-        )
-        text = response.text.strip()
-        if text.startswith("```"):
-            text = text.split("```")[1]
-            if text.startswith("json"):
-                text = text[4:]
-            text = text.strip()
-        return json.loads(text)
-    except json.JSONDecodeError as e:
-        print(f"[ai_service] JSON parse error: {e}")
-        return None
-    except Exception as e:
-        status = getattr(e, 'status_code', None) or getattr(e, 'code', None)
-        if status in (401, 403):
-            print(f"[ai_service] invalid or unauthorised API key: {e}")
-        else:
-            print(f"[ai_service] generate_wedding_theme failed: {e}")
-        return None
+    client = genai.Client(api_key=api_key)
+    cfg = types.GenerateContentConfig(
+        system_instruction=SYSTEM_PROMPT,
+        response_mime_type="application/json",
+    )
+
+    for attempt in range(2):
+        try:
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=user_prompt,
+                config=cfg,
+            )
+            text = _repair_json(response.text.strip())
+            return json.loads(text)
+        except json.JSONDecodeError as e:
+            print(f"[ai_service] JSON parse error (attempt {attempt + 1}): {e}")
+            print(f"[ai_service] Raw response: {response.text[:300]!r}")
+        except Exception as e:
+            status = getattr(e, 'status_code', None) or getattr(e, 'code', None)
+            if status in (401, 403):
+                print(f"[ai_service] invalid or unauthorised API key: {e}")
+                return None
+            print(f"[ai_service] generate_wedding_theme failed (attempt {attempt + 1}): {e}")
+
+    return None

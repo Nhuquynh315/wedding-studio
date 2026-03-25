@@ -3,7 +3,7 @@ import re
 from collections import defaultdict
 from datetime import date
 
-from flask import Blueprint, flash, redirect, render_template, request, send_file, url_for
+from flask import Blueprint, flash, redirect, render_template, request, send_file, session, url_for
 from flask_login import login_required, current_user
 
 from app import db
@@ -20,10 +20,114 @@ wedding_bp = Blueprint('wedding', __name__)
 @wedding_bp.route('/')
 @wedding_bp.route('/dashboard')
 def dashboard():
-    weddings = []
-    if current_user.is_authenticated:
-        weddings = Wedding.query.filter_by(user_id=current_user.id).order_by(Wedding.created_at.desc()).all()
-    return render_template('dashboard.html', weddings=weddings)
+    if not current_user.is_authenticated:
+        return render_template('dashboard.html', active_wedding=None)
+
+    weddings = Wedding.query.filter_by(user_id=current_user.id).order_by(Wedding.wedding_date).all()
+
+    # Determine active wedding
+    active_id = session.get('active_wedding_id')
+    active = next((w for w in weddings if w.id == active_id), None) or (weddings[0] if weddings else None)
+    if active:
+        session['active_wedding_id'] = active.id
+
+    if not active:
+        return render_template('dashboard.html', active_wedding=None, weddings=weddings)
+
+    # Guest stats for active wedding
+    guests   = active.guests
+    total    = len(guests)
+    accepted = sum(1 for g in guests if g.rsvp_status == 'confirmed')
+    declined = sum(1 for g in guests if g.rsvp_status == 'declined')
+    pending  = sum(1 for g in guests if g.rsvp_status == 'pending')
+
+    guest_stats = {
+        'total':         total,
+        'accepted':      accepted,
+        'declined':      declined,
+        'pending':       pending,
+        'response_rate': round(accepted / total * 100) if total else 0,
+    }
+
+    # Checklist — use real DB items if they exist, else show setup prompts
+    from app.models import ChecklistItem
+    cl_items  = ChecklistItem.query.filter_by(wedding_id=active.id).all()
+    if cl_items:
+        cl_total = len(cl_items)
+        cl_done  = sum(1 for i in cl_items if i.is_completed)
+        checklist_pct = round(cl_done / cl_total * 100) if cl_total else 0
+        # 5 most urgent incomplete items for the overview card
+        upcoming_tasks = sorted(
+            [i for i in cl_items if not i.is_completed and i.due_date],
+            key=lambda x: x.due_date
+        )[:5]
+        checklist_items = [(i.title, i.is_completed) for i in cl_items]
+    else:
+        # Fallback setup checklist before first migration
+        theme = None
+        if active.ai_generated_theme:
+            try:
+                theme = json.loads(active.ai_generated_theme)
+            except (ValueError, TypeError):
+                pass
+        checklist_items = [
+            ('Set wedding date',      bool(active.wedding_date)),
+            ('Choose venue',          bool(active.venue_name)),
+            ('Generate AI theme',     bool(active.ai_generated_theme)),
+            ('Select accent colour',  theme is not None and bool(theme.get('selected_colour'))),
+            ('Add guest list',        total > 0),
+            ('Create invitation PDF', bool(active.designs)),
+        ]
+        cl_done  = sum(1 for _, v in checklist_items if v)
+        checklist_pct = round(cl_done / len(checklist_items) * 100)
+        upcoming_tasks = []
+
+    today = date.today()
+    days_until = (active.wedding_date - today).days if active.wedding_date else None
+
+    # Budget stats for active wedding
+    total_budget_amount = active.total_budget or 0
+    cats = active.budget_categories
+    total_actual_paid = sum(e.actual_cost or 0 for cat in cats for e in cat.expenses if e.is_paid)
+    budget_pct = round(total_actual_paid / total_budget_amount * 100) if total_budget_amount else 0
+    # Top 3 categories by estimated spend for the snapshot card
+    budget_snapshot = sorted(
+        [{'name': c.name, 'color': c.color, 'allocated': c.allocated_amount,
+          'estimated': sum(e.estimated_cost or 0 for e in c.expenses),
+          'actual': sum(e.actual_cost or 0 for e in c.expenses if e.is_paid)}
+         for c in cats if c.allocated_amount],
+        key=lambda x: x['estimated'], reverse=True
+    )[:3]
+
+    # Recent activity: last 5 guests added across all weddings
+    all_guests = []
+    for w in weddings:
+        all_guests.extend(w.guests)
+    recent_guests = sorted(all_guests, key=lambda g: g.created_at, reverse=True)[:5]
+
+    return render_template(
+        'dashboard.html',
+        active_wedding=active,
+        weddings=weddings,
+        guest_stats=guest_stats,
+        checklist_items=checklist_items,
+        checklist_pct=checklist_pct,
+        upcoming_tasks=upcoming_tasks,
+        days_until=days_until,
+        recent_guests=recent_guests,
+        total_budget_amount=total_budget_amount,
+        total_actual_paid=total_actual_paid,
+        budget_pct=budget_pct,
+        budget_snapshot=budget_snapshot,
+    )
+
+
+@wedding_bp.route('/wedding/<int:wedding_id>/activate', methods=['POST'])
+@login_required
+def activate_wedding(wedding_id):
+    wedding = get_wedding_or_403(wedding_id)
+    session['active_wedding_id'] = wedding.id
+    return redirect(url_for('wedding.dashboard'))
 
 
 @wedding_bp.route('/wedding/new', methods=['GET', 'POST'])
@@ -89,6 +193,22 @@ def create_wedding():
             flash('Something went wrong saving your wedding. Please try again.', 'danger')
             return render_template('wedding/create.html')
 
+        # Seed default checklist
+        try:
+            from app.services.checklist_service import create_default_checklist
+            create_default_checklist(wedding.id, wedding.wedding_date)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        # Seed default budget categories
+        try:
+            from app.services.budget_service import create_default_budget
+            create_default_budget(wedding.id)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()   # non-fatal — wedding still created
+
         flash(f"{partner1_name} & {partner2_name}'s wedding has been created!", 'success')
         return redirect(url_for('wedding.dashboard'))
 
@@ -145,9 +265,24 @@ def wedding_detail(wedding_id):
         except (ValueError, TypeError):
             pass
 
+    today = date.today()
+    days_until = (wedding.wedding_date - today).days if wedding.wedding_date else None
+
+    checklist_items = [
+        ('Set wedding date',     bool(wedding.wedding_date)),
+        ('Choose venue',         bool(wedding.venue_name)),
+        ('Generate AI theme',    bool(wedding.ai_generated_theme)),
+        ('Select accent colour', theme is not None and bool(theme.get('selected_colour'))),
+        ('Add guest list',       total > 0),
+        ('Create invitation PDF', bool(wedding.designs)),
+    ]
+    checklist_done = sum(1 for _, v in checklist_items if v)
+    checklist_pct  = round(checklist_done / len(checklist_items) * 100)
+
     return render_template('wedding/detail.html', wedding=wedding,
                            guest_stats=guest_stats, group_stats=group_stats,
-                           theme=theme)
+                           theme=theme, days_until=days_until,
+                           checklist_items=checklist_items, checklist_pct=checklist_pct)
 
 
 @wedding_bp.route('/wedding/<int:wedding_id>/edit', methods=['GET', 'POST'])
@@ -243,6 +378,7 @@ def generate_theme(wedding_id):
         flash('Could not generate theme. Please try again later.', 'danger')
     else:
         theme['generated_at'] = date.today().strftime('%B %d, %Y')
+        theme['tone'] = tone
         wedding.ai_generated_theme = json.dumps(theme)
         try:
             db.session.commit()
@@ -250,7 +386,7 @@ def generate_theme(wedding_id):
         except Exception:
             db.session.rollback()
             flash('Theme generated but could not be saved. Please try again.', 'danger')
-    return redirect(url_for('wedding.wedding_detail', wedding_id=wedding_id, _anchor='theme'))
+    return redirect(url_for('wedding.wedding_detail', wedding_id=wedding_id, _anchor='invitation'))
 
 
 @wedding_bp.route('/test-invitation')
@@ -335,7 +471,7 @@ def select_colour(wedding_id):
     hex_colour = request.form.get('hex_colour', '').strip()
     if not _HEX_COLOR.match(hex_colour):
         flash('Invalid colour value.', 'danger')
-        return redirect(url_for('wedding.wedding_detail', wedding_id=wedding_id, _anchor='theme'))
+        return redirect(url_for('wedding.wedding_detail', wedding_id=wedding_id, _anchor='invitation'))
     theme['selected_colour'] = hex_colour
     wedding.ai_generated_theme = json.dumps(theme)
     try:
@@ -344,7 +480,7 @@ def select_colour(wedding_id):
     except Exception:
         db.session.rollback()
         flash('Could not save colour selection. Please try again.', 'danger')
-    return redirect(url_for('wedding.wedding_detail', wedding_id=wedding_id, _anchor='theme'))
+    return redirect(url_for('wedding.wedding_detail', wedding_id=wedding_id, _anchor='invitation'))
 
 
 @wedding_bp.route('/wedding/<int:wedding_id>/select-font', methods=['POST'])
@@ -366,7 +502,7 @@ def select_font(wedding_id):
         except Exception:
             db.session.rollback()
             flash('Could not save font selection. Please try again.', 'danger')
-    return redirect(url_for('wedding.wedding_detail', wedding_id=wedding_id, _anchor='theme'))
+    return redirect(url_for('wedding.wedding_detail', wedding_id=wedding_id, _anchor='invitation'))
 
 
 @wedding_bp.route('/wedding/<int:wedding_id>/delete', methods=['POST'])

@@ -1,0 +1,1197 @@
+{% extends 'base.html' %}
+
+{% block title %}Seating Chart – {{ wedding.partner1_name }} & {{ wedding.partner2_name }}{% endblock %}
+{% block page_title %}Seating Chart{% endblock %}
+
+{% block extra_css %}
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<style>
+/* Override app-body padding for full-bleed layout */
+.app-body { padding: 0 !important; overflow: hidden; }
+
+/* ── Main layout ─────────────────────────────────────────────────── */
+.seating-wrap {
+    display: flex;
+    height: calc(100vh - var(--topbar-h));
+    overflow: hidden;
+}
+.seating-panel {
+    width: 300px;
+    flex-shrink: 0;
+    background: #fff;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.seating-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* ── Canvas toolbar ──────────────────────────────────────────────── */
+.canvas-toolbar {
+    padding: .65rem 1.25rem;
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+.canvas-scroll {
+    flex: 1;
+    overflow: auto;
+    background: #f5f3ef;
+}
+.s-canvas {
+    position: relative;
+    min-width: 1400px;
+    min-height: 900px;
+    background-image:
+        linear-gradient(rgba(0,0,0,.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,0,0,.045) 1px, transparent 1px);
+    background-size: 50px 50px;
+    transform-origin: top left;
+}
+
+/* ── Guest panel ─────────────────────────────────────────────────── */
+.sp-hd {
+    padding: 1rem 1.25rem .75rem;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+.sp-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.3rem;
+    font-weight: 400;
+    color: var(--text-dark);
+    margin: 0 0 .15rem;
+}
+.sp-count {
+    font-family: 'Jost', sans-serif;
+    font-size: .72rem;
+    color: var(--text-muted);
+}
+.sp-filters {
+    padding: .65rem 1rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: .4rem;
+    flex-shrink: 0;
+}
+.sp-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: .65rem .85rem;
+    display: flex;
+    flex-direction: column;
+    gap: .35rem;
+}
+.sp-list.drag-over {
+    background: #f0faf5;
+    border-radius: 8px;
+}
+.sp-footer {
+    padding: .75rem 1rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+    flex-shrink: 0;
+}
+
+/* ── Guest pills ─────────────────────────────────────────────────── */
+.guest-pill {
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+    padding: .4rem .7rem;
+    background: #fff;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    cursor: grab;
+    font-family: 'Jost', sans-serif;
+    font-size: .8rem;
+    transition: all .12s;
+}
+.guest-pill:hover { border-color: var(--rose); background: #fdf0f2; }
+.guest-pill.dragging { opacity: .35; }
+.pill-name {
+    flex: 1;
+    font-weight: 500;
+    color: var(--text-dark);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.pill-group {
+    font-size: .68rem;
+    color: var(--text-muted);
+    background: #f5ede8;
+    border-radius: 4px;
+    padding: .1rem .35rem;
+    white-space: nowrap;
+}
+.pill-meal { font-size: .75rem; flex-shrink: 0; }
+.guest-pill.hidden { display: none; }
+
+/* ── Table elements ──────────────────────────────────────────────── */
+.tbl-el {
+    position: absolute;
+    background: #fff;
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    z-index: 1;
+}
+.tbl-el.tbl-round  { width: 200px; }
+.tbl-el.tbl-rectangle { width: 260px; }
+.tbl-el.tbl-head   { width: 400px; }
+.tbl-el.drop-ok    { border-color: #5fa67a; box-shadow: 0 0 0 3px rgba(95,166,122,.2); }
+.tbl-el.drop-full  { border-color: #d47a7a; box-shadow: 0 0 0 3px rgba(212,122,122,.2); }
+.tbl-el.moving     { box-shadow: 0 8px 28px rgba(0,0,0,.15); z-index: 100 !important; cursor: grabbing; }
+.tbl-hd {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .4rem;
+    padding: .6rem .75rem .5rem;
+    cursor: grab;
+    border-bottom: 1px solid #f0ebe6;
+    user-select: none;
+    border-radius: 10px 10px 0 0;
+    background: #fdfaf8;
+}
+.tbl-hd:active { cursor: grabbing; }
+.tbl-hd-l { display: flex; align-items: center; gap: .4rem; min-width: 0; }
+.tbl-hd-r { display: flex; align-items: center; gap: .3rem; flex-shrink: 0; }
+.tbl-shape-dot {
+    width: 18px; height: 18px;
+    flex-shrink: 0;
+    border: 2px solid var(--rose);
+    background: #fdf0f2;
+}
+.tbl-shape-dot.tbl-shape-round     { border-radius: 50%; }
+.tbl-shape-dot.tbl-shape-rectangle { border-radius: 3px; }
+.tbl-shape-dot.tbl-shape-head      { border-radius: 2px; width: 26px; height: 14px; }
+.tbl-name-txt {
+    font-family: 'Jost', sans-serif;
+    font-size: .82rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.tbl-cap-badge {
+    font-family: 'Jost', sans-serif;
+    font-size: .68rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+.tbl-cap-badge.at-cap { color: #d47a7a; font-weight: 600; }
+.tbl-btn {
+    width: 22px; height: 22px;
+    border-radius: 5px;
+    border: 1px solid #ecdde3;
+    background: transparent;
+    cursor: pointer;
+    font-size: .7rem;
+    color: #b89a8a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .12s;
+    padding: 0;
+}
+.tbl-btn:hover { border-color: var(--rose); color: var(--rose); background: #fdf0f2; }
+.tbl-btn.danger:hover { border-color: #e57373; color: #c62828; background: #fff5f5; }
+.tbl-chips {
+    padding: .5rem .7rem .65rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .3rem;
+    min-height: 36px;
+}
+.tbl-chip {
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+    padding: .2rem .45rem .2rem .5rem;
+    background: #f5f0eb;
+    border: 1px solid #ecdde3;
+    border-radius: 6px;
+    font-family: 'Jost', sans-serif;
+    font-size: .72rem;
+    cursor: grab;
+    color: var(--text-dark);
+    transition: all .12s;
+}
+.tbl-chip:hover { background: #fdf0f2; border-color: var(--rose); }
+.tbl-chip.dragging { opacity: .35; }
+.chip-meal { font-size: .68rem; flex-shrink: 0; }
+.chip-name {
+    white-space: nowrap;
+    overflow: hidden;
+    max-width: 110px;
+    text-overflow: ellipsis;
+}
+.chip-rm {
+    width: 14px; height: 14px;
+    border: none;
+    background: transparent;
+    color: #c0a898;
+    cursor: pointer;
+    font-size: .78rem;
+    line-height: 1;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.chip-rm:hover { color: #c62828; }
+
+/* ── Toolbar buttons ─────────────────────────────────────────────── */
+.toolbar-btn {
+    font-family: 'Jost', sans-serif;
+    font-size: .78rem;
+    font-weight: 500;
+    padding: .35rem .8rem;
+    border-radius: 7px;
+    border: 1.5px solid var(--border);
+    background: #fff;
+    color: var(--text-dark);
+    cursor: pointer;
+    transition: all .12s;
+    white-space: nowrap;
+}
+.toolbar-btn:hover { border-color: var(--rose); color: var(--rose); }
+.toolbar-zoom {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    margin-left: auto;
+}
+.toolbar-zoom label {
+    font-family: 'Jost', sans-serif;
+    font-size: .75rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+.toolbar-zoom input[type=range] { width: 80px; accent-color: var(--rose); }
+
+/* ── Detail panel ────────────────────────────────────────────────── */
+.detail-panel {
+    position: fixed;
+    right: -320px;
+    top: var(--topbar-h);
+    bottom: 0;
+    width: 300px;
+    background: #fff;
+    border-left: 1px solid var(--border);
+    z-index: 600;
+    transition: right .22s ease;
+    display: flex;
+    flex-direction: column;
+    box-shadow: -4px 0 20px rgba(0,0,0,.08);
+}
+.detail-panel.open { right: 0; }
+.dp-hd {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+.dp-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.2rem;
+    font-weight: 400;
+    color: var(--text-dark);
+    margin: 0;
+}
+.dp-close {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    cursor: pointer;
+    font-size: 1rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.dp-close:hover { border-color: var(--rose); color: var(--rose); }
+.dp-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 1.25rem;
+}
+.dp-label {
+    font-family: 'Jost', sans-serif;
+    font-size: .72rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    display: block;
+    margin-bottom: .3rem;
+    margin-top: .9rem;
+}
+.dp-label:first-child { margin-top: 0; }
+.dp-input {
+    width: 100%;
+    padding: .4rem .65rem;
+    border: 1.5px solid var(--border);
+    border-radius: 7px;
+    font-family: 'Jost', sans-serif;
+    font-size: .82rem;
+    color: var(--text-dark);
+    background: #fff;
+    outline: none;
+    transition: border-color .12s;
+}
+.dp-input:focus { border-color: var(--rose); box-shadow: 0 0 0 3px rgba(201,104,122,.12); }
+.dp-save-btn {
+    width: 100%;
+    margin-top: 1rem;
+    padding: .5rem;
+    background: var(--rose);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Jost', sans-serif;
+    font-size: .82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background .12s;
+}
+.dp-save-btn:hover { background: var(--rose-dark); }
+.dp-guest-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .35rem 0;
+    border-bottom: 1px solid #f5f0eb;
+    font-family: 'Jost', sans-serif;
+    font-size: .8rem;
+    color: var(--text-dark);
+}
+.dp-guest-item:last-child { border-bottom: none; }
+.dp-rm-btn {
+    font-size: .7rem;
+    color: var(--text-muted);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: .1rem .3rem;
+    border-radius: 4px;
+}
+.dp-rm-btn:hover { color: #c62828; background: #fff5f5; }
+
+/* ── Meal badge colours ───────────────────────────────────────────── */
+.meal-v  { color: #5fa67a; font-weight: 700; font-size: .65rem; }
+.meal-ve { color: #3d7a5a; font-weight: 700; font-size: .65rem; }
+.meal-h  { color: #4a7acc; font-weight: 700; font-size: .65rem; }
+.meal-k  { color: #7a5acc; font-weight: 700; font-size: .65rem; }
+.meal-o  { color: #aa8060; font-weight: 700; font-size: .65rem; }
+
+/* ── Footer action links ─────────────────────────────────────────── */
+.sp-action-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .35rem;
+    font-family: 'Jost', sans-serif;
+    font-size: .78rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: .3rem;
+    border-radius: 6px;
+    transition: all .12s;
+}
+.sp-action-link:hover { color: var(--rose); background: #fdf0f2; }
+.sp-auto-btn {
+    width: 100%;
+    padding: .45rem;
+    background: #fdf0f2;
+    color: var(--rose);
+    border: 1.5px solid #ecdde3;
+    border-radius: 8px;
+    font-family: 'Jost', sans-serif;
+    font-size: .78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .12s;
+}
+.sp-auto-btn:hover { background: var(--rose); color: #fff; border-color: var(--rose); }
+.sp-action-row {
+    display: flex;
+    gap: .5rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="seating-wrap">
+
+    {# ── Left panel: unassigned guests ─────────────────────────── #}
+    <div class="seating-panel">
+        <div class="sp-hd">
+            <p class="sp-title">Seating</p>
+            <p class="sp-count">
+                <span id="unassignedCount">{{ unassigned|length }}</span> unassigned ·
+                {{ accepted_count }} confirmed
+            </p>
+        </div>
+        <div class="sp-filters">
+            <input type="text" id="guestSearch" class="dp-input" placeholder="Search guests…" style="margin:0;">
+            <select id="groupFilter" class="dp-input" style="margin:0;">
+                <option value="">All groups</option>
+                {% for g in groups %}
+                <option value="{{ g }}">{{ g }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="sp-list" id="unassignedList"
+             ondragover="unassignedDragOver(event)"
+             ondragleave="unassignedDragLeave(event)"
+             ondrop="unassignedDrop(event)">
+            {% for g in unassigned %}
+            <div class="guest-pill"
+                 id="pill-{{ g.id }}"
+                 draggable="true"
+                 data-guest-id="{{ g.id }}"
+                 data-group="{{ g.group_name or '' }}"
+                 data-name="{{ g.full_name.lower() }}"
+                 ondragstart="pillDragStart(event, {{ g.id }})"
+                 ondragend="dragEnd(event)">
+                <span class="pill-meal">
+                    {% if g.meal_preference == 'Vegetarian' %}<span class="meal-v" title="Vegetarian">V</span>
+                    {% elif g.meal_preference == 'Vegan' %}<span class="meal-ve" title="Vegan">Ve</span>
+                    {% elif g.meal_preference == 'Halal' %}<span class="meal-h" title="Halal">H</span>
+                    {% elif g.meal_preference == 'Kosher' %}<span class="meal-k" title="Kosher">K</span>
+                    {% elif g.meal_preference and g.meal_preference not in ('Standard', '') %}<span class="meal-o" title="{{ g.meal_preference }}">◆</span>
+                    {% endif %}
+                </span>
+                <span class="pill-name">{{ g.full_name }}</span>
+                {% if g.group_name %}
+                <span class="pill-group">{{ g.group_name }}</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+            {% if not unassigned %}
+            <p style="font-family:'Jost',sans-serif; font-size:.78rem; color:var(--text-muted); text-align:center; margin-top:1rem;">
+                All confirmed guests are seated!
+            </p>
+            {% endif %}
+        </div>
+        <div class="sp-footer">
+            <button class="sp-auto-btn" id="autoAssignBtn" onclick="autoAssign()">
+                ✦ Auto-Assign
+            </button>
+            <div class="sp-action-row">
+                <a href="{{ url_for('seating.export_csv', wedding_id=wedding.id) }}" class="sp-action-link" style="flex:1;">
+                    <i class="bi bi-download"></i> Export CSV
+                </a>
+                <a href="{{ url_for('seating.print_seating', wedding_id=wedding.id) }}" target="_blank" class="sp-action-link" style="flex:1;">
+                    <i class="bi bi-printer"></i> Print
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {# ── Right: canvas area ────────────────────────────────────── #}
+    <div class="seating-main">
+        <div class="canvas-toolbar">
+            <button class="toolbar-btn" onclick="addTable('round')">＋ Round Table</button>
+            <button class="toolbar-btn" onclick="addTable('rectangle')">＋ Rectangle</button>
+            <button class="toolbar-btn" onclick="addTable('head')">＋ Head Table</button>
+            <div class="toolbar-zoom">
+                <label for="zoomSlider">Zoom</label>
+                <input type="range" id="zoomSlider" min="40" max="140" value="100" oninput="setZoom(this.value)">
+                <span id="zoomDisplay" style="font-family:'Jost',sans-serif; font-size:.75rem; color:var(--text-muted); width:32px; text-align:right;">100%</span>
+            </div>
+        </div>
+        <div class="canvas-scroll" id="canvasScroll">
+            <div class="s-canvas" id="canvas">
+                {% for t in tables %}
+                <div class="tbl-el tbl-{{ t.shape }}" id="table-{{ t.id }}"
+                     style="left:{{ t.position_x if t.position_x is not none else (80 + loop.index0 % 4 * 250) }}px; top:{{ t.position_y if t.position_y is not none else (80 + loop.index0 // 4 * 260) }}px"
+                     ondragover="tblDragOver(event, {{ t.id }})"
+                     ondragleave="tblDragLeave(event, {{ t.id }})"
+                     ondrop="tblDrop(event, {{ t.id }})">
+                    <div class="tbl-hd" onmousedown="pickUpTable(event, {{ t.id }})">
+                        <div class="tbl-hd-l">
+                            <span class="tbl-shape-dot tbl-shape-{{ t.shape }}"></span>
+                            <span class="tbl-name-txt">{{ t.display_name() }}</span>
+                        </div>
+                        <div class="tbl-hd-r">
+                            <span class="tbl-cap-badge{% if t.guests|length >= t.capacity %} at-cap{% endif %}" id="tcap-{{ t.id }}">{{ t.guests|length }}/{{ t.capacity }}</span>
+                            <button class="tbl-btn" onclick="openDetail({{ t.id }}, event)" title="Edit">✎</button>
+                            <button class="tbl-btn danger" onclick="deleteTable({{ t.id }}, event)" title="Delete">✕</button>
+                        </div>
+                    </div>
+                    <div class="tbl-chips" id="tchips-{{ t.id }}">
+                        {% for g in t.guests %}
+                        <div class="tbl-chip" id="chip-{{ g.id }}"
+                             draggable="true"
+                             ondragstart="chipDragStart(event, {{ g.id }}, {{ t.id }})"
+                             ondragend="dragEnd(event)">
+                            <span class="chip-meal">
+                                {% if g.meal_preference == 'Vegetarian' %}<span class="meal-v" title="Vegetarian">V</span>
+                                {% elif g.meal_preference == 'Vegan' %}<span class="meal-ve" title="Vegan">Ve</span>
+                                {% elif g.meal_preference == 'Halal' %}<span class="meal-h" title="Halal">H</span>
+                                {% elif g.meal_preference == 'Kosher' %}<span class="meal-k" title="Kosher">K</span>
+                                {% elif g.meal_preference and g.meal_preference not in ('Standard', '') %}<span class="meal-o" title="{{ g.meal_preference }}">◆</span>
+                                {% endif %}
+                            </span>
+                            <span class="chip-name">{{ g.full_name }}</span>
+                            <button class="chip-rm" onclick="rmGuest({{ g.id }}, {{ t.id }}, event)">×</button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ── Table detail slide panel ──────────────────────────────────── #}
+<div id="detailPanel" class="detail-panel">
+    <div class="dp-hd">
+        <h2 class="dp-title" id="dpTitle">Table</h2>
+        <button class="dp-close" onclick="closeDetail()">✕</button>
+    </div>
+    <div class="dp-body">
+        <form id="detailForm" onsubmit="saveDetail(event)">
+            <label class="dp-label">Table Name</label>
+            <input type="text" id="dpName" class="dp-input" placeholder="e.g. Family Table">
+            <label class="dp-label">Capacity</label>
+            <input type="number" id="dpCapacity" class="dp-input" min="1" max="50" value="8">
+            <label class="dp-label">Shape</label>
+            <select id="dpShape" class="dp-input">
+                <option value="round">Round</option>
+                <option value="rectangle">Rectangle</option>
+                <option value="head">Head Table</option>
+            </select>
+            <label class="dp-label">Notes</label>
+            <textarea id="dpNotes" class="dp-input" rows="3" placeholder="Optional notes…" style="resize:vertical;"></textarea>
+            <button type="submit" class="dp-save-btn">Save Changes</button>
+        </form>
+        <hr style="margin: 1rem 0; border-color: var(--border);">
+        <p class="dp-label" style="margin-top:0;">Assigned Guests</p>
+        <div id="detailGuestList"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const WEDDING_ID = {{ wedding.id }};
+const CSRF = document.querySelector('meta[name="csrf-token"]').content;
+
+// Guest data map (all accepted guests)
+const GUESTS = {};
+{% for g in accepted_guests %}
+GUESTS[{{ g.id }}] = {
+    id: {{ g.id }},
+    name: {{ g.full_name|tojson }},
+    meal: {{ (g.meal_preference or '')|tojson }},
+    group: {{ (g.group_name or '')|tojson }},
+    tableId: {{ g.table_id if g.table_id is not none else 'null' }}
+};
+{% endfor %}
+
+// Table data map
+const TABLES = {};
+{% for t in tables %}
+TABLES[{{ t.id }}] = {
+    id: {{ t.id }},
+    number: {{ t.table_number }},
+    name: {{ (t.table_name or '')|tojson }},
+    capacity: {{ t.capacity }},
+    shape: {{ t.shape|tojson }},
+    count: {{ t.guests|length }}
+};
+{% endfor %}
+
+let dragGuestId = null;
+let dragFromTableId = null;
+let movingTableId = null;
+let moveOffX = 0, moveOffY = 0;
+let posSaveTimers = {};
+let currentDetailTableId = null;
+
+// ── Meal icon helper ─────────────────────────────────────────────
+function mealIcon(meal) {
+    if (!meal || meal === 'Standard') return '';
+    if (meal === 'Vegetarian') return '<span class="meal-v" title="Vegetarian">V</span>';
+    if (meal === 'Vegan')      return '<span class="meal-ve" title="Vegan">Ve</span>';
+    if (meal === 'Halal')      return '<span class="meal-h" title="Halal">H</span>';
+    if (meal === 'Kosher')     return '<span class="meal-k" title="Kosher">K</span>';
+    return '<span class="meal-o" title="' + escHtml(meal) + '">◆</span>';
+}
+
+function escHtml(s) {
+    return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+// ── Drag from unassigned pill ────────────────────────────────────
+function pillDragStart(e, guestId) {
+    dragGuestId = guestId;
+    dragFromTableId = null;
+    e.target.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+}
+
+// ── Drag from table chip ─────────────────────────────────────────
+function chipDragStart(e, guestId, fromTableId) {
+    dragGuestId = guestId;
+    dragFromTableId = fromTableId;
+    e.target.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+}
+
+// ── Drag end cleanup ─────────────────────────────────────────────
+function dragEnd(e) {
+    e.target.classList.remove('dragging');
+}
+
+// ── Table drop zone handlers ─────────────────────────────────────
+function tblDragOver(e, tableId) {
+    e.preventDefault();
+    const el = document.getElementById('table-' + tableId);
+    if (!el) return;
+    el.classList.remove('drop-ok', 'drop-full');
+    const tbl = TABLES[tableId];
+    if (tbl && tbl.count < tbl.capacity) {
+        el.classList.add('drop-ok');
+    } else {
+        el.classList.add('drop-full');
+    }
+}
+
+function tblDragLeave(e, tableId) {
+    const el = document.getElementById('table-' + tableId);
+    if (el) {
+        el.classList.remove('drop-ok', 'drop-full');
+    }
+}
+
+async function tblDrop(e, tableId) {
+    e.preventDefault();
+    const el = document.getElementById('table-' + tableId);
+    if (el) el.classList.remove('drop-ok', 'drop-full');
+
+    if (!dragGuestId) return;
+    // Don't drop onto the same table
+    if (dragFromTableId === tableId) { dragGuestId = null; dragFromTableId = null; return; }
+
+    const resp = await fetch('/seating/assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ guest_id: dragGuestId, table_id: tableId }),
+    });
+    const data = await resp.json();
+    if (!resp.ok || !data.ok) {
+        showToast(data.error || 'Could not assign guest.', 'danger');
+        dragGuestId = null; dragFromTableId = null;
+        return;
+    }
+    const gid = dragGuestId;
+    const fromTid = dragFromTableId;
+    dragGuestId = null;
+    dragFromTableId = null;
+
+    if (fromTid != null) {
+        removeChipFromTable(gid, fromTid);
+    } else {
+        removePillFromUnassigned(gid);
+    }
+    addChipToTable(gid, tableId);
+
+    if (currentDetailTableId === tableId || currentDetailTableId === fromTid) {
+        populateDetailGuests(currentDetailTableId);
+    }
+}
+
+// ── Unassigned list drop zone ────────────────────────────────────
+function unassignedDragOver(e) {
+    e.preventDefault();
+    document.getElementById('unassignedList').classList.add('drag-over');
+}
+
+function unassignedDragLeave(e) {
+    document.getElementById('unassignedList').classList.remove('drag-over');
+}
+
+async function unassignedDrop(e) {
+    e.preventDefault();
+    document.getElementById('unassignedList').classList.remove('drag-over');
+    if (!dragGuestId || dragFromTableId == null) { dragGuestId = null; dragFromTableId = null; return; }
+
+    const gid = dragGuestId;
+    const fromTid = dragFromTableId;
+    dragGuestId = null;
+    dragFromTableId = null;
+
+    const resp = await fetch('/seating/unassign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ guest_id: gid }),
+    });
+    const data = await resp.json();
+    if (!resp.ok || !data.ok) {
+        showToast(data.error || 'Could not unassign guest.', 'danger');
+        return;
+    }
+    removeChipFromTable(gid, fromTid);
+    addPillToUnassigned(gid);
+
+    if (currentDetailTableId === fromTid) {
+        populateDetailGuests(currentDetailTableId);
+    }
+}
+
+// ── Table drag/move (mouse) ──────────────────────────────────────
+function pickUpTable(e, tableId) {
+    // Don't initiate table move if clicking buttons or chips
+    if (e.target.closest('.tbl-btn, .chip-rm, .tbl-chip')) return;
+    e.preventDefault();
+    movingTableId = tableId;
+    const el = document.getElementById('table-' + tableId);
+    const canvas = document.getElementById('canvas');
+    const zoom = parseFloat(canvas.style.transform.replace('scale(', '') || '1');
+    const canvasRect = canvas.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    moveOffX = (e.clientX - elRect.left) / zoom;
+    moveOffY = (e.clientY - elRect.top) / zoom;
+    el.classList.add('moving');
+}
+
+document.addEventListener('mousemove', function(e) {
+    if (movingTableId == null) return;
+    const el = document.getElementById('table-' + movingTableId);
+    if (!el) return;
+    const canvas = document.getElementById('canvas');
+    const scroll = document.getElementById('canvasScroll');
+    const rawTransform = canvas.style.transform;
+    let zoom = 1;
+    if (rawTransform) {
+        const m = rawTransform.match(/scale\(([\d.]+)\)/);
+        if (m) zoom = parseFloat(m[1]);
+    }
+    const canvasRect = canvas.getBoundingClientRect();
+    let x = (e.clientX - canvasRect.left) / zoom - moveOffX;
+    let y = (e.clientY - canvasRect.top) / zoom - moveOffY;
+    if (x < 0) x = 0;
+    if (y < 0) y = 0;
+    el.style.left = x + 'px';
+    el.style.top  = y + 'px';
+});
+
+document.addEventListener('mouseup', function(e) {
+    if (movingTableId == null) return;
+    const el = document.getElementById('table-' + movingTableId);
+    if (el) {
+        el.classList.remove('moving');
+        const x = parseFloat(el.style.left);
+        const y = parseFloat(el.style.top);
+        savePosition(movingTableId, x, y);
+    }
+    movingTableId = null;
+});
+
+function savePosition(tableId, x, y) {
+    if (posSaveTimers[tableId]) clearTimeout(posSaveTimers[tableId]);
+    posSaveTimers[tableId] = setTimeout(async function() {
+        await fetch('/seating/table/' + tableId + '/position', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+            body: JSON.stringify({ x, y }),
+        });
+    }, 500);
+}
+
+// ── Add table ────────────────────────────────────────────────────
+async function addTable(shape) {
+    const fd = new FormData();
+    fd.append('shape', shape);
+    fd.append('csrf_token', CSRF);
+    const resp = await fetch('/wedding/' + WEDDING_ID + '/seating/tables/add', {
+        method: 'POST',
+        body: fd,
+    });
+    const data = await resp.json();
+    if (!resp.ok || !data.ok) {
+        showToast(data.error || 'Could not add table.', 'danger');
+        return;
+    }
+    renderTable(data);
+}
+
+function renderTable(t) {
+    TABLES[t.id] = {
+        id: t.id,
+        number: t.table_number,
+        name: t.table_name || '',
+        capacity: t.capacity,
+        shape: t.shape,
+        count: 0,
+    };
+    const el = document.createElement('div');
+    el.className = 'tbl-el tbl-' + t.shape;
+    el.id = 'table-' + t.id;
+    el.style.left = (t.position_x || 80) + 'px';
+    el.style.top  = (t.position_y || 80) + 'px';
+    el.setAttribute('ondragover', 'tblDragOver(event,' + t.id + ')');
+    el.setAttribute('ondragleave', 'tblDragLeave(event,' + t.id + ')');
+    el.setAttribute('ondrop', 'tblDrop(event,' + t.id + ')');
+    el.innerHTML = tableHTML(t);
+    document.getElementById('canvas').appendChild(el);
+}
+
+function tableHTML(t) {
+    const displayName = t.display_name || t.table_name || ('Table ' + t.number);
+    const count = t.count || 0;
+    const atCap = count >= t.capacity ? ' at-cap' : '';
+    return `<div class="tbl-hd" onmousedown="pickUpTable(event,${t.id})">
+        <div class="tbl-hd-l">
+            <span class="tbl-shape-dot tbl-shape-${t.shape}"></span>
+            <span class="tbl-name-txt">${escHtml(displayName)}</span>
+        </div>
+        <div class="tbl-hd-r">
+            <span class="tbl-cap-badge${atCap}" id="tcap-${t.id}">${count}/${t.capacity}</span>
+            <button class="tbl-btn" onclick="openDetail(${t.id},event)" title="Edit">✎</button>
+            <button class="tbl-btn danger" onclick="deleteTable(${t.id},event)" title="Delete">✕</button>
+        </div>
+    </div>
+    <div class="tbl-chips" id="tchips-${t.id}"></div>`;
+}
+
+function chipHTML(guestId, tableId) {
+    const g = GUESTS[guestId];
+    if (!g) return '';
+    return `<div class="tbl-chip" id="chip-${guestId}" draggable="true"
+         ondragstart="chipDragStart(event,${guestId},${tableId})"
+         ondragend="dragEnd(event)">
+        <span class="chip-meal">${mealIcon(g.meal)}</span>
+        <span class="chip-name">${escHtml(g.name)}</span>
+        <button class="chip-rm" onclick="rmGuest(${guestId},${tableId},event)">×</button>
+    </div>`;
+}
+
+function pillHTML(guestId) {
+    const g = GUESTS[guestId];
+    if (!g) return '';
+    const groupTag = g.group ? `<span class="pill-group">${escHtml(g.group)}</span>` : '';
+    return `<div class="guest-pill" id="pill-${guestId}" draggable="true"
+         data-guest-id="${guestId}"
+         data-group="${escHtml(g.group)}"
+         data-name="${escHtml(g.name.toLowerCase())}"
+         ondragstart="pillDragStart(event,${guestId})"
+         ondragend="dragEnd(event)">
+        <span class="pill-meal">${mealIcon(g.meal)}</span>
+        <span class="pill-name">${escHtml(g.name)}</span>
+        ${groupTag}
+    </div>`;
+}
+
+function addChipToTable(guestId, tableId) {
+    const chips = document.getElementById('tchips-' + tableId);
+    if (!chips) return;
+    chips.insertAdjacentHTML('beforeend', chipHTML(guestId, tableId));
+    if (TABLES[tableId]) {
+        TABLES[tableId].count++;
+        GUESTS[guestId].tableId = tableId;
+    }
+    updateCount(tableId);
+}
+
+function removeChipFromTable(guestId, tableId) {
+    const chip = document.getElementById('chip-' + guestId);
+    if (chip) chip.remove();
+    if (TABLES[tableId] && TABLES[tableId].count > 0) {
+        TABLES[tableId].count--;
+    }
+    if (GUESTS[guestId]) GUESTS[guestId].tableId = null;
+    updateCount(tableId);
+}
+
+function addPillToUnassigned(guestId) {
+    const list = document.getElementById('unassignedList');
+    if (!list) return;
+    list.insertAdjacentHTML('beforeend', pillHTML(guestId));
+    if (GUESTS[guestId]) GUESTS[guestId].tableId = null;
+    updateUnassignedCount();
+}
+
+function removePillFromUnassigned(guestId) {
+    const pill = document.getElementById('pill-' + guestId);
+    if (pill) pill.remove();
+    updateUnassignedCount();
+}
+
+function updateCount(tableId) {
+    const badge = document.getElementById('tcap-' + tableId);
+    if (!badge || !TABLES[tableId]) return;
+    const tbl = TABLES[tableId];
+    badge.textContent = tbl.count + '/' + tbl.capacity;
+    if (tbl.count >= tbl.capacity) {
+        badge.classList.add('at-cap');
+    } else {
+        badge.classList.remove('at-cap');
+    }
+}
+
+function updateUnassignedCount() {
+    const list = document.getElementById('unassignedList');
+    if (!list) return;
+    const visible = list.querySelectorAll('.guest-pill:not(.hidden)').length;
+    const el = document.getElementById('unassignedCount');
+    if (el) el.textContent = visible;
+}
+
+// ── Remove guest from table ──────────────────────────────────────
+async function rmGuest(guestId, tableId, e) {
+    e.stopPropagation();
+    const resp = await fetch('/seating/unassign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ guest_id: guestId }),
+    });
+    const data = await resp.json();
+    if (!resp.ok || !data.ok) {
+        showToast(data.error || 'Could not remove guest.', 'danger');
+        return;
+    }
+    removeChipFromTable(guestId, tableId);
+    addPillToUnassigned(guestId);
+    if (currentDetailTableId === tableId) {
+        populateDetailGuests(tableId);
+    }
+}
+
+// ── Delete table ─────────────────────────────────────────────────
+async function deleteTable(tableId, e) {
+    e.stopPropagation();
+    if (!confirm('Delete this table? Guests will be moved back to unassigned.')) return;
+    const resp = await fetch('/seating/table/' + tableId + '/delete', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': CSRF },
+    });
+    const data = await resp.json();
+    if (!resp.ok || !data.ok) {
+        showToast(data.error || 'Could not delete table.', 'danger');
+        return;
+    }
+    // Move all guests from this table to unassigned panel
+    const chips = document.getElementById('tchips-' + tableId);
+    if (chips) {
+        const chipEls = chips.querySelectorAll('.tbl-chip');
+        chipEls.forEach(function(chip) {
+            const cid = parseInt(chip.id.replace('chip-', ''));
+            if (GUESTS[cid]) {
+                GUESTS[cid].tableId = null;
+                addPillToUnassigned(cid);
+            }
+        });
+    }
+    const el = document.getElementById('table-' + tableId);
+    if (el) el.remove();
+    delete TABLES[tableId];
+    if (currentDetailTableId === tableId) closeDetail();
+}
+
+// ── Detail panel ─────────────────────────────────────────────────
+function openDetail(tableId, e) {
+    e.stopPropagation();
+    currentDetailTableId = tableId;
+    const tbl = TABLES[tableId];
+    if (!tbl) return;
+    const displayName = tbl.name || ('Table ' + tbl.number);
+    document.getElementById('dpTitle').textContent = displayName;
+    document.getElementById('dpName').value = tbl.name || '';
+    document.getElementById('dpCapacity').value = tbl.capacity;
+    document.getElementById('dpShape').value = tbl.shape;
+    document.getElementById('dpNotes').value = '';
+    populateDetailGuests(tableId);
+    document.getElementById('detailPanel').classList.add('open');
+}
+
+function closeDetail() {
+    document.getElementById('detailPanel').classList.remove('open');
+    currentDetailTableId = null;
+}
+
+async function saveDetail(e) {
+    e.preventDefault();
+    const tableId = currentDetailTableId;
+    if (!tableId) return;
+    const fd = new FormData();
+    fd.append('table_name', document.getElementById('dpName').value);
+    fd.append('capacity', document.getElementById('dpCapacity').value);
+    fd.append('shape', document.getElementById('dpShape').value);
+    fd.append('notes', document.getElementById('dpNotes').value);
+    fd.append('csrf_token', CSRF);
+    const resp = await fetch('/seating/table/' + tableId + '/edit', {
+        method: 'POST',
+        body: fd,
+    });
+    const data = await resp.json();
+    if (!resp.ok || !data.ok) {
+        showToast(data.error || 'Could not save.', 'danger');
+        return;
+    }
+    // Update local state
+    const tbl = TABLES[tableId];
+    if (tbl) {
+        tbl.name = data.table_name || '';
+        tbl.capacity = data.capacity;
+        tbl.shape = data.shape;
+    }
+    // Update table element DOM
+    const el = document.getElementById('table-' + tableId);
+    if (el) {
+        // Update shape class
+        el.className = 'tbl-el tbl-' + data.shape;
+        // Update name text
+        const nameEl = el.querySelector('.tbl-name-txt');
+        if (nameEl) nameEl.textContent = data.display_name || data.table_name || ('Table ' + tbl.number);
+        // Update shape dot
+        const dot = el.querySelector('.tbl-shape-dot');
+        if (dot) {
+            dot.className = 'tbl-shape-dot tbl-shape-' + data.shape;
+        }
+        // Update capacity badge
+        updateCount(tableId);
+    }
+    // Update detail panel title
+    document.getElementById('dpTitle').textContent = data.display_name || data.table_name || ('Table ' + (tbl ? tbl.number : ''));
+    showToast('Table updated.', 'success');
+}
+
+function populateDetailGuests(tableId) {
+    const list = document.getElementById('detailGuestList');
+    if (!list) return;
+    const chips = document.getElementById('tchips-' + tableId);
+    if (!chips) { list.innerHTML = '<p style="font-size:.78rem; color:var(--text-muted);">No guests assigned.</p>'; return; }
+    const chipEls = chips.querySelectorAll('.tbl-chip');
+    if (chipEls.length === 0) {
+        list.innerHTML = '<p style="font-size:.78rem; color:var(--text-muted);">No guests assigned.</p>';
+        return;
+    }
+    let html = '';
+    chipEls.forEach(function(chip) {
+        const gid = parseInt(chip.id.replace('chip-', ''));
+        const g = GUESTS[gid];
+        if (!g) return;
+        html += `<div class="dp-guest-item">
+            <span>${escHtml(g.name)}</span>
+            <button class="dp-rm-btn" onclick="rmGuest(${gid},${tableId},event)">Remove</button>
+        </div>`;
+    });
+    list.innerHTML = html;
+}
+
+// ── Auto-assign ──────────────────────────────────────────────────
+async function autoAssign() {
+    const btn = document.getElementById('autoAssignBtn');
+    btn.disabled = true;
+    btn.textContent = 'Assigning…';
+    const fd = new FormData();
+    fd.append('csrf_token', CSRF);
+    const resp = await fetch('/wedding/' + WEDDING_ID + '/seating/auto-assign', {
+        method: 'POST',
+        body: fd,
+    });
+    const data = await resp.json();
+    if (!resp.ok || !data.ok) {
+        showToast(data.error || 'Auto-assign failed.', 'danger');
+        btn.disabled = false;
+        btn.textContent = '✦ Auto-Assign';
+        return;
+    }
+    showToast(data.message, 'success');
+    setTimeout(function() { window.location.reload(); }, 1200);
+}
+
+// ── Zoom ─────────────────────────────────────────────────────────
+function setZoom(val) {
+    const canvas = document.getElementById('canvas');
+    canvas.style.transform = 'scale(' + (val / 100) + ')';
+    document.getElementById('zoomDisplay').textContent = val + '%';
+}
+
+// ── Guest filter ─────────────────────────────────────────────────
+function filterGuests() {
+    const search = document.getElementById('guestSearch').value.toLowerCase();
+    const group  = document.getElementById('groupFilter').value;
+    const pills  = document.querySelectorAll('#unassignedList .guest-pill');
+    let visible  = 0;
+    pills.forEach(function(pill) {
+        const name      = pill.dataset.name || '';
+        const pillGroup = pill.dataset.group || '';
+        const nameMatch  = !search || name.includes(search);
+        const groupMatch = !group  || pillGroup === group;
+        if (nameMatch && groupMatch) {
+            pill.classList.remove('hidden');
+            visible++;
+        } else {
+            pill.classList.add('hidden');
+        }
+    });
+    const el = document.getElementById('unassignedCount');
+    if (el) el.textContent = visible;
+}
+
+document.getElementById('guestSearch').addEventListener('input', filterGuests);
+document.getElementById('groupFilter').addEventListener('change', filterGuests);
+
+// ── Toast helper ─────────────────────────────────────────────────
+function showToast(msg, type) {
+    type = type || 'success';
+    const container = document.querySelector('.toast-container');
+    if (!container) return;
+    const id = 'toast-' + Date.now();
+    const bgClass = type === 'success' ? 'text-bg-success' :
+                    type === 'danger'  ? 'text-bg-danger'  :
+                    type === 'warning' ? 'text-bg-warning'  : 'text-bg-secondary';
+    const html = `<div id="${id}" class="toast align-items-center ${bgClass} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">${escHtml(msg)}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>`;
+    container.insertAdjacentHTML('beforeend', html);
+    const el = document.getElementById(id);
+    bootstrap.Toast.getOrCreateInstance(el, { delay: 4000 }).show();
+    el.addEventListener('hidden.bs.toast', function() { el.remove(); });
+}
+
+// ── Close detail on outside click ────────────────────────────────
+document.addEventListener('click', function(e) {
+    const panel = document.getElementById('detailPanel');
+    if (panel && panel.classList.contains('open')) {
+        if (!panel.contains(e.target) && !e.target.closest('.tbl-btn')) {
+            closeDetail();
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,835 @@
+{% extends "base.html" %}
+
+{% block title %}Wedding Timeline – {{ wedding.partner1_name }} & {{ wedding.partner2_name }}{% endblock %}
+{% block page_title %}Wedding Timeline{% endblock %}
+
+{% block extra_css %}
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<style>
+/* ── Page header ──────────────────────────────────────────────────── */
+.cl-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+.cl-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.6rem;
+    font-weight: 400;
+    color: #2d2420;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+.pct-badge {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.3em 0.75em;
+    border-radius: 2em;
+    background: var(--rose-bg, #fdf0f2);
+    color: var(--rose, #c9687a);
+    letter-spacing: 0.04em;
+}
+
+/* ── Overall progress bar ─────────────────────────────────────────── */
+.cl-progress-wrap {
+    margin-bottom: 1.5rem;
+}
+.cl-progress-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    color: #8a7f7a;
+    margin-bottom: 0.4rem;
+}
+.cl-progress {
+    height: 6px;
+    background: #f0e8e4;
+    border-radius: 3px;
+    overflow: hidden;
+}
+.cl-progress-fill {
+    height: 100%;
+    background: var(--rose, #c9687a);
+    border-radius: 3px;
+    transition: width 0.4s ease;
+}
+
+/* ── Filter / control bar ─────────────────────────────────────────── */
+.cl-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+.cl-filter-group {
+    display: flex;
+    gap: 0.3rem;
+    flex-wrap: wrap;
+}
+.cl-filter-btn {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 400;
+    border: 1px solid #e8e0d8;
+    background: #fff;
+    color: #8a7f7a;
+    border-radius: 6px;
+    padding: 0.3rem 0.7rem;
+    cursor: pointer;
+    transition: all 0.12s;
+    white-space: nowrap;
+}
+.cl-filter-btn:hover { border-color: var(--rose); color: var(--rose); }
+.cl-filter-btn.active {
+    background: var(--rose-bg, #fdf0f2);
+    border-color: var(--rose);
+    color: var(--rose);
+    font-weight: 500;
+}
+.cl-divider { width: 1px; height: 24px; background: #e8e0d8; margin: 0 0.25rem; }
+.cl-spacer  { flex: 1; }
+.btn-view-toggle {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.75rem;
+    border: 1px solid #e8e0d8;
+    background: #fff;
+    color: #8a7f7a;
+    border-radius: 6px;
+    padding: 0.3rem 0.7rem;
+    cursor: pointer;
+    transition: all 0.12s;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+.btn-view-toggle:hover { border-color: var(--rose); color: var(--rose); }
+.btn-add-task {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    background: var(--rose, #c9687a);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.4rem 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: background 0.12s;
+}
+.btn-add-task:hover { background: #a8566a; }
+
+/* ── Category group ───────────────────────────────────────────────── */
+.cl-group {
+    margin-bottom: 1.25rem;
+    border: 1px solid #e8e0d8;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+}
+.cl-group-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.75rem 1rem;
+    background: #faf8f5;
+    border-bottom: 1px solid #e8e0d8;
+}
+.cl-group-icon {
+    width: 26px; height: 26px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem;
+    flex-shrink: 0;
+}
+.cl-group-name {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #2d2420;
+    flex: 1;
+}
+.cl-group-count {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.72rem;
+    color: #8a7f7a;
+}
+
+/* ── Task row ─────────────────────────────────────────────────────── */
+.task-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 1rem;
+    border-bottom: 1px solid #f5f0ec;
+    transition: background 0.1s;
+}
+.task-row:last-child { border-bottom: none; }
+.task-row:hover { background: #fdfbf9; }
+.task-row.is-done { opacity: 0.55; }
+
+.task-check {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+}
+.task-checkbox {
+    width: 17px; height: 17px;
+    border-radius: 50%;
+    border: 1.5px solid #c8bdb8;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    position: relative;
+    background: #fff;
+    transition: all 0.12s;
+    flex-shrink: 0;
+}
+.task-checkbox:checked {
+    background: var(--rose, #c9687a);
+    border-color: var(--rose, #c9687a);
+}
+.task-checkbox:checked::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 5px;
+    width: 4px; height: 7px;
+    border: 1.5px solid #fff;
+    border-top: none;
+    border-left: none;
+    transform: rotate(45deg);
+}
+
+.task-body { flex: 1; min-width: 0; }
+.task-title {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.875rem;
+    color: #2d2420;
+    display: block;
+}
+.task-row.is-done .task-title {
+    text-decoration: line-through;
+    color: #b0a8a0;
+}
+.task-notes {
+    font-size: 0.75rem;
+    color: #a09080;
+    margin-top: 0.15rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 400px;
+}
+
+.task-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+.task-due {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.72rem;
+    color: #a09080;
+    white-space: nowrap;
+}
+.task-due.overdue  { color: #c9687a; font-weight: 500; }
+.task-due.soon     { color: #c9a84c; font-weight: 500; }
+
+.priority-badge {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.62rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 0.2em 0.5em;
+    border-radius: 4px;
+}
+.priority-badge.high   { background: #fdecea; color: #c9687a; }
+.priority-badge.medium { background: #fdf6e3; color: #a87832; }
+.priority-badge.low    { background: #f0ebe7; color: #a09080; }
+
+.task-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.12s;
+}
+.task-row:hover .task-actions { opacity: 1; }
+.btn-task-icon {
+    background: none;
+    border: none;
+    color: #b0a8a0;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    line-height: 1;
+    transition: color 0.12s, background 0.12s;
+}
+.btn-task-icon:hover         { color: var(--rose); background: var(--rose-bg); }
+.btn-task-icon.delete:hover  { color: #c9687a; background: #fdecea; }
+
+/* ── Timeline view ────────────────────────────────────────────────── */
+.timeline-view { display: none; }
+.timeline-view.active { display: block; }
+.list-view { display: block; }
+.list-view.hidden { display: none; }
+
+.tl-item {
+    display: flex;
+    gap: 1rem;
+    padding-bottom: 1.25rem;
+    position: relative;
+}
+.tl-item::before {
+    content: '';
+    position: absolute;
+    left: 20px;
+    top: 28px;
+    bottom: 0;
+    width: 1px;
+    background: #e8e0d8;
+}
+.tl-item:last-child::before { display: none; }
+.tl-dot {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid #e8e0d8;
+    flex-shrink: 0;
+    margin-top: 5px;
+    position: relative;
+    z-index: 1;
+    transition: border-color 0.12s;
+}
+.tl-dot.done   { background: var(--rose, #c9687a); border-color: var(--rose, #c9687a); }
+.tl-dot.high   { border-color: #c9687a; }
+.tl-dot.medium { border-color: #c9a84c; }
+.tl-card {
+    flex: 1;
+    background: #fff;
+    border: 1px solid #e8e0d8;
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+}
+.tl-card-top {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+.tl-title {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.875rem;
+    color: #2d2420;
+    flex: 1;
+}
+.tl-title.done { text-decoration: line-through; color: #b0a8a0; }
+.tl-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.72rem;
+    color: #a09080;
+}
+
+/* ── Category icon colours ────────────────────────────────────────── */
+.cat-venue        { background: #eef4fb; color: #3a68a8; }
+.cat-catering     { background: #fdf6e3; color: #a87832; }
+.cat-attire       { background: #fdf0f2; color: #c9687a; }
+.cat-photography  { background: #eef7f2; color: #3a8a5a; }
+.cat-flowers      { background: #fdf0f8; color: #a8468a; }
+.cat-music        { background: #f0f0fd; color: #5a5ac9; }
+.cat-stationery   { background: #fdf5ee; color: #a87832; }
+.cat-transport    { background: #edf5fb; color: #2a7a9a; }
+.cat-honeymoon    { background: #fff0ea; color: #c97a48; }
+.cat-other        { background: #f5f0ec; color: #8a7f7a; }
+
+/* ── Empty state ──────────────────────────────────────────────────── */
+.cl-empty {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: #8a7f7a;
+}
+.cl-empty i { font-size: 2.5rem; color: #d8cec8; display: block; margin-bottom: 0.75rem; }
+
+/* ── Modals ───────────────────────────────────────────────────────── */
+.modal-content { border-radius: 14px !important; border: none !important; }
+.modal-header  { border-bottom: 1px solid #f0e8e4; padding-bottom: 0.75rem; }
+.modal-footer  { border-top: 1px solid #f0e8e4; }
+.form-label    { font-size: 0.8rem; font-weight: 500; color: #2d2420; }
+.priority-radio label {
+    font-size: 0.82rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ── Page header ──────────────────────────────────────────────────── #}
+<div class="cl-header">
+    <h1 class="cl-title">
+        Wedding Timeline
+        <span class="pct-badge" id="overallPct">{{ pct }}% complete</span>
+    </h1>
+    <div class="d-flex gap-2 align-items-center">
+        <button class="btn-view-toggle" id="viewToggle">
+            <i class="bi bi-calendar3"></i> Timeline view
+        </button>
+        <button class="btn-add-task" data-bs-toggle="modal" data-bs-target="#addTaskModal">
+            <i class="bi bi-plus-lg"></i> Add Task
+        </button>
+    </div>
+</div>
+
+{# ── Progress bar ─────────────────────────────────────────────────── #}
+<div class="cl-progress-wrap">
+    <div class="cl-progress-meta">
+        <span id="progressLabel">{{ done }} of {{ total }} tasks complete</span>
+        <span>{{ pct }}%</span>
+    </div>
+    <div class="cl-progress">
+        <div class="cl-progress-fill" id="progressFill" style="width:{{ pct }}%;"></div>
+    </div>
+</div>
+
+{# ── Filter bar ───────────────────────────────────────────────────── #}
+<div class="cl-controls">
+    <div class="cl-filter-group" id="catFilters">
+        <button class="cl-filter-btn active" data-cat="all">All</button>
+        {% for cat in categories %}
+        {% if ordered_groups | selectattr('0', 'equalto', cat) | list %}
+        <button class="cl-filter-btn" data-cat="{{ cat }}">{{ cat }}</button>
+        {% endif %}
+        {% endfor %}
+    </div>
+    <div class="cl-divider"></div>
+    <div class="cl-filter-group" id="statusFilters">
+        <button class="cl-filter-btn active" data-status="all">All</button>
+        <button class="cl-filter-btn" data-status="pending">Pending</button>
+        <button class="cl-filter-btn" data-status="done">Completed</button>
+    </div>
+    <div class="cl-spacer"></div>
+</div>
+
+{# ── List view ─────────────────────────────────────────────────────── #}
+{% macro cat_icon(cat) %}
+{% set icons = {
+    'Venue': 'bi-building', 'Catering': 'bi-cup-hot', 'Attire': 'bi-stars',
+    'Photography': 'bi-camera', 'Flowers': 'bi-flower1', 'Music': 'bi-music-note',
+    'Stationery': 'bi-envelope', 'Transport': 'bi-car-front', 'Honeymoon': 'bi-airplane',
+    'Other': 'bi-three-dots'
+} %}
+{{ icons.get(cat, 'bi-circle') }}
+{% endmacro %}
+
+<div class="list-view" id="listView">
+{% if ordered_groups %}
+    {% for cat, cat_items in ordered_groups %}
+    {% set cat_done = cat_items | selectattr('is_completed') | list | length %}
+    <div class="cl-group" data-group-cat="{{ cat }}">
+        <div class="cl-group-header">
+            <div class="cl-group-icon cat-{{ cat | lower }}">
+                <i class="bi {{ cat_icon(cat) | trim }}"></i>
+            </div>
+            <span class="cl-group-name">{{ cat }}</span>
+            <span class="cl-group-count" data-cat-count="{{ cat }}">
+                {{ cat_done }}/{{ cat_items | length }} complete
+            </span>
+        </div>
+        {% for item in cat_items %}
+        <div class="task-row {% if item.is_completed %}is-done{% endif %}"
+             data-task-id="{{ item.id }}"
+             data-cat="{{ item.category }}"
+             data-status="{% if item.is_completed %}done{% else %}pending{% endif %}"
+             data-due="{{ item.due_date.isoformat() if item.due_date else '' }}">
+
+            <div class="task-check">
+                <input type="checkbox"
+                       class="task-checkbox"
+                       data-item-id="{{ item.id }}"
+                       {% if item.is_completed %}checked{% endif %}>
+            </div>
+
+            <div class="task-body">
+                <span class="task-title">{{ item.title }}</span>
+                {% if item.notes %}
+                <div class="task-notes">{{ item.notes }}</div>
+                {% endif %}
+            </div>
+
+            <div class="task-meta">
+                {% if item.due_date %}
+                <span class="task-due" data-due="{{ item.due_date.isoformat() }}">
+                    {{ item.due_date.strftime('%b %-d, %Y') }}
+                </span>
+                {% endif %}
+                <span class="priority-badge {{ item.priority }}">{{ item.priority }}</span>
+            </div>
+
+            <div class="task-actions">
+                <button class="btn-task-icon"
+                        title="Edit task"
+                        data-bs-toggle="modal"
+                        data-bs-target="#editTaskModal"
+                        data-item-id="{{ item.id }}"
+                        data-title="{{ item.title | e }}"
+                        data-category="{{ item.category }}"
+                        data-priority="{{ item.priority }}"
+                        data-due="{{ item.due_date.isoformat() if item.due_date else '' }}"
+                        data-notes="{{ item.notes | e if item.notes else '' }}">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <form method="POST"
+                      action="{{ url_for('checklist.delete_item', item_id=item.id) }}"
+                      onsubmit="return confirm('Delete this task?');"
+                      style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn-task-icon delete" title="Delete task">
+                        <i class="bi bi-trash3"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="cl-empty">
+        <i class="bi bi-check2-square"></i>
+        <p>No tasks yet. Click <strong>Add Task</strong> to get started.</p>
+    </div>
+{% endif %}
+</div>
+
+{# ── Timeline view ────────────────────────────────────────────────── #}
+<div class="timeline-view" id="timelineView">
+    {% set tl_items = items | sort(attribute='due_date', reverse=False) %}
+    {% if tl_items %}
+    {% for item in tl_items %}
+    <div class="tl-item"
+         data-cat="{{ item.category }}"
+         data-status="{% if item.is_completed %}done{% else %}pending{% endif %}">
+        <div class="tl-dot {% if item.is_completed %}done{% else %}{{ item.priority }}{% endif %}"></div>
+        <div class="tl-card">
+            <div class="tl-card-top">
+                <span class="tl-title {% if item.is_completed %}done{% endif %}">{{ item.title }}</span>
+                <span class="priority-badge {{ item.priority }}">{{ item.priority }}</span>
+            </div>
+            <div class="tl-meta">
+                <span>{{ item.category }}</span>
+                {% if item.due_date %}
+                <span>·</span>
+                <span class="task-due" data-due="{{ item.due_date.isoformat() }}">
+                    {{ item.due_date.strftime('%b %-d, %Y') }}
+                </span>
+                {% endif %}
+                {% if item.is_completed %}
+                <span>·</span>
+                <span style="color:#5fa67a;">Done</span>
+                {% endif %}
+            </div>
+            {% if item.notes %}
+            <div class="task-notes mt-1">{{ item.notes }}</div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="cl-empty">
+        <i class="bi bi-calendar3"></i>
+        <p>No tasks with due dates yet.</p>
+    </div>
+    {% endif %}
+</div>
+
+{# ── Add Task Modal ───────────────────────────────────────────────── #}
+<div class="modal fade" id="addTaskModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form class="modal-content" method="POST"
+              action="{{ url_for('checklist.add_item', wedding_id=wedding.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="modal-header">
+                <h5 class="modal-title" style="font-family:'Cormorant Garamond',serif; font-size:1.4rem; font-weight:400;">
+                    Add Task
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Task Title <span class="text-danger">*</span></label>
+                    <input type="text" name="title" class="form-control" required
+                           placeholder="e.g. Book the florist">
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-6">
+                        <label class="form-label">Category</label>
+                        <select name="category" class="form-select">
+                            {% for cat in categories %}
+                            <option value="{{ cat }}">{{ cat }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Due Date</label>
+                        <input type="date" name="due_date" class="form-control">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Priority</label>
+                    <div class="priority-radio d-flex gap-3">
+                        {% for p in priorities %}
+                        <label>
+                            <input type="radio" name="priority" value="{{ p }}"
+                                   {% if p == 'medium' %}checked{% endif %}>
+                            {{ p | capitalize }}
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="mb-1">
+                    <label class="form-label">Notes</label>
+                    <textarea name="notes" class="form-control" rows="2"
+                              placeholder="Optional notes…"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Add Task</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# ── Edit Task Modal ──────────────────────────────────────────────── #}
+<div class="modal fade" id="editTaskModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form class="modal-content" method="POST" id="editTaskForm" action="#">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="modal-header">
+                <h5 class="modal-title" style="font-family:'Cormorant Garamond',serif; font-size:1.4rem; font-weight:400;">
+                    Edit Task
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Task Title <span class="text-danger">*</span></label>
+                    <input type="text" name="title" id="editTitle" class="form-control" required>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-6">
+                        <label class="form-label">Category</label>
+                        <select name="category" id="editCategory" class="form-select">
+                            {% for cat in categories %}
+                            <option value="{{ cat }}">{{ cat }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Due Date</label>
+                        <input type="date" name="due_date" id="editDue" class="form-control">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Priority</label>
+                    <div class="priority-radio d-flex gap-3">
+                        {% for p in priorities %}
+                        <label>
+                            <input type="radio" name="priority" value="{{ p }}"
+                                   class="edit-priority-radio">
+                            {{ p | capitalize }}
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="mb-1">
+                    <label class="form-label">Notes</label>
+                    <textarea name="notes" id="editNotes" class="form-control" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    'use strict';
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+    /* ── Overdue / soon highlighting ───────────────────────────── */
+    const today = new Date(); today.setHours(0,0,0,0);
+    document.querySelectorAll('.task-due[data-due]').forEach(function (el) {
+        const raw = el.dataset.due;
+        if (!raw) return;
+        const d = new Date(raw + 'T00:00:00');
+        const diff = Math.round((d - today) / 86400000);
+        const row  = el.closest('.task-row, .tl-item');
+        const done = row && row.classList.contains('is-done');
+        if (done) return;
+        if (diff < 0)      el.classList.add('overdue');
+        else if (diff <= 7) el.classList.add('soon');
+    });
+
+    /* ── Checkbox toggle (AJAX) ─────────────────────────────────── */
+    document.querySelectorAll('.task-checkbox').forEach(function (cb) {
+        cb.addEventListener('change', function () {
+            const itemId  = this.dataset.itemId;
+            const checked = this.checked;
+            fetch('/checklist/' + itemId + '/toggle', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({}),
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!data.ok) { cb.checked = !checked; return; }
+
+                // Update row appearance
+                const row = cb.closest('.task-row');
+                if (data.is_completed) {
+                    row.classList.add('is-done');
+                    row.dataset.status = 'done';
+                } else {
+                    row.classList.remove('is-done');
+                    row.dataset.status = 'pending';
+                }
+
+                // Update category count
+                const cat = row.dataset.cat;
+                const group = document.querySelector('.cl-group[data-group-cat="' + cat + '"]');
+                if (group) {
+                    const rows = group.querySelectorAll('.task-row');
+                    const doneRows = group.querySelectorAll('.task-row.is-done');
+                    const countEl = document.querySelector('[data-cat-count="' + cat + '"]');
+                    if (countEl) countEl.textContent = doneRows.length + '/' + rows.length + ' complete';
+                }
+
+                // Update overall progress
+                document.getElementById('progressFill').style.width = data.pct + '%';
+                document.getElementById('progressLabel').textContent =
+                    data.done + ' of ' + data.total + ' tasks complete';
+                document.getElementById('overallPct').textContent = data.pct + '% complete';
+
+                // Re-apply filter (in case status filter is active)
+                applyFilters();
+            })
+            .catch(function () { cb.checked = !checked; });
+        });
+    });
+
+    /* ── Category + status filters ─────────────────────────────── */
+    let activeCat    = 'all';
+    let activeStatus = 'all';
+
+    function applyFilters() {
+        // List view: show/hide task rows and entire groups
+        document.querySelectorAll('.cl-group').forEach(function (group) {
+            const cat = group.dataset.groupCat;
+            const catMatch = activeCat === 'all' || cat === activeCat;
+            let groupHasVisible = false;
+
+            group.querySelectorAll('.task-row').forEach(function (row) {
+                const rowCat    = row.dataset.cat;
+                const rowStatus = row.dataset.status;
+                const catOk    = activeCat === 'all' || rowCat === activeCat;
+                const statusOk = activeStatus === 'all' || rowStatus === activeStatus;
+                const show = catOk && statusOk;
+                row.style.display = show ? '' : 'none';
+                if (show) groupHasVisible = true;
+            });
+
+            group.style.display = (catMatch && groupHasVisible) ? '' : 'none';
+        });
+
+        // Timeline view: show/hide items
+        document.querySelectorAll('.tl-item').forEach(function (item) {
+            const catOk    = activeCat === 'all' || item.dataset.cat === activeCat;
+            const statusOk = activeStatus === 'all' || item.dataset.status === activeStatus;
+            item.style.display = (catOk && statusOk) ? '' : 'none';
+        });
+    }
+
+    document.getElementById('catFilters').addEventListener('click', function (e) {
+        const btn = e.target.closest('.cl-filter-btn');
+        if (!btn) return;
+        document.querySelectorAll('#catFilters .cl-filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeCat = btn.dataset.cat;
+        applyFilters();
+    });
+
+    document.getElementById('statusFilters').addEventListener('click', function (e) {
+        const btn = e.target.closest('.cl-filter-btn');
+        if (!btn) return;
+        document.querySelectorAll('#statusFilters .cl-filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeStatus = btn.dataset.status;
+        applyFilters();
+    });
+
+    /* ── List / Timeline view toggle ────────────────────────────── */
+    const listView     = document.getElementById('listView');
+    const timelineView = document.getElementById('timelineView');
+    const toggleBtn    = document.getElementById('viewToggle');
+    let isTimeline     = false;
+
+    toggleBtn.addEventListener('click', function () {
+        isTimeline = !isTimeline;
+        if (isTimeline) {
+            listView.classList.add('hidden');
+            timelineView.classList.add('active');
+            toggleBtn.innerHTML = '<i class="bi bi-list-ul"></i> List view';
+        } else {
+            listView.classList.remove('hidden');
+            timelineView.classList.remove('active');
+            toggleBtn.innerHTML = '<i class="bi bi-calendar3"></i> Timeline view';
+        }
+    });
+
+    /* ── Edit modal — populate from data-* attrs ────────────────── */
+    const editModal = document.getElementById('editTaskModal');
+    if (editModal) {
+        editModal.addEventListener('show.bs.modal', function (e) {
+            const btn = e.relatedTarget;
+            const itemId = btn.dataset.itemId;
+            document.getElementById('editTaskForm').action = '/checklist/' + itemId + '/edit';
+            document.getElementById('editTitle').value    = btn.dataset.title    || '';
+            document.getElementById('editDue').value      = btn.dataset.due      || '';
+            document.getElementById('editNotes').value    = btn.dataset.notes    || '';
+            document.getElementById('editCategory').value = btn.dataset.category || 'Other';
+            document.querySelectorAll('.edit-priority-radio').forEach(function (r) {
+                r.checked = r.value === (btn.dataset.priority || 'medium');
+            });
+        });
+    }
+
+})();
+</script>
+{% endblock %}

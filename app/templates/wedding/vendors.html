@@ -1,0 +1,877 @@
+{% extends "base.html" %}
+{% block title %}Vendors – {{ wedding.partner1_name }} & {{ wedding.partner2_name }}{% endblock %}
+{% block page_title %}Vendors{% endblock %}
+
+{% block extra_css %}
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<style>
+/* ── Layout ───────────────────────────────────────────────────────── */
+.vendor-page { max-width: 1200px; }
+
+/* ── Summary cards ────────────────────────────────────────────────── */
+.v-metric {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.1rem 1.4rem;
+    display: flex; flex-direction: column; gap: 0.15rem;
+}
+.v-metric-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.9rem; font-weight: 300; line-height: 1;
+    color: var(--text-dark);
+}
+.v-metric-label { font-size: 0.75rem; color: var(--text-muted); }
+
+/* ── Tab nav ──────────────────────────────────────────────────────── */
+.vendor-tabs {
+    border-bottom: 1px solid var(--border);
+    display: flex; gap: 0; flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+}
+.vendor-tab {
+    padding: 0.55rem 1.1rem;
+    font-size: 0.82rem; font-weight: 400;
+    color: var(--text-muted);
+    background: none; border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer; transition: all 0.12s;
+    white-space: nowrap;
+}
+.vendor-tab:hover { color: var(--rose); }
+.vendor-tab.active {
+    color: var(--rose); font-weight: 500;
+    border-bottom-color: var(--rose);
+}
+
+/* ── Category badge colors ────────────────────────────────────────── */
+.cat-badge {
+    display: inline-block;
+    font-size: 0.62rem; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 0.18em 0.55em; border-radius: 4px;
+}
+.cat-Venue        { background:#e8f0fb; color:#3a68a8; }
+.cat-Catering     { background:#fdf7ee; color:#a87832; }
+.cat-Photography  { background:#eef7f2; color:#3a8a5a; }
+.cat-Videography  { background:#f0eefb; color:#6a5abf; }
+.cat-Flowers      { background:#fdf0f5; color:#c96880; }
+.cat-Music        { background:#eef6fb; color:#2e86ab; }
+.cat-Hair         { background:#fbf0ee; color:#c9785a; }
+.cat-Transport    { background:#f0f4ee; color:#5a7a48; }
+.cat-Cake         { background:#fbeeee; color:#c95a5a; }
+.cat-Stationery   { background:#f5f0fb; color:#8a5abf; }
+.cat-Officiant    { background:#f5f5f0; color:#6a6a5a; }
+.cat-Other        { background:#f0ebe7; color:#8a7870; }
+
+/* ── Status badge ─────────────────────────────────────────────────── */
+.status-badge {
+    font-size: 0.65rem; font-weight: 600;
+    letter-spacing: 0.05em; text-transform: uppercase;
+    padding: 0.2em 0.55em; border-radius: 4px;
+}
+.status-booked      { background: #eef7f2; color: #3a8a5a; }
+.status-considering { background: #fdf7ee; color: #a87832; }
+.status-rejected    { background: #fbeeee; color: #c95a5a; }
+.status-backup      { background: #f0ebe7; color: #8a7870; }
+
+/* ── Vendor cards ─────────────────────────────────────────────────── */
+.vendor-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    display: flex; flex-direction: column; gap: 0.75rem;
+    transition: box-shadow 0.12s;
+    position: relative;
+}
+.vendor-card:hover { box-shadow: 0 2px 16px rgba(0,0,0,.07); }
+.vendor-card.is-booked { border-color: #b8dfc8; }
+
+.vendor-booked-banner {
+    background: #eef7f2;
+    border-radius: 6px;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.78rem; font-weight: 500; color: #3a8a5a;
+    display: flex; align-items: center; gap: 0.4rem;
+}
+
+.vendor-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.15rem; font-weight: 400;
+    color: var(--text-dark); margin: 0;
+}
+.vendor-contact-name {
+    font-size: 0.78rem; color: var(--text-muted);
+}
+.vendor-contact-row {
+    display: flex; flex-wrap: wrap; gap: 0.75rem;
+    font-size: 0.8rem;
+}
+.vendor-contact-row a {
+    color: var(--text-muted); text-decoration: none;
+    display: flex; align-items: center; gap: 0.3rem;
+}
+.vendor-contact-row a:hover { color: var(--rose); }
+
+.vendor-price-row {
+    display: flex; align-items: center; gap: 1rem;
+    font-size: 0.82rem; color: var(--text-dark);
+    flex-wrap: wrap;
+}
+.vendor-price-row .price-label { color: var(--text-muted); font-size: 0.75rem; }
+.deposit-paid-icon { color: #3a8a5a; }
+.deposit-unpaid-icon { color: #d8cec8; cursor: pointer; }
+
+/* ── Star rating ──────────────────────────────────────────────────── */
+.star-row { display: flex; gap: 2px; }
+.star {
+    font-size: 1rem; cursor: pointer;
+    color: #d8cec8; transition: color 0.1s;
+    background: none; border: none; padding: 0; line-height: 1;
+}
+.star.filled { color: #e8b84b; }
+.star:hover, .star.hover { color: #e8b84b; }
+
+/* ── Notes ────────────────────────────────────────────────────────── */
+.vendor-notes {
+    font-size: 0.8rem; color: var(--text-muted);
+    line-height: 1.5;
+}
+.notes-toggle {
+    font-size: 0.75rem; color: var(--rose);
+    background: none; border: none; padding: 0; cursor: pointer;
+}
+
+/* ── Card actions ─────────────────────────────────────────────────── */
+.vendor-actions {
+    display: flex; align-items: center; gap: 0.5rem;
+    flex-wrap: wrap; margin-top: auto;
+    padding-top: 0.5rem; border-top: 1px solid #f5f0ec;
+}
+.btn-vendor {
+    font-size: 0.75rem; font-family: 'Jost', sans-serif;
+    padding: 0.3rem 0.7rem; border-radius: 6px;
+    border: 1px solid var(--border); background: #fff;
+    color: var(--text-muted); cursor: pointer;
+    display: flex; align-items: center; gap: 0.3rem;
+    transition: all 0.12s; text-decoration: none;
+}
+.btn-vendor:hover { border-color: var(--rose); color: var(--rose); }
+.btn-vendor.btn-book {
+    background: var(--rose); color: #fff; border-color: var(--rose);
+}
+.btn-vendor.btn-book:hover { background: var(--rose-dark); }
+.btn-vendor.btn-danger:hover { border-color: #c95a5a; color: #c95a5a; }
+
+/* ── Status dropdown in actions ───────────────────────────────────── */
+.status-select {
+    font-size: 0.75rem; font-family: 'Jost', sans-serif;
+    padding: 0.28rem 0.55rem; border-radius: 6px;
+    border: 1px solid var(--border); background: #fff;
+    color: var(--text-muted); cursor: pointer;
+}
+
+/* ── Comparison table ─────────────────────────────────────────────── */
+.compare-table {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    font-size: 0.82rem;
+}
+.compare-table th {
+    font-size: 0.65rem; font-weight: 600; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text-muted);
+    padding: 0.5rem 0.75rem; border-bottom: 2px solid var(--border);
+    background: var(--cream); text-align: left;
+}
+.compare-table td {
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid #f5f0ec;
+    vertical-align: middle;
+}
+.compare-table tr:hover td { background: #faf9f7; }
+
+/* ── View toggle ──────────────────────────────────────────────────── */
+.view-toggle {
+    display: flex; gap: 0.3rem;
+    background: var(--cream); border: 1px solid var(--border);
+    border-radius: 8px; padding: 0.2rem;
+}
+.view-toggle-btn {
+    font-size: 0.75rem; padding: 0.3rem 0.65rem;
+    border-radius: 6px; border: none; background: none;
+    color: var(--text-muted); cursor: pointer; transition: all 0.1s;
+}
+.view-toggle-btn.active {
+    background: #fff; color: var(--text-dark);
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+}
+
+/* ── Budget prompt toast ──────────────────────────────────────────── */
+#budgetPrompt {
+    position: fixed; bottom: 1.5rem; right: 1.5rem;
+    width: 320px; background: #fff;
+    border: 1px solid var(--border); border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(0,0,0,.12);
+    padding: 1.25rem; z-index: 1200;
+    display: none;
+}
+</style>
+{% endblock %}
+
+{# ── MACRO: shared form fields (must be at template scope, before block content) ── #}
+{% macro _vendor_form_fields(edit=false) %}
+<div class="row g-3">
+    <div class="col-md-8">
+        <label class="form-label" style="font-size:.8rem;">Business Name *</label>
+        <input type="text" name="business_name" class="form-control form-control-sm"
+               {% if edit %}id="edit_business_name"{% endif %} required>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label" style="font-size:.8rem;">Category</label>
+        <select name="category" class="form-select form-select-sm"
+                {% if edit %}id="edit_category"{% endif %}>
+            {% for cat in vendor_categories %}
+            <option value="{{ cat }}">{{ cat }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label" style="font-size:.8rem;">Contact Name</label>
+        <input type="text" name="contact_name" class="form-control form-control-sm"
+               {% if edit %}id="edit_contact_name"{% endif %}>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label" style="font-size:.8rem;">Email</label>
+        <input type="email" name="email" class="form-control form-control-sm"
+               {% if edit %}id="edit_email"{% endif %}>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label" style="font-size:.8rem;">Phone</label>
+        <input type="text" name="phone" class="form-control form-control-sm"
+               {% if edit %}id="edit_phone"{% endif %}>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label" style="font-size:.8rem;">Website</label>
+        <input type="url" name="website" class="form-control form-control-sm"
+               {% if edit %}id="edit_website"{% endif %} placeholder="https://...">
+    </div>
+    <div class="col-md-4">
+        <label class="form-label" style="font-size:.8rem;">Quoted Price ($)</label>
+        <input type="number" name="quoted_price" class="form-control form-control-sm"
+               {% if edit %}id="edit_quoted_price"{% endif %} min="0" step="0.01">
+    </div>
+    <div class="col-md-4">
+        <label class="form-label" style="font-size:.8rem;">Deposit Amount ($)</label>
+        <input type="number" name="deposit_amount" class="form-control form-control-sm"
+               {% if edit %}id="edit_deposit_amount"{% endif %} min="0" step="0.01">
+    </div>
+    <div class="col-md-4">
+        <label class="form-label" style="font-size:.8rem;">Deposit Due Date</label>
+        <input type="date" name="deposit_due_date" class="form-control form-control-sm"
+               {% if edit %}id="edit_deposit_due_date"{% endif %}>
+    </div>
+    <div class="col-12">
+        <label class="form-label" style="font-size:.8rem;">Status</label>
+        <div class="d-flex gap-2 flex-wrap">
+            {% for s in vendor_statuses %}
+            <label class="d-flex align-items-center gap-1" style="cursor:pointer; font-size:0.82rem;">
+                <input type="radio" name="status" value="{{ s }}"
+                       {% if loop.first %}checked{% endif %}
+                       {% if edit %}class="edit-status-radio"{% endif %}>
+                <span class="status-badge status-{{ s }}">{{ s }}</span>
+            </label>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="col-12">
+        <label class="form-label" style="font-size:.8rem;">Rating</label>
+        <div class="d-flex gap-1" id="{% if edit %}editModalStars{% else %}addModalStars{% endif %}">
+            {% for i in range(1, 6) %}
+            <button type="button" class="star modal-star"
+                    data-val="{{ i }}"
+                    onmouseover="modalStarHover(this.closest('.d-flex'), {{ i }})"
+                    onmouseleave="modalStarReset(this.closest('.d-flex'))"
+                    onclick="modalStarClick(this.closest('.d-flex'), {{ i }})">★</button>
+            {% endfor %}
+            <input type="hidden" name="rating" value="0"
+                   {% if edit %}id="edit_rating"{% endif %} class="modal-rating-input">
+        </div>
+    </div>
+    <div class="col-12">
+        <label class="form-label" style="font-size:.8rem;">Notes</label>
+        <textarea name="notes" class="form-control form-control-sm" rows="3"
+                  {% if edit %}id="edit_notes"{% endif %}></textarea>
+    </div>
+</div>
+{% endmacro %}
+
+{% block content %}
+<div class="vendor-page">
+
+{# ── Header row ────────────────────────────────────────────────────── #}
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+        <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.6rem; font-weight:400; margin:0;">
+            Vendors
+        </h2>
+        <span style="font-size:0.8rem; color:var(--text-muted);">
+            {{ wedding.partner1_name }} &amp; {{ wedding.partner2_name }}
+        </span>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{{ url_for('vendors.export_vendors', wedding_id=wedding.id) }}"
+           class="btn-vendor" style="text-decoration:none;">
+            <i class="bi bi-download"></i> Export CSV
+        </a>
+        <button class="btn-vendor btn-book" data-bs-toggle="modal" data-bs-target="#addVendorModal">
+            <i class="bi bi-plus-lg"></i> Add Vendor
+        </button>
+    </div>
+</div>
+
+{# ── Summary metrics ───────────────────────────────────────────────── #}
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-4 col-xl">
+        <div class="v-metric">
+            <div class="v-metric-num">{{ summary.total }}</div>
+            <div class="v-metric-label">Total Vendors</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl">
+        <div class="v-metric">
+            <div class="v-metric-num" id="sumBooked">{{ summary.booked }}</div>
+            <div class="v-metric-label">Booked</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl">
+        <div class="v-metric">
+            <div class="v-metric-num" id="sumPending">{{ summary.pending }}</div>
+            <div class="v-metric-label">Pending Decision</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl">
+        <div class="v-metric">
+            <div class="v-metric-num" id="sumQuoted">${{ '{:,.0f}'.format(summary.total_quoted) }}</div>
+            <div class="v-metric-label">Total Booked Value</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl">
+        <div class="v-metric">
+            <div class="v-metric-num" id="sumDeposits">{{ summary.deposits_paid }}</div>
+            <div class="v-metric-label">Deposits Paid</div>
+        </div>
+    </div>
+</div>
+
+{% if not all_vendors %}
+{# ── Empty state ───────────────────────────────────────────────────── #}
+<div style="text-align:center; padding:4rem 2rem; color:var(--text-muted);">
+    <i class="bi bi-shop" style="font-size:3rem; color:#d8cec8; display:block; margin-bottom:1rem;"></i>
+    <p style="font-size:1rem; margin-bottom:1.5rem;">No vendors added yet.</p>
+    <button class="btn-vendor btn-book" data-bs-toggle="modal" data-bs-target="#addVendorModal">
+        <i class="bi bi-plus-lg"></i> Add Your First Vendor
+    </button>
+</div>
+{% else %}
+
+{# ── View toggle + filter bar ──────────────────────────────────────── #}
+<div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
+    <div class="view-toggle">
+        <button class="view-toggle-btn active" id="btnCards" onclick="switchView('cards')">
+            <i class="bi bi-grid-3x2-gap"></i> Cards
+        </button>
+        <button class="view-toggle-btn" id="btnTable" onclick="switchView('table')">
+            <i class="bi bi-table"></i> Compare
+        </button>
+    </div>
+</div>
+
+{# ── Category tabs ─────────────────────────────────────────────────── #}
+<div class="vendor-tabs" id="vendorTabs">
+    <button class="vendor-tab active" data-tab="all" onclick="switchTab('all', this)">
+        All <span style="font-size:0.68rem; color:var(--text-muted);">({{ all_vendors|length }})</span>
+    </button>
+    {% for cat in used_categories %}
+    {% set slug = cat.lower().replace(' ', '-').replace('&', '').replace('--', '-') %}
+    <button class="vendor-tab" data-tab="{{ slug }}" onclick="switchTab('{{ slug }}', this)">
+        {{ cat }}
+        <span style="font-size:0.68rem; color:var(--text-muted);">
+            ({{ all_vendors | selectattr('category', 'equalto', cat) | list | length }})
+        </span>
+    </button>
+    {% endfor %}
+</div>
+
+{# ── CARDS VIEW ────────────────────────────────────────────────────── #}
+<div id="cardsView">
+<div class="row g-3" id="vendorGrid">
+{% for v in all_vendors %}
+{% set slug = v.category.lower().replace(' ', '-').replace('&', '').replace('--', '-') %}
+{% set cat_class = v.category.split()[0] %}
+<div class="col-md-6 col-xl-4 vendor-col" data-cat="{{ slug }}">
+<div class="vendor-card {% if v.status == 'booked' %}is-booked{% endif %}" id="card-{{ v.id }}">
+
+    {# Top: badges #}
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+        <span class="cat-badge cat-{{ cat_class }}">{{ v.category }}</span>
+        <span class="status-badge status-{{ v.status }}" id="statusBadge-{{ v.id }}">{{ v.status }}</span>
+        {% if v.status == 'booked' %}
+        <span class="ms-auto" style="font-size:0.75rem; color:#3a8a5a;">
+            {% if v.contracted %}<i class="bi bi-file-earmark-check-fill"></i> Signed{% else %}<i class="bi bi-file-earmark"></i> No contract{% endif %}
+        </span>
+        {% endif %}
+    </div>
+
+    {% if v.status == 'booked' %}
+    <div class="vendor-booked-banner">
+        <i class="bi bi-check-circle-fill"></i> Booked
+        {% if v.contracted %}&nbsp;· Contract signed {{ v.contract_signed_date.strftime('%b %-d') if v.contract_signed_date else '' }}{% endif %}
+    </div>
+    {% endif %}
+
+    {# Name #}
+    <div>
+        <p class="vendor-name">{{ v.business_name }}</p>
+        {% if v.contact_name %}<p class="vendor-contact-name">{{ v.contact_name }}</p>{% endif %}
+    </div>
+
+    {# Contact links #}
+    {% if v.email or v.phone or v.website %}
+    <div class="vendor-contact-row">
+        {% if v.email %}
+        <a href="mailto:{{ v.email }}"><i class="bi bi-envelope"></i> {{ v.email }}</a>
+        {% endif %}
+        {% if v.phone %}
+        <a href="tel:{{ v.phone }}"><i class="bi bi-telephone"></i> {{ v.phone }}</a>
+        {% endif %}
+        {% if v.website %}
+        <a href="{{ v.website }}" target="_blank" rel="noopener"><i class="bi bi-globe"></i> Website</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {# Price row #}
+    {% if v.quoted_price or v.deposit_amount %}
+    <div class="vendor-price-row">
+        {% if v.quoted_price %}
+        <div>
+            <span class="price-label">Quoted</span><br>
+            <strong>${{ '{:,.0f}'.format(v.quoted_price) }}</strong>
+        </div>
+        {% endif %}
+        {% if v.deposit_amount %}
+        <div>
+            <span class="price-label">Deposit</span><br>
+            <strong>${{ '{:,.0f}'.format(v.deposit_amount) }}</strong>
+            {% if v.deposit_paid %}
+            <i class="bi bi-check-circle-fill deposit-paid-icon ms-1" title="Deposit paid"></i>
+            {% else %}
+            <button class="deposit-unpaid-icon ms-1 border-0 bg-transparent p-0"
+                    title="Mark deposit paid" onclick="toggleDeposit({{ v.id }}, this)">
+                <i class="bi bi-circle"></i>
+            </button>
+            {% endif %}
+        </div>
+        {% if v.deposit_due_date %}
+        <div>
+            <span class="price-label">Due</span><br>
+            <span {% if v.deposit_due_date < date_today and not v.deposit_paid %}style="color:#c95a5a;"{% endif %}>
+                {{ v.deposit_due_date.strftime('%b %-d') }}
+            </span>
+        </div>
+        {% endif %}
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {# Star rating #}
+    <div class="star-row" id="stars-{{ v.id }}"
+         onmouseleave="resetStarHover({{ v.id }}, {{ v.rating or 0 }})">
+        {% for i in range(1, 6) %}
+        <button class="star {% if v.rating and i <= v.rating %}filled{% endif %}"
+                data-val="{{ i }}"
+                onmouseover="hoverStars({{ v.id }}, {{ i }})"
+                onclick="rateVendor({{ v.id }}, {{ i }})">★</button>
+        {% endfor %}
+    </div>
+
+    {# Notes #}
+    {% if v.notes %}
+    <div class="vendor-notes">
+        <span class="notes-short-{{ v.id }}">{{ v.notes[:100] }}{% if v.notes|length > 100 %}…{% endif %}</span>
+        {% if v.notes|length > 100 %}
+        <span class="notes-full-{{ v.id }}" style="display:none;">{{ v.notes }}</span>
+        <button class="notes-toggle" onclick="toggleNotes({{ v.id }})">Show more</button>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {# Actions #}
+    <div class="vendor-actions">
+        <select class="status-select" onchange="updateStatus({{ v.id }}, this.value)"
+                id="statusSel-{{ v.id }}">
+            {% for s in vendor_statuses %}
+            <option value="{{ s }}" {% if v.status == s %}selected{% endif %}>
+                {{ s | capitalize }}
+            </option>
+            {% endfor %}
+        </select>
+
+        {% if v.status == 'booked' %}
+        <button class="btn-vendor" onclick="toggleContracted({{ v.id }}, this)"
+                id="contractBtn-{{ v.id }}" title="{{ 'Unmark contract' if v.contracted else 'Mark contract signed' }}">
+            <i class="bi bi-file-earmark-{% if v.contracted %}check-fill{% else %}plus{% endif %}"></i>
+            {{ 'Contract ✓' if v.contracted else 'Add Contract' }}
+        </button>
+        {% endif %}
+
+        <button class="btn-vendor ms-auto" data-bs-toggle="modal"
+                data-bs-target="#editVendorModal"
+                onclick="populateEdit({{ v | tojson }})">
+            <i class="bi bi-pencil"></i> Edit
+        </button>
+        <form method="POST" action="{{ url_for('vendors.delete_vendor', vendor_id=v.id) }}"
+              onsubmit="return confirm('Delete {{ v.business_name }}?');" style="margin:0;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn-vendor btn-danger">
+                <i class="bi bi-trash"></i>
+            </button>
+        </form>
+    </div>
+
+</div>
+</div>
+{% endfor %}
+</div>
+</div>{# /cardsView #}
+
+{# ── COMPARE TABLE VIEW ────────────────────────────────────────────── #}
+<div id="tableView" style="display:none; overflow-x:auto;">
+<table class="compare-table">
+    <thead>
+        <tr>
+            <th>Vendor</th>
+            <th>Category</th>
+            <th>Status</th>
+            <th>Quoted</th>
+            <th>Deposit</th>
+            <th>Rating</th>
+            <th>Contact</th>
+        </tr>
+    </thead>
+    <tbody id="compareBody">
+    {% for v in all_vendors %}
+    <tr data-cat="{{ v.category.lower().replace(' ', '-').replace('&', '').replace('--', '-') }}">
+        <td>
+            <strong style="font-size:0.9rem;">{{ v.business_name }}</strong>
+            {% if v.contact_name %}<br><span style="font-size:0.75rem; color:var(--text-muted);">{{ v.contact_name }}</span>{% endif %}
+        </td>
+        <td><span class="cat-badge cat-{{ v.category.split()[0] }}">{{ v.category }}</span></td>
+        <td><span class="status-badge status-{{ v.status }}">{{ v.status }}</span></td>
+        <td>{% if v.quoted_price %}${{ '{:,.0f}'.format(v.quoted_price) }}{% else %}<span style="color:var(--text-muted);">—</span>{% endif %}</td>
+        <td>
+            {% if v.deposit_amount %}
+            ${{ '{:,.0f}'.format(v.deposit_amount) }}
+            {% if v.deposit_paid %}<i class="bi bi-check-circle-fill deposit-paid-icon ms-1"></i>{% endif %}
+            {% else %}<span style="color:var(--text-muted);">—</span>{% endif %}
+        </td>
+        <td>
+            {% if v.rating %}
+            <span style="color:#e8b84b;">{{ '★' * v.rating }}{{ '☆' * (5 - v.rating) }}</span>
+            {% else %}<span style="color:var(--text-muted);">—</span>{% endif %}
+        </td>
+        <td style="font-size:0.78rem;">
+            {% if v.email %}<a href="mailto:{{ v.email }}" style="color:var(--rose);">{{ v.email }}</a><br>{% endif %}
+            {% if v.phone %}{{ v.phone }}{% endif %}
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+
+{% endif %}{# /if all_vendors #}
+</div>{# /vendor-page #}
+
+{# ── Budget integration prompt ─────────────────────────────────────── #}
+<div id="budgetPrompt">
+    <div style="font-weight:600; font-size:0.9rem; margin-bottom:0.35rem;">
+        <i class="bi bi-wallet2" style="color:var(--rose);"></i> Add to budget?
+    </div>
+    <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:0.75rem;" id="budgetPromptText"></p>
+    <div class="d-flex gap-2">
+        <select id="budgetCatSelect" class="form-select form-select-sm" style="flex:1;">
+            {% for bc in budget_categories %}
+            <option value="{{ bc.id }}">{{ bc.name }}</option>
+            {% endfor %}
+        </select>
+        <button class="btn-vendor btn-book" onclick="confirmAddToBudget()" style="white-space:nowrap;">
+            Add it
+        </button>
+        <button class="btn-vendor" onclick="document.getElementById('budgetPrompt').style.display='none';">
+            Skip
+        </button>
+    </div>
+</div>
+
+{# ── ADD VENDOR MODAL ──────────────────────────────────────────────── #}
+<div class="modal fade" id="addVendorModal" tabindex="-1">
+<div class="modal-dialog modal-lg modal-dialog-scrollable">
+<div class="modal-content">
+    <div class="modal-header" style="border-bottom-color:var(--border);">
+        <h5 class="modal-title" style="font-family:'Cormorant Garamond',serif; font-weight:400; font-size:1.3rem;">
+            Add Vendor
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    </div>
+    <form method="POST" action="{{ url_for('vendors.add_vendor', wedding_id=wedding.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="modal-body">
+        {{ _vendor_form_fields() }}
+    </div>
+    <div class="modal-footer" style="border-top-color:var(--border);">
+        <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm">Add Vendor</button>
+    </div>
+    </form>
+</div>
+</div>
+</div>
+
+{# ── EDIT VENDOR MODAL ─────────────────────────────────────────────── #}
+<div class="modal fade" id="editVendorModal" tabindex="-1">
+<div class="modal-dialog modal-lg modal-dialog-scrollable">
+<div class="modal-content">
+    <div class="modal-header" style="border-bottom-color:var(--border);">
+        <h5 class="modal-title" style="font-family:'Cormorant Garamond',serif; font-weight:400; font-size:1.3rem;">
+            Edit Vendor
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    </div>
+    <form method="POST" id="editVendorForm" action="">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="modal-body">
+        {{ _vendor_form_fields(edit=true) }}
+    </div>
+    <div class="modal-footer" style="border-top-color:var(--border);">
+        <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+    </div>
+    </form>
+</div>
+</div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CSRF = document.querySelector('meta[name="csrf-token"]').content;
+
+/* ── Tab switching ────────────────────────────────────────────────── */
+function switchTab(tab, btn) {
+    document.querySelectorAll('.vendor-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.vendor-col').forEach(col => {
+        col.style.display = (tab === 'all' || col.dataset.cat === tab) ? '' : 'none';
+    });
+    document.querySelectorAll('#compareBody tr').forEach(row => {
+        row.style.display = (tab === 'all' || row.dataset.cat === tab) ? '' : 'none';
+    });
+    location.hash = tab === 'all' ? '' : tab;
+}
+
+/* Restore tab from hash on load */
+(function () {
+    const hash = location.hash.replace('#', '');
+    if (hash) {
+        const btn = document.querySelector(`.vendor-tab[data-tab="${hash}"]`);
+        if (btn) switchTab(hash, btn);
+    }
+})();
+
+/* ── View toggle (cards / compare table) ─────────────────────────── */
+function switchView(v) {
+    document.getElementById('cardsView').style.display  = v === 'cards'  ? '' : 'none';
+    document.getElementById('tableView').style.display  = v === 'table'  ? '' : 'none';
+    document.getElementById('btnCards').classList.toggle('active', v === 'cards');
+    document.getElementById('btnTable').classList.toggle('active', v === 'table');
+}
+
+/* ── Star rating (cards) ──────────────────────────────────────────── */
+function hoverStars(vid, val) {
+    document.querySelectorAll(`#stars-${vid} .star`).forEach(s => {
+        s.classList.toggle('filled', parseInt(s.dataset.val) <= val);
+    });
+}
+function resetStarHover(vid, current) {
+    document.querySelectorAll(`#stars-${vid} .star`).forEach(s => {
+        s.classList.toggle('filled', parseInt(s.dataset.val) <= current);
+    });
+}
+function rateVendor(vid, val) {
+    fetch(`/vendor/${vid}/rating`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+        body: JSON.stringify({rating: val}),
+    }).then(r => r.json()).then(d => {
+        if (!d.ok) return;
+        document.querySelectorAll(`#stars-${vid} .star`).forEach(s => {
+            s.classList.toggle('filled', parseInt(s.dataset.val) <= val);
+        });
+    });
+}
+
+/* ── Modal star rating ────────────────────────────────────────────── */
+function modalStarHover(container, val) {
+    container.querySelectorAll('.modal-star').forEach(s => {
+        s.classList.toggle('filled', parseInt(s.dataset.val) <= val);
+    });
+}
+function modalStarReset(container) {
+    const current = parseInt(container.querySelector('.modal-rating-input').value) || 0;
+    container.querySelectorAll('.modal-star').forEach(s => {
+        s.classList.toggle('filled', parseInt(s.dataset.val) <= current);
+    });
+}
+function modalStarClick(container, val) {
+    container.querySelector('.modal-rating-input').value = val;
+    container.querySelectorAll('.modal-star').forEach(s => {
+        s.classList.toggle('filled', parseInt(s.dataset.val) <= val);
+    });
+}
+
+/* ── Status update ────────────────────────────────────────────────── */
+function updateStatus(vid, newStatus) {
+    fetch(`/vendor/${vid}/status`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+        body: JSON.stringify({status: newStatus}),
+    }).then(r => r.json()).then(d => {
+        if (!d.ok) return;
+        // Update badge
+        const badge = document.getElementById(`statusBadge-${vid}`);
+        if (badge) {
+            badge.className = `status-badge status-${d.status}`;
+            badge.textContent = d.status;
+        }
+        // Update card border
+        const card = document.getElementById(`card-${vid}`);
+        if (card) card.classList.toggle('is-booked', d.status === 'booked');
+        // Update summary
+        updateSummary(d.summary);
+        // Budget prompt
+        if (d.prompt_budget) {
+            showBudgetPrompt(d);
+        }
+    });
+}
+
+/* ── Toggle deposit ───────────────────────────────────────────────── */
+function toggleDeposit(vid, btn) {
+    fetch(`/vendor/${vid}/toggle-deposit`, {
+        method: 'POST',
+        headers: {'X-CSRFToken': CSRF},
+    }).then(r => r.json()).then(d => {
+        if (!d.ok) return;
+        if (d.deposit_paid) {
+            btn.outerHTML = `<i class="bi bi-check-circle-fill deposit-paid-icon ms-1" title="Deposit paid"></i>`;
+        }
+        updateSummary(d.summary);
+    });
+}
+
+/* ── Toggle contracted ────────────────────────────────────────────── */
+function toggleContracted(vid, btn) {
+    fetch(`/vendor/${vid}/toggle-contracted`, {
+        method: 'POST',
+        headers: {'X-CSRFToken': CSRF},
+    }).then(r => r.json()).then(d => {
+        if (!d.ok) return;
+        btn.innerHTML = d.contracted
+            ? '<i class="bi bi-file-earmark-check-fill"></i> Contract ✓'
+            : '<i class="bi bi-file-earmark-plus"></i> Add Contract';
+    });
+}
+
+/* ── Notes expand ─────────────────────────────────────────────────── */
+function toggleNotes(vid) {
+    const s = document.querySelector(`.notes-short-${vid}`);
+    const f = document.querySelector(`.notes-full-${vid}`);
+    const btn = event.target;
+    if (f.style.display === 'none') {
+        s.style.display = 'none';
+        f.style.display = '';
+        btn.textContent = 'Show less';
+    } else {
+        s.style.display = '';
+        f.style.display = 'none';
+        btn.textContent = 'Show more';
+    }
+}
+
+/* ── Populate edit modal ──────────────────────────────────────────── */
+function populateEdit(v) {
+    document.getElementById('editVendorForm').action = `/vendor/${v.id}/edit`;
+    document.getElementById('edit_business_name').value  = v.business_name || '';
+    document.getElementById('edit_contact_name').value   = v.contact_name || '';
+    document.getElementById('edit_email').value          = v.email || '';
+    document.getElementById('edit_phone').value          = v.phone || '';
+    document.getElementById('edit_website').value        = v.website || '';
+    document.getElementById('edit_quoted_price').value   = v.quoted_price || '';
+    document.getElementById('edit_deposit_amount').value = v.deposit_amount || '';
+    document.getElementById('edit_deposit_due_date').value = v.deposit_due_date || '';
+    document.getElementById('edit_notes').value          = v.notes || '';
+    document.getElementById('edit_rating').value         = v.rating || 0;
+
+    // Category
+    const catSel = document.getElementById('edit_category');
+    if (catSel) catSel.value = v.category || 'Other';
+
+    // Status radios
+    document.querySelectorAll('.edit-status-radio').forEach(r => {
+        r.checked = r.value === v.status;
+    });
+
+    // Stars
+    const starContainer = document.getElementById('editModalStars');
+    if (starContainer) {
+        const current = v.rating || 0;
+        starContainer.querySelectorAll('.modal-star').forEach(s => {
+            s.classList.toggle('filled', parseInt(s.dataset.val) <= current);
+        });
+    }
+}
+
+/* ── Budget prompt ────────────────────────────────────────────────── */
+let _pendingVendorId = null;
+function showBudgetPrompt(data) {
+    _pendingVendorId = data.vendor_id;
+    const price = data.quoted_price ? `$${data.quoted_price.toLocaleString()}` : '';
+    document.getElementById('budgetPromptText').textContent =
+        `Add "${data.vendor_name}" (${price}) to your budget?`;
+    document.getElementById('budgetPrompt').style.display = 'block';
+}
+function confirmAddToBudget() {
+    if (!_pendingVendorId) return;
+    const catId = document.getElementById('budgetCatSelect').value;
+    fetch(`/vendor/${_pendingVendorId}/add-to-budget`, {
+        method: 'POST',
+        headers: {'X-CSRFToken': CSRF},
+    }).then(r => r.json()).then(d => {
+        document.getElementById('budgetPrompt').style.display = 'none';
+        _pendingVendorId = null;
+    });
+}
+
+/* ── Summary bar update ───────────────────────────────────────────── */
+function updateSummary(s) {
+    if (!s) return;
+    const el = id => document.getElementById(id);
+    if (el('sumBooked'))   el('sumBooked').textContent   = s.booked;
+    if (el('sumPending'))  el('sumPending').textContent  = s.pending;
+    if (el('sumQuoted'))   el('sumQuoted').textContent   = '$' + s.total_quoted.toLocaleString('en-US', {maximumFractionDigits:0});
+    if (el('sumDeposits')) el('sumDeposits').textContent = s.deposits_paid;
+}
+</script>
+{% endblock %}
