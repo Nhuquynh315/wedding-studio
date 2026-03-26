@@ -1,0 +1,582 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile & Settings – AI Wedding Studio{% endblock %}
+{% block page_title %}Profile & Settings{% endblock %}
+
+{% block extra_css %}
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<style>
+.settings-wrap { max-width: 680px; }
+
+/* ── Cards ───────────────────────────────────────────────────────── */
+.settings-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.75rem;
+    margin-bottom: 1.5rem;
+}
+.settings-card-title {
+    font-family: 'Jost', sans-serif;
+    font-size: .72rem;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 1.35rem;
+    display: block;
+}
+.danger-card { border-color: #f5c2c2; }
+
+/* ── Form elements ───────────────────────────────────────────────── */
+.settings-field { margin-bottom: 1rem; }
+.settings-label {
+    font-size: .8rem;
+    font-weight: 500;
+    color: var(--text-dark);
+    margin-bottom: .35rem;
+    display: block;
+}
+.settings-label .opt {
+    font-weight: 400;
+    color: var(--text-muted);
+    font-size: .74rem;
+}
+.settings-input {
+    width: 100%;
+    padding: .5rem .8rem;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: 'Jost', sans-serif;
+    font-size: .875rem;
+    color: var(--text-dark);
+    background: #fff;
+    transition: border-color .12s, box-shadow .12s;
+    appearance: none;
+}
+.settings-input:focus {
+    outline: none;
+    border-color: var(--rose);
+    box-shadow: 0 0 0 3px rgba(201,104,122,.14);
+}
+.settings-hint {
+    font-size: .78rem;
+    color: #c8a060;
+    background: #fdf8ee;
+    border: 1px solid #f0e0b0;
+    border-radius: 8px;
+    padding: .6rem .85rem;
+    margin-bottom: 1rem;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────── */
+.btn-save {
+    font-family: 'Jost', sans-serif;
+    font-size: .84rem;
+    font-weight: 500;
+    background: var(--rose);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: .5rem 1.35rem;
+    cursor: pointer;
+    transition: background .12s;
+}
+.btn-save:hover { background: var(--rose-dark); }
+.btn-danger-outline {
+    font-family: 'Jost', sans-serif;
+    font-size: .84rem;
+    font-weight: 500;
+    background: transparent;
+    color: #c62828;
+    border: 1.5px solid #f5c2c2;
+    border-radius: 8px;
+    padding: .5rem 1.25rem;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: all .12s;
+}
+.btn-danger-outline:hover { background: #fff5f5; border-color: #e57373; }
+.btn-text {
+    font-family: 'Jost', sans-serif;
+    font-size: .8rem;
+    font-weight: 500;
+    background: none;
+    border: none;
+    color: var(--rose);
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+}
+
+/* ── Avatar ──────────────────────────────────────────────────────── */
+.avatar-lg {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Jost', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 500;
+    color: #fff;
+    flex-shrink: 0;
+    transition: background-color .2s;
+}
+
+/* ── Color swatches ──────────────────────────────────────────────── */
+.color-swatches { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+.color-swatch {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform .12s, border-color .12s;
+    padding: 0;
+    flex-shrink: 0;
+}
+.color-swatch:hover { transform: scale(1.15); }
+.color-swatch.selected { border-color: #333; box-shadow: 0 0 0 2px #fff inset; }
+.color-custom {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    cursor: pointer;
+    padding: 0;
+    background: transparent;
+    overflow: hidden;
+}
+.color-custom::-webkit-color-swatch-wrapper { padding: 0; }
+.color-custom::-webkit-color-swatch { border: none; border-radius: 50%; }
+
+/* ── Email form collapse ─────────────────────────────────────────── */
+.email-current-row {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    font-size: .875rem;
+    color: var(--text-dark);
+}
+.email-current-row i { color: var(--text-muted); }
+.email-current-row span { flex: 1; font-weight: 500; }
+.email-form-wrapper {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height .3s ease;
+}
+.email-form-wrapper.open { max-height: 320px; }
+.email-form-inner { padding-top: 1.25rem; }
+
+/* ── Password strength ───────────────────────────────────────────── */
+.pw-strength-bar {
+    height: 4px;
+    border-radius: 2px;
+    background: #f0e8e4;
+    margin-top: .5rem;
+    overflow: hidden;
+}
+.pw-strength-fill {
+    height: 100%;
+    border-radius: 2px;
+    width: 0;
+    transition: width .2s, background-color .2s;
+}
+.pw-reqs {
+    margin-top: .6rem;
+    display: flex;
+    flex-direction: column;
+    gap: .25rem;
+}
+.pw-req {
+    font-size: .74rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+    transition: color .15s;
+}
+.pw-req.met { color: #3a8a5a; }
+.pw-req i { font-size: .7rem; }
+
+/* ── Notification toggle ─────────────────────────────────────────── */
+.form-check-input:checked { background-color: var(--rose); border-color: var(--rose); }
+.form-check-input:focus { box-shadow: 0 0 0 3px rgba(201,104,122,.2); border-color: var(--rose); }
+
+/* ── Danger zone ─────────────────────────────────────────────────── */
+.danger-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1.25rem;
+}
+
+@media (max-width: 500px) {
+    .danger-row { flex-direction: column; }
+    .btn-danger-outline { width: 100%; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-wrap">
+
+    <p style="font-size:.85rem; color:var(--text-muted); margin:-0.5rem 0 1.75rem;">
+        Manage your account profile and preferences.
+    </p>
+
+    {# ── Section 1: Profile ────────────────────────────────────────── #}
+    <div class="settings-card">
+        <span class="settings-card-title">Profile</span>
+
+        {# Avatar + color picker #}
+        <div style="display:flex; align-items:flex-start; gap:1.5rem; margin-bottom:1.5rem; flex-wrap:wrap;">
+            <div class="avatar-lg" id="avatarLg"
+                 style="background:{{ current_user.avatar_color or '#c9687a' }};">
+                {{ current_user.full_name | initials }}
+            </div>
+            <div style="flex:1; min-width:0;">
+                <label class="settings-label">Avatar Color</label>
+                <div class="color-swatches">
+                    {% set current_color = current_user.avatar_color or '#c9687a' %}
+                    {% for color in ['#c9687a', '#7cb8e8', '#a8d8a8', '#d4a8d8', '#e8a87c', '#8a9bb8'] %}
+                    <button type="button" class="color-swatch {% if color == current_color %}selected{% endif %}"
+                            data-color="{{ color }}"
+                            style="background:{{ color }};"
+                            title="{{ color }}"></button>
+                    {% endfor %}
+                    <input type="color" id="customColorPicker"
+                           value="{{ current_color }}"
+                           title="Custom color"
+                           class="color-custom">
+                </div>
+                <p style="font-size:.72rem; color:var(--text-muted); margin:.5rem 0 0;">
+                    Click a color to update your avatar instantly.
+                </p>
+            </div>
+        </div>
+
+        {# Profile form #}
+        <form method="POST" action="{{ url_for('settings.update_profile') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="settings-field">
+                <label class="settings-label" for="fullName">Full Name</label>
+                <input type="text" id="fullName" name="full_name" class="settings-input"
+                       value="{{ current_user.full_name }}" required
+                       oninput="updateAvatarPreview(this.value)">
+            </div>
+            <div class="settings-field">
+                <label class="settings-label" for="phone">
+                    Phone <span class="opt">(optional)</span>
+                </label>
+                <input type="tel" id="phone" name="phone" class="settings-input"
+                       value="{{ current_user.phone or '' }}"
+                       placeholder="+1 (555) 000-0000">
+            </div>
+            <div class="settings-field">
+                <label class="settings-label" for="timezone">Timezone</label>
+                <select id="timezone" name="timezone" class="settings-input">
+                    {% for tz in timezones %}
+                    <option value="{{ tz }}"
+                            {% if tz == (current_user.timezone or 'UTC') %}selected{% endif %}>
+                        {{ tz }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn-save">Save Profile</button>
+        </form>
+    </div>
+
+    {# ── Section 2: Email ──────────────────────────────────────────── #}
+    <div class="settings-card">
+        <span class="settings-card-title">Email Address</span>
+        <div class="email-current-row">
+            <i class="bi bi-envelope"></i>
+            <span>{{ current_user.email }}</span>
+            <button type="button" class="btn-text" onclick="toggleEmailForm(this)">Change</button>
+        </div>
+        <div class="email-form-wrapper" id="emailFormWrapper">
+            <div class="email-form-inner">
+                <p class="settings-hint">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    Changing your email will require you to log in again.
+                </p>
+                <form method="POST" action="{{ url_for('settings.update_email') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="settings-field">
+                        <label class="settings-label" for="newEmail">New Email Address</label>
+                        <input type="email" id="newEmail" name="new_email"
+                               class="settings-input" required autocomplete="email">
+                    </div>
+                    <div class="settings-field">
+                        <label class="settings-label" for="emailPassword">Current Password</label>
+                        <input type="password" id="emailPassword" name="password"
+                               class="settings-input" required autocomplete="current-password">
+                    </div>
+                    <button type="submit" class="btn-save">Update Email</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {# ── Section 3: Password ───────────────────────────────────────── #}
+    <div class="settings-card">
+        <span class="settings-card-title">Password</span>
+        <form method="POST" action="{{ url_for('settings.update_password') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="settings-field">
+                <label class="settings-label" for="currentPassword">Current Password</label>
+                <input type="password" id="currentPassword" name="current_password"
+                       class="settings-input" required autocomplete="current-password">
+            </div>
+            <div class="settings-field">
+                <label class="settings-label" for="newPassword">New Password</label>
+                <input type="password" id="newPassword" name="new_password"
+                       class="settings-input" required autocomplete="new-password"
+                       oninput="updateStrength(this.value)">
+                <div class="pw-strength-bar">
+                    <div class="pw-strength-fill" id="pwStrengthFill"></div>
+                </div>
+                <div class="pw-reqs">
+                    <div class="pw-req" id="req-length">
+                        <i class="bi bi-circle" id="req-length-icon"></i> At least 8 characters
+                    </div>
+                    <div class="pw-req" id="req-number">
+                        <i class="bi bi-circle" id="req-number-icon"></i> Contains a number
+                    </div>
+                    <div class="pw-req" id="req-special">
+                        <i class="bi bi-circle" id="req-special-icon"></i> Contains a special character
+                    </div>
+                </div>
+            </div>
+            <div class="settings-field">
+                <label class="settings-label" for="confirmPassword">Confirm New Password</label>
+                <input type="password" id="confirmPassword" name="confirm_password"
+                       class="settings-input" required autocomplete="new-password">
+            </div>
+            <button type="submit" class="btn-save">Update Password</button>
+        </form>
+    </div>
+
+    {# ── Section 4: Notifications ──────────────────────────────────── #}
+    <div class="settings-card">
+        <span class="settings-card-title">Notifications</span>
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem;">
+            <div style="flex:1;">
+                <div style="font-size:.875rem; font-weight:500; color:var(--text-dark);">
+                    Email Notifications
+                </div>
+                <div style="font-size:.78rem; color:var(--text-muted); margin-top:.3rem; line-height:1.55;">
+                    Receive email reminders for upcoming vendor payments, checklist due dates,
+                    and RSVP updates.
+                </div>
+            </div>
+            <div class="form-check form-switch mb-0" style="padding-left:0; flex-shrink:0; padding-top:.15rem;">
+                <input class="form-check-input" type="checkbox" role="switch"
+                       id="notifToggle"
+                       {% if current_user.email_notifications %}checked{% endif %}
+                       style="width:2.5em; height:1.4em; margin:0; cursor:pointer;">
+            </div>
+        </div>
+        <p id="notifSaved" style="font-size:.75rem; color:#3a8a5a; margin:.6rem 0 0; display:none;">
+            <i class="bi bi-check-circle"></i> Saved
+        </p>
+    </div>
+
+    {# ── Section 5: Danger Zone ────────────────────────────────────── #}
+    <div class="settings-card danger-card">
+        <span class="settings-card-title" style="color:#c62828;">Danger Zone</span>
+        <div class="danger-row">
+            <div>
+                <div style="font-size:.875rem; font-weight:500; color:var(--text-dark);">
+                    Delete Account
+                </div>
+                <div style="font-size:.78rem; color:var(--text-muted); margin-top:.3rem; line-height:1.55;">
+                    Permanently delete your account and all wedding data.
+                    This cannot be undone.
+                </div>
+            </div>
+            <button type="button" class="btn-danger-outline"
+                    data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                Delete Account
+            </button>
+        </div>
+    </div>
+
+</div>{# /settings-wrap #}
+
+{# ── Delete Account Modal ──────────────────────────────────────────── #}
+<div class="modal fade" id="deleteAccountModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:12px; border:none;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title"
+                    style="font-family:'Jost',sans-serif; font-weight:600; font-size:1rem; color:#c62828;">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Delete Account
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding:1.25rem 1.5rem;">
+                <p style="font-size:.875rem; color:var(--text-dark); margin-bottom:.75rem;">
+                    This will permanently and irreversibly delete:
+                </p>
+                <ul style="font-size:.84rem; color:var(--text-muted); margin-bottom:1rem; padding-left:1.25rem;">
+                    <li>Your account and all personal information</li>
+                    <li>All wedding projects and their settings</li>
+                    <li>All guests, seating charts, budgets, and vendors</li>
+                    <li>All checklists, timelines, and AI-generated themes</li>
+                </ul>
+                <form method="POST" action="{{ url_for('settings.delete_account') }}" id="deleteAccountForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="settings-field">
+                        <label class="settings-label" for="deletePassword">Confirm Password</label>
+                        <input type="password" id="deletePassword" name="password"
+                               class="settings-input" autocomplete="current-password"
+                               placeholder="Your current password">
+                    </div>
+                    <div class="settings-field mb-0">
+                        <label class="settings-label" for="deleteConfirm">
+                            Type <strong>DELETE</strong> to confirm
+                        </label>
+                        <input type="text" id="deleteConfirm" name="confirm_text"
+                               class="settings-input" autocomplete="off"
+                               placeholder="DELETE">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal"
+                        style="font-family:'Jost',sans-serif; font-size:.84rem;">
+                    Cancel
+                </button>
+                <button type="submit" form="deleteAccountForm" id="deleteSubmitBtn"
+                        class="btn btn-danger" disabled
+                        style="font-family:'Jost',sans-serif; font-size:.84rem;">
+                    Permanently Delete Account
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CSRF = document.querySelector('meta[name="csrf-token"]').content;
+
+// ── Avatar color ──────────────────────────────────────────────────
+async function applyColor(hex) {
+    const resp = await fetch('{{ url_for("settings.update_avatar_color") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ color: hex }),
+    });
+    const data = await resp.json();
+    if (!data.ok) return;
+
+    // Update all avatar elements on the page
+    document.querySelectorAll('#avatarLg, .sidebar-user-avatar, #sidebarAvatarMobile').forEach(el => {
+        el.style.backgroundColor = hex;
+    });
+    // Update custom picker value
+    document.getElementById('customColorPicker').value = hex;
+    // Update swatch selection
+    document.querySelectorAll('.color-swatch').forEach(sw => {
+        sw.classList.toggle('selected', sw.dataset.color === hex);
+    });
+}
+
+document.querySelectorAll('.color-swatch').forEach(btn => {
+    btn.addEventListener('click', () => applyColor(btn.dataset.color));
+});
+
+document.getElementById('customColorPicker').addEventListener('change', function () {
+    applyColor(this.value);
+});
+
+// ── Avatar initials preview ───────────────────────────────────────
+function getInitials(name) {
+    const parts = (name || '').trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return '?';
+    if (parts.length === 1) return parts[0][0].toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function updateAvatarPreview(name) {
+    const el = document.getElementById('avatarLg');
+    if (el) el.textContent = getInitials(name);
+}
+
+// ── Email form toggle ─────────────────────────────────────────────
+function toggleEmailForm(btn) {
+    const wrapper = document.getElementById('emailFormWrapper');
+    const isOpen  = wrapper.classList.toggle('open');
+    btn.textContent = isOpen ? 'Cancel' : 'Change';
+}
+
+// ── Password strength meter ───────────────────────────────────────
+function updateStrength(val) {
+    const hasLength  = val.length >= 8;
+    const hasNumber  = /\d/.test(val);
+    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(val);
+    const hasUpper   = /[A-Z]/.test(val);
+
+    // Check off requirements
+    setReq('req-length',  hasLength);
+    setReq('req-number',  hasNumber);
+    setReq('req-special', hasSpecial);
+
+    // Score 0–4
+    const score = [hasLength, hasNumber, hasSpecial, hasUpper].filter(Boolean).length;
+    const fill  = document.getElementById('pwStrengthFill');
+    const pct   = score === 0 ? 0 : [25, 40, 65, 90, 100][score];
+    const color = score <= 1 ? '#d47a7a' : score <= 2 ? '#c8a060' : '#5fa67a';
+    fill.style.width           = pct + '%';
+    fill.style.backgroundColor = color;
+}
+
+function setReq(id, met) {
+    const el   = document.getElementById(id);
+    const icon = el ? el.querySelector('i') : null;
+    if (!el) return;
+    el.classList.toggle('met', met);
+    if (icon) {
+        icon.className = met ? 'bi bi-check-circle-fill' : 'bi bi-circle';
+    }
+}
+
+// ── Notification toggle ───────────────────────────────────────────
+document.getElementById('notifToggle').addEventListener('change', async function () {
+    const enabled = this.checked;
+    const resp = await fetch('{{ url_for("settings.update_notifications") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ enabled }),
+    });
+    const data = await resp.json();
+    if (data.ok) {
+        const saved = document.getElementById('notifSaved');
+        saved.style.display = 'block';
+        setTimeout(() => { saved.style.display = 'none'; }, 2500);
+    } else {
+        // Revert toggle on failure
+        this.checked = !enabled;
+    }
+});
+
+// ── Delete account modal guard ────────────────────────────────────
+function checkDeleteReady() {
+    const pw   = document.getElementById('deletePassword').value;
+    const text = document.getElementById('deleteConfirm').value;
+    document.getElementById('deleteSubmitBtn').disabled = !(pw && text === 'DELETE');
+}
+document.getElementById('deletePassword').addEventListener('input',  checkDeleteReady);
+document.getElementById('deleteConfirm').addEventListener('input',   checkDeleteReady);
+
+// Reset modal state on close
+document.getElementById('deleteAccountModal').addEventListener('hidden.bs.modal', function () {
+    document.getElementById('deletePassword').value = '';
+    document.getElementById('deleteConfirm').value  = '';
+    document.getElementById('deleteSubmitBtn').disabled = true;
+});
+</script>
+{% endblock %}

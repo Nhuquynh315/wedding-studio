@@ -63,13 +63,19 @@ def checklist(wedding_id):
 @login_required
 def add_item(wedding_id):
     wedding = get_wedding_or_403(wedding_id)
-    title    = request.form.get('title', '').strip()
-    category = request.form.get('category', 'Other').strip()
-    priority = request.form.get('priority', 'medium').strip()
-    notes    = request.form.get('notes', '').strip() or None
-    due_raw  = request.form.get('due_date', '').strip()
+    is_json = request.is_json
+    data     = request.get_json(silent=True) or {}
+    get      = lambda k, d='': (data.get(k) or request.form.get(k) or d).strip()
+
+    title    = get('title')
+    category = get('category', 'Other')
+    priority = get('priority', 'medium')
+    notes    = get('notes') or None
+    due_raw  = get('due_date')
 
     if not title:
+        if is_json:
+            return {'error': 'Task title is required.'}, 400
         flash('Task title is required.', 'danger')
         return redirect(url_for('checklist.checklist', wedding_id=wedding_id))
 
@@ -84,6 +90,8 @@ def add_item(wedding_id):
             from datetime import date
             due_date = date.fromisoformat(due_raw)
         except ValueError:
+            if is_json:
+                return {'error': 'Invalid due date.'}, 400
             flash('Invalid due date.', 'danger')
             return redirect(url_for('checklist.checklist', wedding_id=wedding_id))
 
@@ -100,7 +108,11 @@ def add_item(wedding_id):
         db.session.commit()
     except Exception:
         db.session.rollback()
+        if is_json:
+            return {'error': 'Could not add task. Please try again.'}, 500
         flash('Could not add task. Please try again.', 'danger')
+    if is_json:
+        return {'ok': True, 'id': item.id}
     return redirect(url_for('checklist.checklist', wedding_id=wedding_id))
 
 

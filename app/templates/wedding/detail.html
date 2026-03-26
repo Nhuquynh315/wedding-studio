@@ -237,69 +237,112 @@
 }
 
 /* ── Invitation section ──────────────────────────────────────────── */
-.invitation-preview-wrap {
-    width: 100%;
-    overflow: hidden;
-    border-radius: 10px;
-    border: 1px solid #ecdde3;
-    background: #fffdf9;
-    margin-bottom: 1.25rem;
-}
-.invitation-scaled {
-    transform: scale(0.55);
-    transform-origin: top left;
-    width: calc(100% / 0.55);
-    height: calc(672px / 0.55);
-}
-.invitation-spacer { height: calc(672px * 0.55); }
-
-/* ── Theme styles (carried over) ─────────────────────────────────── */
-.theme-tagline {
-    background: linear-gradient(135deg, #fdf8f5 0%, #fdf3ee 100%);
+.invitation-stage {
+    background: #f0ebe3;
     border-radius: 14px;
-    padding: 2rem 1.75rem;
-    text-align: center;
-    margin-bottom: 1rem;
+    padding: 2.5rem 1.5rem 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 0;
 }
-.theme-tagline p {
+.invitation-card-wrap {
+    --inv-scale: 1.104;
+    width:  calc(480px * var(--inv-scale));
+    height: calc(672px * var(--inv-scale));
+    flex-shrink: 0;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.12);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+.invitation-card-wrap.fit-screen { --inv-scale: 0.72; }
+.invitation-card-wrap iframe {
+    width: 480px; height: 672px; border: none; display: block;
+    transform: scale(var(--inv-scale));
+    transform-origin: top left;
+    pointer-events: none;
+}
+.invitation-meta {
+    text-align: center;
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+.invitation-meta p {
     font-family: 'Cormorant Garamond', serif;
     font-size: clamp(1.3rem, 2.5vw, 1.8rem);
     font-weight: 300;
     font-style: italic;
     color: #4a3728;
-    margin: 0;
+    margin: 0 0 0.25rem;
     line-height: 1.5;
 }
-.theme-tagline small { font-family: 'Jost', sans-serif; font-size: 0.72rem; color: #c0a898; }
+.invitation-meta small { font-family: 'Jost', sans-serif; font-size: 0.72rem; color: #c0a898; }
+.inv-view-toggle {
+    display: flex;
+    gap: 0.4rem;
+    margin-top: 1rem;
+}
+.inv-view-btn {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    border: 1px solid #d4b8ac;
+    background: transparent;
+    color: #a09080;
+    border-radius: 6px;
+    padding: 0.28rem 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.inv-view-btn.active,
+.inv-view-btn:hover { border-color: var(--ws-rose); color: var(--ws-rose); }
 
 .palette-swatches { display: flex; flex-wrap: wrap; gap: 1.1rem; }
 .swatch-item { display: flex; align-items: center; gap: 0.75rem; flex: 1 1 140px; }
-.swatch-item.selected .swatch-circle { outline: 2.5px solid var(--ws-rose); outline-offset: 3px; }
-.swatch-circle { width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+.swatch-circle { width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,.12); cursor: pointer; transition: transform 0.15s, box-shadow 0.15s, outline 0.12s; }
+.swatch-circle:hover { transform: scale(1.12); box-shadow: 0 4px 14px rgba(0,0,0,.18); }
+.swatch-item.selected .swatch-circle { outline: 2px solid #c9687a; outline-offset: 3px; }
 .swatch-info { line-height: 1.3; }
 .swatch-role { display: block; font-family: 'Jost', sans-serif; font-size: 0.62rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: #b89a8a; }
 .swatch-name { display: block; font-family: 'Jost', sans-serif; font-size: 0.82rem; color: #3a2e28; }
 .swatch-hex  { display: block; font-family: monospace; font-size: 0.7rem; color: #a09080; }
-.colour-selected-badge { display: block; font-family: 'Jost', sans-serif; font-size: 0.68rem; font-weight: 500; letter-spacing: 0.05em; color: var(--ws-rose); margin-top: 0.25rem; }
-.btn-select-colour { font-family: 'Jost', sans-serif; font-size: 0.68rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; border: 1px solid #d4b8ac; background: transparent; color: #a09080; border-radius: 4px; padding: 0.18rem 0.55rem; cursor: pointer; margin-top: 0.25rem; transition: all 0.15s; }
-.btn-select-colour:hover { border-color: var(--ws-rose); color: var(--ws-rose); }
 
-.font-pairing-card { border-radius: 12px; padding: 1.25rem; background: #fdf9f7; border: 1.5px solid #f0e4df; transition: border-color 0.15s; }
+.font-pairing-card { border-radius: 12px; padding: 1.25rem; background: #fdf9f7; border: 1.5px solid #f0e4df; transition: border-color 0.15s; height: 100%; display: flex; flex-direction: column; justify-content: space-between; gap: 0; }
 .font-pairing-card.selected { border-color: var(--ws-rose); }
-.font-pair-label { font-family: 'Jost', sans-serif; font-size: 0.62rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: #b89a8a; margin-bottom: 0.15rem; }
-.font-pair-name  { font-family: 'Jost', sans-serif; font-size: 0.82rem; color: #5a4e48; margin-bottom: 0.35rem; }
-.font-pair-sample { font-size: 1.15rem; color: #3a2e28; margin-bottom: 0.75rem; }
-.font-pair-description { font-family: 'Jost', sans-serif; font-size: 0.78rem; color: #8a7a70; line-height: 1.5; }
-.font-pair-select-btn { margin-top: 0.75rem; }
-.btn-select-font { font-family: 'Jost', sans-serif; font-size: 0.72rem; font-weight: 500; letter-spacing: 0.06em; border: 1px solid #d4b8ac; background: transparent; color: #a09080; border-radius: 6px; padding: 0.3rem 0.8rem; cursor: pointer; transition: all 0.15s; }
-.btn-select-font:hover { border-color: var(--ws-rose); color: var(--ws-rose); }
-.font-selected-badge { font-family: 'Jost', sans-serif; font-size: 0.72rem; font-weight: 500; color: var(--ws-rose); }
+.font-pair-top { display: flex; flex-direction: column; }
+.font-pair-label { font-family: 'Jost', sans-serif; font-size: 0.69rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: #b89a8a; margin: 0 0 0.3rem; }
+.font-pair-heading-name { font-size: 1.375rem; color: #2d2420; margin: 0 0 0.2rem; line-height: 1.3; }
+.font-pair-heading-sample { font-size: 1.125rem; font-weight: 300; color: #2d2420; margin: 0 0 1rem; line-height: 1.4; }
+.font-pair-divider { border: none; border-top: 0.5px solid #e8e0d8; margin: 0 0 0.85rem; }
+.font-pair-body-name { font-family: 'Jost', sans-serif; font-size: 0.8rem; color: #8a7a70; margin: 0 0 0.35rem; }
+.font-pair-body-sample { font-size: 0.8125rem; line-height: 1.7; color: #5a5450; margin: 0; flex: 1; }
+.font-pairing-card:hover { border-color: #d4b8ac; }
 
 .invitation-body { font-family: 'Jost', sans-serif; font-size: 0.9rem; line-height: 1.8; color: #4a3e38; white-space: pre-line; }
 .theme-badge { display: inline-block; padding: 0.3em 0.9em; border-radius: 2em; background: #fdf0f3; color: var(--ws-rose); font-family: 'Jost', sans-serif; font-size: 0.78rem; font-weight: 400; }
 .decor-list { list-style: none; padding: 0; margin: 0; }
-.decor-list li { font-family: 'Jost', sans-serif; font-size: 0.85rem; color: #5a4e48; padding: 0.4rem 0; border-bottom: 1px solid #f5eae7; }
+.decor-list li { font-family: 'Jost', sans-serif; font-size: 0.85rem; color: #5a4e48; padding: 0.55rem 0; border-bottom: 1px solid #f5eae7; display: flex; gap: 0.75rem; align-items: flex-start; }
 .decor-list li:last-child { border-bottom: none; }
+.decor-list li span { flex: 1; line-height: 1.55; }
+.btn-add-checklist {
+    flex-shrink: 0;
+    font-family: 'Jost', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 12px;
+    border: 1px solid #c9687a;
+    color: #c9687a;
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+.btn-add-checklist:hover { background: #fdf0f3; }
+.btn-add-checklist.added { border-color: #5a8a5a; color: #5a8a5a; cursor: default; }
+.btn-add-checklist.failed { border-color: #c0392b; color: #c0392b; }
 
 .btn-copy { font-family: 'Jost', sans-serif; font-size: 0.72rem; font-weight: 500; letter-spacing: 0.06em; border: 1px solid #d4b8ac; background: transparent; color: #a09080; border-radius: 6px; padding: 0.3rem 0.8rem; cursor: pointer; transition: all 0.15s; }
 .btn-copy:hover { border-color: var(--ws-rose); color: var(--ws-rose); }
@@ -777,7 +820,14 @@
 <section id="sec-invitation" class="planner-section">
     <div class="section-hd">
         <h2 class="section-title">Invitation</h2>
-        <div class="section-subtitle">AI-generated theme &amp; print-ready design</div>
+        {% if theme %}
+        <form method="POST" action="{{ url_for('wedding.generate_pdf', wedding_id=wedding.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-primary btn-sm">
+                <i class="bi bi-download me-1"></i>Download PDF
+            </button>
+        </form>
+        {% endif %}
     </div>
 
     {# If theme exists, show preview first #}
@@ -785,34 +835,26 @@
 
     {# Invitation preview #}
     <div class="planner-card mb-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <div>
-                <p class="planner-card-title mb-0">Preview</p>
-                <small style="font-family:'Jost',sans-serif; font-size:0.75rem; color:#b89a8a;">5 × 7 in print-ready</small>
-            </div>
-            <form method="POST" action="{{ url_for('wedding.generate_pdf', wedding_id=wedding.id) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-primary btn-sm">
-                    <i class="bi bi-download me-1"></i>Download PDF
-                </button>
-            </form>
-        </div>
-        <div class="invitation-preview-wrap">
-            <div class="invitation-scaled">
+        <p class="planner-card-title mb-1">Preview</p>
+        <small style="font-family:'Jost',sans-serif; font-size:0.75rem; color:#b89a8a; display:block; margin-bottom:1rem;">5 × 7 in print-ready</small>
+
+        <div class="invitation-stage">
+            <div class="invitation-card-wrap fit-screen" id="invCardWrap">
                 <iframe src="{{ url_for('wedding.invitation_preview', wedding_id=wedding.id) }}"
-                        style="width:480px; height:672px; border:none; display:block;"
                         scrolling="no"></iframe>
             </div>
-            <div class="invitation-spacer"></div>
+            <div class="invitation-meta">
+                <p>"{{ theme.tagline }}"</p>
+                {% if theme.generated_at %}
+                <small>Theme generated {{ theme.generated_at }}</small>
+                {% endif %}
+            </div>
         </div>
-    </div>
 
-    {# Theme tagline #}
-    <div class="theme-tagline mb-4">
-        <p>"{{ theme.tagline }}"</p>
-        {% if theme.generated_at %}
-        <small>Theme generated {{ theme.generated_at }}</small>
-        {% endif %}
+        <div class="inv-view-toggle justify-content-center mt-2">
+            <button class="inv-view-btn active" id="btnFit" onclick="setInvView('fit')">Fit to Screen</button>
+            <button class="inv-view-btn" id="btnFull" onclick="setInvView('full')">Full Size</button>
+        </div>
     </div>
 
     <div class="row g-3 mb-3">
@@ -820,26 +862,23 @@
         <div class="col-12">
             <div class="planner-card">
                 <p class="planner-card-title">Colour Palette</p>
-                <div class="palette-swatches">
+                <div class="palette-swatches"
+                     id="paletteSwatches"
+                     data-apply-url="{{ url_for('wedding.select_colour', wedding_id=wedding.id) }}"
+                     data-csrf="{{ csrf_token() }}">
                     {% if theme.color_palette is iterable and theme.color_palette is not string %}
                         {% set sel_colour = theme.selected_colour if theme.selected_colour is defined else '' %}
                         {% for color in theme.color_palette %}
                         {% if color is mapping %}
                         <div class="swatch-item{% if color.hex | lower == sel_colour | lower %} selected{% endif %}">
-                            <div class="swatch-circle" style="background-color: {{ color.hex }};"></div>
+                            <div class="swatch-circle"
+                                 style="background-color: {{ color.hex }};"
+                                 onclick="applyColour(this, '{{ color.hex }}')"
+                                 title="{{ color.name }}"></div>
                             <div class="swatch-info">
                                 <span class="swatch-role">{{ color.role }}</span>
                                 <span class="swatch-name">{{ color.name }}</span>
                                 <span class="swatch-hex">{{ color.hex }}</span>
-                                {% if color.hex | lower == sel_colour | lower %}
-                                <span class="colour-selected-badge">✦ Applied</span>
-                                {% else %}
-                                <form method="POST" action="{{ url_for('wedding.select_colour', wedding_id=wedding.id) }}" style="display:inline;">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <input type="hidden" name="hex_colour" value="{{ color.hex }}">
-                                    <button type="submit" class="btn-select-colour">Use</button>
-                                </form>
-                                {% endif %}
                             </div>
                         </div>
                         {% endif %}
@@ -853,30 +892,27 @@
         <div class="col-12">
             <div class="planner-card">
                 <p class="planner-card-title">Typography Pairings</p>
-                <div class="row g-3" id="fontPairings">
+                <div class="row g-3 align-items-stretch" id="fontPairings"
+                     data-apply-url="{{ url_for('wedding.select_font', wedding_id=wedding.id) }}"
+                     data-csrf="{{ csrf_token() }}">
                     {% set sel_idx = theme.selected_font_index if theme.selected_font_index is defined else 0 %}
                     {% for fp in theme.font_suggestions %}
                     {% set loop_idx = loop.index0 %}
-                    <div class="col-md-4">
+                    <div class="col-md-4 d-flex">
                         {% if fp is mapping %}
                         <div class="font-pairing-card{% if loop_idx == sel_idx %} selected{% endif %}"
-                             data-heading="{{ fp.heading }}" data-body="{{ fp.body }}">
-                            <p class="font-pair-label">Heading</p>
-                            <p class="font-pair-name">{{ fp.heading }}</p>
-                            <p class="font-pair-sample">A love written in time</p>
-                            <p class="font-pair-label mt-2">Body</p>
-                            <p class="font-pair-name">{{ fp.body }}</p>
-                            <p class="font-pair-description">{{ fp.description }}</p>
-                            <div class="font-pair-select-btn">
-                                {% if loop_idx == sel_idx %}
-                                <span class="font-selected-badge">✦ Applied to invitation</span>
-                                {% else %}
-                                <form method="POST" action="{{ url_for('wedding.select_font', wedding_id=wedding.id) }}">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <input type="hidden" name="font_index" value="{{ loop_idx }}">
-                                    <button type="submit" class="btn-select-font">Use this pairing</button>
-                                </form>
-                                {% endif %}
+                             data-heading="{{ fp.heading }}" data-body="{{ fp.body }}"
+                             data-index="{{ loop_idx }}"
+                             onclick="applyFont(this, {{ loop_idx }})"
+                             style="cursor:pointer;">
+                            <div class="font-pair-top">
+                                <p class="font-pair-label">Heading</p>
+                                <p class="font-pair-heading-name">{{ fp.heading }}</p>
+                                <p class="font-pair-heading-sample">A love written in time</p>
+                                <hr class="font-pair-divider">
+                                <p class="font-pair-label">Body</p>
+                                <p class="font-pair-body-name">{{ fp.body }}</p>
+                                <p class="font-pair-body-sample">{{ fp.description }}</p>
                             </div>
                         </div>
                         {% endif %}
@@ -901,7 +937,16 @@
             <div class="planner-card">
                 <p class="planner-card-title">Decor Ideas</p>
                 <ul class="decor-list">
-                    {% for idea in theme.decor_suggestions %}<li>{{ idea }}</li>{% endfor %}
+                    {% for idea in theme.decor_suggestions %}
+                    <li>
+                        <span>{{ idea }}</span>
+                        <button class="btn-add-checklist"
+                                data-idea="{{ idea | e }}"
+                                data-url="{{ url_for('checklist.add_item', wedding_id=wedding.id) }}"
+                                data-csrf="{{ csrf_token() }}"
+                                onclick="addDecorToChecklist(this)">Add to checklist</button>
+                    </li>
+                    {% endfor %}
                 </ul>
             </div>
         </div>
@@ -911,9 +956,12 @@
             <div class="planner-card">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <p class="planner-card-title mb-0">Invitation Wording</p>
-                    <button class="btn-copy" id="copyBtn" onclick="copyInvitation()">Copy text</button>
+                    <button class="btn-copy" id="wordingSaveBtn" onclick="saveWording()">Save</button>
                 </div>
-                <div class="invitation-body" id="invitationText">{{ theme.invitation_text }}</div>
+                <textarea class="invitation-body" id="invitationText"
+                          style="width:100%; resize:vertical; border:none; outline:none; background:transparent; min-height:6rem;"
+                          data-save-url="{{ url_for('wedding.save_wording', wedding_id=wedding.id) }}"
+                          data-csrf="{{ csrf_token() }}">{{ theme.invitation_text }}</textarea>
             </div>
         </div>
     </div>
@@ -1107,6 +1155,21 @@
 
 {% block extra_js %}
 <script>
+/* ── Invitation view toggle ──────────────────────────────────────── */
+function setInvView(mode) {
+    var wrap = document.getElementById('invCardWrap');
+    if (!wrap) return;
+    if (mode === 'full') {
+        wrap.classList.remove('fit-screen');
+        document.getElementById('btnFit').classList.remove('active');
+        document.getElementById('btnFull').classList.add('active');
+    } else {
+        wrap.classList.add('fit-screen');
+        document.getElementById('btnFit').classList.add('active');
+        document.getElementById('btnFull').classList.remove('active');
+    }
+}
+
 /* ── Section switching (hash-driven) ────────────────────────────── */
 (function () {
     function activateSection(hash) {
@@ -1185,16 +1248,91 @@ window.addEventListener('pageshow', function (e) {
     }
 });
 
-/* ── Copy invitation text ───────────────────────────────────────── */
-function copyInvitation() {
-    const text = document.getElementById('invitationText');
-    if (!text) return;
-    navigator.clipboard.writeText(text.innerText).then(function () {
-        const btn = document.getElementById('copyBtn');
-        btn.textContent = 'Copied!';
-        btn.classList.add('copied');
-        setTimeout(function () { btn.textContent = 'Copy text'; btn.classList.remove('copied'); }, 2500);
+/* ── Apply colour swatch ────────────────────────────────────────── */
+function applyColour(circleEl, hex) {
+    var wrap = document.getElementById('paletteSwatches');
+    if (!wrap) return;
+    var body = new FormData();
+    body.append('hex_colour', hex);
+    body.append('csrf_token', wrap.dataset.csrf);
+    fetch(wrap.dataset.applyUrl, { method: 'POST', body: body })
+        .then(function (r) { if (r.ok || r.redirected) {
+            wrap.querySelectorAll('.swatch-item').forEach(function (item) {
+                item.classList.remove('selected');
+            });
+            circleEl.closest('.swatch-item').classList.add('selected');
+            var iframe = document.querySelector('#invCardWrap iframe');
+            if (iframe) iframe.src = iframe.src;
+        }});
+}
+
+/* ── Apply font pairing ─────────────────────────────────────────── */
+function applyFont(cardEl, idx) {
+    var wrap = document.getElementById('fontPairings');
+    if (!wrap) return;
+    var body = new FormData();
+    body.append('font_index', idx);
+    body.append('csrf_token', wrap.dataset.csrf);
+    fetch(wrap.dataset.applyUrl, { method: 'POST', body: body })
+        .then(function (r) { if (r.ok || r.redirected) {
+            wrap.querySelectorAll('.font-pairing-card').forEach(function (c) { c.classList.remove('selected'); });
+            cardEl.classList.add('selected');
+            var iframe = document.querySelector('#invCardWrap iframe');
+            if (iframe) iframe.src = iframe.src;
+        }});
+}
+
+/* ── Add decor idea to checklist ────────────────────────────────── */
+function addDecorToChecklist(btn) {
+    var idea = btn.dataset.idea;
+    var words = idea.split(/\s+/).slice(0, 6).join(' ') + '...';
+    fetch(btn.dataset.url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': btn.dataset.csrf
+        },
+        body: JSON.stringify({ title: words, category: 'Decor', notes: idea, priority: 'medium' })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+        if (d.ok) {
+            btn.textContent = '\u2713 Added';
+            btn.classList.add('added');
+            btn.disabled = true;
+        } else {
+            btn.textContent = 'Failed \u2014 try again';
+            btn.classList.add('failed');
+        }
+    })
+    .catch(function () {
+        btn.textContent = 'Failed \u2014 try again';
+        btn.classList.add('failed');
     });
+}
+
+/* ── Save invitation wording ────────────────────────────────────── */
+function saveWording() {
+    var ta  = document.getElementById('invitationText');
+    var btn = document.getElementById('wordingSaveBtn');
+    if (!ta || !btn) return;
+    var body = new FormData();
+    body.append('invitation_text', ta.value);
+    body.append('csrf_token', ta.dataset.csrf);
+    fetch(ta.dataset.saveUrl, { method: 'POST', body: body })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+            if (d.ok) {
+                btn.textContent = 'Saved \u2713';
+                btn.classList.add('copied');
+                var iframe = document.querySelector('#invCardWrap iframe');
+                if (iframe) iframe.src = iframe.src;
+                setTimeout(function () { btn.textContent = 'Save'; btn.classList.remove('copied'); }, 2500);
+            } else {
+                btn.textContent = 'Error';
+                setTimeout(function () { btn.textContent = 'Save'; }, 2500);
+            }
+        });
 }
 
 /* ── Load Google Fonts for font pairing previews ────────────────── */
@@ -1213,11 +1351,14 @@ function copyInvitation() {
     document.head.appendChild(link);
     link.onload = function () {
         cards.forEach(function (card) {
-            const sample = card.querySelector('.font-pair-sample');
-            if (sample && card.dataset.heading) sample.style.fontFamily = "'" + card.dataset.heading + "', serif";
-            card.querySelectorAll('.font-pair-name').forEach(function (el, i) {
-                el.style.fontFamily = i === 0 ? "'" + card.dataset.heading + "', serif" : "'" + card.dataset.body + "', sans-serif";
-            });
+            var hf = "'" + card.dataset.heading + "', serif";
+            var bf = "'" + card.dataset.body + "', sans-serif";
+            var headingName   = card.querySelector('.font-pair-heading-name');
+            var headingSample = card.querySelector('.font-pair-heading-sample');
+            var bodySample    = card.querySelector('.font-pair-body-sample');
+            if (headingName)   headingName.style.fontFamily   = hf;
+            if (headingSample) headingSample.style.fontFamily = hf;
+            if (bodySample)    bodySample.style.fontFamily    = bf;
         });
     };
 })();

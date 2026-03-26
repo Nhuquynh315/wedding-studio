@@ -363,6 +363,7 @@ def edit_wedding(wedding_id):
         wedding.style              = style
         wedding.primary_color      = primary_color
         wedding.secondary_color    = secondary_color
+        wedding.rsvp_contact       = request.form.get('rsvp_contact', '').strip() or None
         wedding.ai_generated_theme = None  # invalidate theme when details change
 
         try:
@@ -438,7 +439,7 @@ def invitation_preview(wedding_id):
     theme = json.loads(wedding.ai_generated_theme)
     from app.services.pdf_service import _format_date
     rsvp_date = theme.get('rsvp_info') or None
-    rsvp_info = f"{rsvp_date}  ·  {current_user.email}" if rsvp_date else None
+    rsvp_info = f"{rsvp_date}  ·  {wedding.rsvp_contact}" if (rsvp_date and wedding.rsvp_contact) else (rsvp_date or None)
     fonts = theme.get('font_suggestions', [])
     sel_idx = theme.get('selected_font_index', 0)
     selected_font = fonts[sel_idx] if fonts and 0 <= sel_idx < len(fonts) else {}
@@ -468,7 +469,7 @@ def generate_pdf(wedding_id):
         return redirect(url_for('wedding.wedding_detail', wedding_id=wedding_id))
     theme = json.loads(wedding.ai_generated_theme)
     rsvp_date = theme.get('rsvp_info') or None
-    rsvp_info = f"{rsvp_date}  ·  {current_user.email}" if rsvp_date else None
+    rsvp_info = f"{rsvp_date}  ·  {wedding.rsvp_contact}" if (rsvp_date and wedding.rsvp_contact) else (rsvp_date or None)
     fonts = theme.get('font_suggestions', [])
     sel_idx = theme.get('selected_font_index', 0)
     selected_font = fonts[sel_idx] if fonts and 0 <= sel_idx < len(fonts) else {}
@@ -528,6 +529,26 @@ def select_font(wedding_id):
             db.session.rollback()
             flash('Could not save font selection. Please try again.', 'danger')
     return redirect(url_for('wedding.wedding_detail', wedding_id=wedding_id, _anchor='invitation'))
+
+
+@wedding_bp.route('/wedding/<int:wedding_id>/save-wording', methods=['POST'])
+@login_required
+def save_wording(wedding_id):
+    wedding = get_wedding_or_403(wedding_id)
+    if not wedding.ai_generated_theme:
+        return {'error': 'No theme found'}, 400
+    theme = json.loads(wedding.ai_generated_theme)
+    text = request.form.get('invitation_text', '').strip()
+    if not text:
+        return {'error': 'Empty wording'}, 400
+    theme['invitation_text'] = text
+    wedding.ai_generated_theme = json.dumps(theme)
+    try:
+        db.session.commit()
+        return {'ok': True}
+    except Exception:
+        db.session.rollback()
+        return {'error': 'Could not save'}, 500
 
 
 @wedding_bp.route('/wedding/<int:wedding_id>/delete', methods=['POST'])

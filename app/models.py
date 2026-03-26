@@ -25,8 +25,13 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
-    full_name = db.Column(db.String(120), nullable=False)
-    created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
+    full_name            = db.Column(db.String(200), nullable=False)
+    avatar_color         = db.Column(db.String(7),  nullable=False, default='#c9687a')
+    phone                = db.Column(db.String(50), nullable=True)
+    timezone             = db.Column(db.String(50), nullable=False, default='UTC')
+    email_notifications  = db.Column(db.Boolean,    nullable=False, default=True)
+    updated_at           = db.Column(db.DateTime,   nullable=True)
+    created_at           = db.Column(db.DateTime,   default=utcnow, nullable=False)
 
     weddings = db.relationship('Wedding', back_populates='user', cascade='all, delete-orphan')
 
@@ -70,6 +75,7 @@ class Wedding(db.Model):
     primary_color = db.Column(db.String(20), nullable=False)
     secondary_color = db.Column(db.String(20), nullable=False)
     ai_generated_theme = db.Column(db.Text, nullable=True)
+    rsvp_contact = db.Column(db.String(255), nullable=True)
     total_budget = db.Column(db.Float, nullable=True, default=None)
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow, nullable=False)

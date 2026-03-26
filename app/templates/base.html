@@ -155,38 +155,45 @@
 
     /* Sidebar bottom */
     .sidebar-bottom {
-        padding: 1rem 1.5rem;
         border-top: 1px solid var(--border);
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+    }
+    .sidebar-user-info {
         display: flex;
         align-items: center;
-        gap: 0.6rem;
+        gap: 0.65rem;
+        padding: 0.85rem 1.5rem 0.6rem;
     }
     .sidebar-user-avatar {
-        width: 30px; height: 30px;
+        width: 36px; height: 36px;
         border-radius: 50%;
-        background: var(--rose-bg);
         display: flex; align-items: center; justify-content: center;
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: var(--rose);
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: #fff;
         flex-shrink: 0;
+        transition: background-color .2s;
     }
+    .sidebar-user-details { flex: 1; min-width: 0; }
     .sidebar-user-name {
         font-size: 0.8rem;
         font-weight: 500;
         color: var(--text-dark);
-        flex: 1;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        display: block;
     }
-    .sidebar-logout {
-        font-size: 0.78rem;
+    .sidebar-user-email {
+        font-size: 0.68rem;
         color: var(--text-muted);
-        text-decoration: none;
-        flex-shrink: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        display: block;
     }
-    .sidebar-logout:hover { color: var(--rose); }
 
     /* ── Main content ─────────────────────────────────────────────── */
     .app-shell {
@@ -383,10 +390,6 @@
                class="sidebar-link" data-nav="invitation">
                 <i class="bi bi-envelope"></i> Invitation
             </a>
-            <span class="sidebar-section-label" style="margin-top:.5rem;">Account</span>
-            <a href="#" class="sidebar-link disabled" data-nav="settings">
-                <i class="bi bi-gear"></i> Settings <span class="soon-badge">Soon</span>
-            </a>
             {% else %}
             <span class="sidebar-link disabled"><i class="bi bi-people"></i> Guests</span>
             <span class="sidebar-link disabled"><i class="bi bi-grid-3x3-gap"></i> Seating</span>
@@ -399,14 +402,29 @@
         {% endif %}
         <div class="sidebar-bottom mt-auto">
             {% if current_user.is_authenticated %}
-            <div class="sidebar-user-avatar">{{ current_user.full_name[0] | upper }}</div>
-            <span class="sidebar-user-name">{{ current_user.full_name.split()[0] }}</span>
-            <a href="{{ url_for('auth.logout') }}" class="sidebar-logout">
-                <i class="bi bi-box-arrow-right"></i>
+            <div class="sidebar-user-info">
+                <div class="sidebar-user-avatar" id="sidebarAvatarMobile"
+                     style="background:{{ current_user.avatar_color or '#c9687a' }};">
+                    {{ current_user.full_name | initials }}
+                </div>
+                <div class="sidebar-user-details">
+                    <span class="sidebar-user-name">{{ current_user.full_name }}</span>
+                    <span class="sidebar-user-email">{{ current_user.email }}</span>
+                </div>
+            </div>
+            <span class="sidebar-section-label">Account</span>
+            <a href="{{ url_for('settings.settings_page') }}"
+               class="sidebar-link {% if request.endpoint == 'settings.settings_page' %}active{% endif %}">
+                <i class="bi bi-person"></i> Profile &amp; Settings
+            </a>
+            <a href="{{ url_for('auth.logout') }}" class="sidebar-link">
+                <i class="bi bi-box-arrow-right"></i> Log Out
             </a>
             {% else %}
-            <a href="{{ url_for('auth.login') }}" class="sidebar-link">Login</a>
-            <a href="{{ url_for('auth.register') }}" class="sidebar-link">Register</a>
+            <div style="padding:.75rem 1.5rem; display:flex; gap:.5rem;">
+                <a href="{{ url_for('auth.login') }}" class="sidebar-link" style="padding:.4rem .75rem;">Login</a>
+                <a href="{{ url_for('auth.register') }}" class="sidebar-link" style="padding:.4rem .75rem;">Register</a>
+            </div>
             {% endif %}
         </div>
     </div>
@@ -469,10 +487,6 @@
            class="sidebar-link" data-nav="invitation">
             <i class="bi bi-envelope"></i> Invitation
         </a>
-        <span class="sidebar-section-label" style="margin-top:.5rem;">Account</span>
-        <a href="#" class="sidebar-link disabled" data-nav="settings">
-            <i class="bi bi-gear"></i> Settings <span class="soon-badge">Soon</span>
-        </a>
         {% else %}
         <span class="sidebar-link disabled"><i class="bi bi-people"></i> Guests</span>
         <span class="sidebar-link disabled"><i class="bi bi-grid-3x3-gap"></i> Seating</span>
@@ -486,14 +500,29 @@
 
     <div class="sidebar-bottom">
         {% if current_user.is_authenticated %}
-        <div class="sidebar-user-avatar">{{ current_user.full_name[0] | upper }}</div>
-        <span class="sidebar-user-name">{{ current_user.full_name.split()[0] }}</span>
-        <a href="{{ url_for('auth.logout') }}" class="sidebar-logout" title="Logout">
-            <i class="bi bi-box-arrow-right"></i>
+        <div class="sidebar-user-info">
+            <div class="sidebar-user-avatar"
+                 style="background:{{ current_user.avatar_color or '#c9687a' }};">
+                {{ current_user.full_name | initials }}
+            </div>
+            <div class="sidebar-user-details">
+                <span class="sidebar-user-name">{{ current_user.full_name }}</span>
+                <span class="sidebar-user-email">{{ current_user.email }}</span>
+            </div>
+        </div>
+        <span class="sidebar-section-label">Account</span>
+        <a href="{{ url_for('settings.settings_page') }}"
+           class="sidebar-link {% if request.endpoint == 'settings.settings_page' %}active{% endif %}">
+            <i class="bi bi-person"></i> Profile &amp; Settings
+        </a>
+        <a href="{{ url_for('auth.logout') }}" class="sidebar-link">
+            <i class="bi bi-box-arrow-right"></i> Log Out
         </a>
         {% else %}
-        <a href="{{ url_for('auth.login') }}" class="sidebar-link">Login</a>
-        <a href="{{ url_for('auth.register') }}" class="sidebar-link">Register</a>
+        <div style="padding:.75rem 1.5rem; display:flex; gap:.5rem;">
+            <a href="{{ url_for('auth.login') }}" class="sidebar-link" style="padding:.4rem .75rem;">Login</a>
+            <a href="{{ url_for('auth.register') }}" class="sidebar-link" style="padding:.4rem .75rem;">Register</a>
+        </div>
         {% endif %}
     </div>
 </aside>

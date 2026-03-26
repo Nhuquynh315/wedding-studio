@@ -50,6 +50,14 @@ _TONE_DESCRIPTIONS = {
     'Simple':    'simple, clean, and understated',
 }
 
+_WORDING_GUIDANCE = {
+    'Romantic':  'Warm and tender — classic structure but with a loving, heartfelt feel. Example: "joyfully invite you to share in their love\\nas they begin their journey together"',
+    'Formal':    'Traditional and dignified — classic printed-invitation phrasing. Example: "request the honour of your presence\\nat the celebration of their marriage"',
+    'Playful':   'Warm and fun — still invitation-appropriate but friendly and upbeat. Example: "can\'t wait to celebrate with you\\nas they tie the knot!"',
+    'Poetic':    'Lyrical and evocative — may use imagery or gentle metaphor, 2-3 lines. Example: "where two rivers meet the sea\\nthey ask you to witness their becoming one"',
+    'Simple':    'Clear and minimal — short, direct, no embellishment. Example: "invite you to their wedding ceremony"',
+}
+
 
 def generate_wedding_theme(
     partner1_name,
@@ -69,18 +77,19 @@ def generate_wedding_theme(
         return None
 
     tone_desc = _TONE_DESCRIPTIONS.get(tone, 'romantic and heartfelt')
+    wording_guidance = _WORDING_GUIDANCE.get(tone, _WORDING_GUIDANCE['Formal'])
     user_prompt = f"""Wedding theme for {partner1_name} & {partner2_name}.
 Venue: {venue_name}, {location}. Date: {wedding_date}. Style: {style}. Colours: {primary_color}, {secondary_color}.
-Tone: Use a {tone_desc} tone throughout all text fields.
+Tone: Use a {tone_desc} tone throughout ALL text fields — tagline, invitation_text, decor_suggestions, style_keywords.
 
 JSON fields required:
-- tagline: MAX 6 WORDS. A short evocative subtitle only — no full sentences. Example: "Where two hearts become one"
+- tagline: MAX 6 WORDS. A short evocative subtitle matching the {tone} tone — no full sentences.
 - color_palette: array of 5 objects with keys name, hex, role — real CSS hex inspired by the given colours; roles: Primary/Secondary/Accent/Neutral/Highlight
-- font_suggestions: array of 3 objects with keys heading, body, description — real Google Font names, one sentence why it suits {style}
-- invitation_text: EXACTLY 2-3 lines of CLASSIC, TRADITIONAL invitation wording. Rules: NO names, NO date, NO time, NO venue. NO flowery or poetic language — keep it simple and direct. Use \\n between lines. The wording must sound like a real printed wedding invitation, not a poem. Example: "request the honour of your presence\\nat the celebration of their marriage"
+- font_suggestions: array of EXACTLY 3 objects with keys heading, body, description. Each must use a DIFFERENT font style category — one must use a script/calligraphy heading (e.g. Tangerine, Great Vibes, Pinyon Script), one must use a classic serif heading (e.g. Cormorant Garamond, Playfair Display, EB Garamond), one must use a modern sans-serif heading (e.g. Josefin Sans, Raleway, Montserrat). The 3 pairings must look visually DISTINCT from each other. Body fonts must be readable (Lato, Lora, Source Serif Pro, etc). One sentence description per pairing explaining why it suits {style} and {tone} tone.
+- invitation_text: 2-3 lines of invitation wording matching the {tone} tone. NO names, NO date, NO time, NO venue. Use \\n between lines. Guidance for {tone} tone: {wording_guidance}
 - ceremony_time: a ceremony time string in simple format, e.g. "5:00 PM" or "4:30 PM"
-- style_keywords: array of 5 strings
-- decor_suggestions: array of 4 strings specific to {venue_name} and {style}
+- style_keywords: array of 5 strings that reflect both {style} style and {tone} tone
+- decor_suggestions: array of 4 strings specific to {venue_name} and {style}, written in a {tone_desc} tone
 - rsvp_info: a short string with only the RSVP deadline date. Example: "March 15, 2026"
 """
 

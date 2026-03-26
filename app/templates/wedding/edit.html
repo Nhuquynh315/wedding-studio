@@ -109,6 +109,15 @@
                             </div>
                         </div>
                     </div>
+                    <div class="row g-3 mt-1">
+                        <div class="col-12">
+                            <label for="rsvp_contact" class="form-label">RSVP Contact <span class="text-muted fw-normal">(optional)</span></label>
+                            <input type="text" class="form-control" id="rsvp_contact" name="rsvp_contact"
+                                   value="{{ request.form.rsvp_contact or wedding.rsvp_contact or '' }}"
+                                   placeholder="e.g. emma@example.com or +1 555 000 0000">
+                            <div class="form-text">Shown on the invitation card next to the RSVP date.</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

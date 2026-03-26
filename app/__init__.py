@@ -47,7 +47,7 @@ def create_app(config_name='default'):
 
     # Register blueprints
     from app.routes.main import main_bp
-    from app.routes import auth_bp, wedding_bp, guests_bp, checklist_bp, budget_bp, vendors_bp, seating_bp
+    from app.routes import auth_bp, wedding_bp, guests_bp, checklist_bp, budget_bp, vendors_bp, seating_bp, settings_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
@@ -57,6 +57,16 @@ def create_app(config_name='default'):
     app.register_blueprint(budget_bp)
     app.register_blueprint(vendors_bp)
     app.register_blueprint(seating_bp)
+    app.register_blueprint(settings_bp)
+
+    @app.template_filter('initials')
+    def initials_filter(name):
+        parts = (name or '').strip().split()
+        if not parts:
+            return '?'
+        if len(parts) == 1:
+            return parts[0][0].upper()
+        return (parts[0][0] + parts[-1][0]).upper()
     
     @app.errorhandler(CSRFError)
     def handle_csrf_error(e):
