@@ -7,7 +7,7 @@ from flask import Blueprint, flash, redirect, render_template, request, send_fil
 from flask_login import login_required, current_user
 
 from app import db
-from app.models import Wedding, WEDDING_STYLES
+from app.models import Wedding, WEDDING_STYLES, Guest
 from app.routes.utils import get_wedding_or_403
 from app.services.ai_service import generate_wedding_theme
 from app.services.pdf_service import generate_invitation_pdf
@@ -240,18 +240,23 @@ def create_wedding():
     return render_template('wedding/create.html')
 
 
+_GUEST_RSVP_DB = {'accepted': 'confirmed', 'pending': 'pending', 'declined': 'declined'}
+_PER_PAGE = 50
+
+
 @wedding_bp.route('/wedding/<int:wedding_id>')
 @login_required
 def wedding_detail(wedding_id):
     wedding = get_wedding_or_403(wedding_id)
+
+    # Stats always computed on the full guest list
     guests = wedding.guests
     total    = len(guests)
     accepted = sum(1 for g in guests if g.rsvp_status == 'confirmed')
     declined = sum(1 for g in guests if g.rsvp_status == 'declined')
     pending  = sum(1 for g in guests if g.rsvp_status == 'pending')
-    responded = accepted + declined  # anyone who made a decision
+    responded = accepted + declined
 
-    # Meal breakdown — count only guests with a non-null preference
     meal_counts = defaultdict(int)
     for g in guests:
         if g.meal_preference:
@@ -270,7 +275,6 @@ def wedding_detail(wedding_id):
         'no_meal':        sum(1 for g in guests if not g.meal_preference),
     }
 
-    # Per-group breakdown: { group_name: {total, accepted, pending, declined} }
     group_stats = defaultdict(lambda: {'total': 0, 'accepted': 0, 'pending': 0, 'declined': 0})
     for g in guests:
         key = g.group_name or 'Ungrouped'
@@ -282,6 +286,27 @@ def wedding_detail(wedding_id):
         else:
             group_stats[key]['pending'] += 1
     group_stats = dict(sorted(group_stats.items()))
+
+    # Filtered + paginated guest query for the table
+    search_q     = request.args.get('search', '').strip()
+    group_filter = request.args.get('group',  '').strip()
+    rsvp_filter  = request.args.get('rsvp',   '').strip()
+    page         = request.args.get('page', 1, type=int)
+
+    q = Guest.query.filter_by(wedding_id=wedding_id)
+    if search_q:
+        q = q.filter(db.or_(
+            Guest.full_name.ilike(f'%{search_q}%'),
+            Guest.email.ilike(f'%{search_q}%'),
+        ))
+    if group_filter:
+        q = q.filter(Guest.group_name == group_filter)
+    db_rsvp = _GUEST_RSVP_DB.get(rsvp_filter)
+    if db_rsvp:
+        q = q.filter(Guest.rsvp_status == db_rsvp)
+
+    guests_page  = q.order_by(Guest.full_name).paginate(page=page, per_page=_PER_PAGE, error_out=False)
+    all_groups   = sorted(set(g.group_name for g in guests if g.group_name))
 
     theme = None
     if wedding.ai_generated_theme:
@@ -307,7 +332,10 @@ def wedding_detail(wedding_id):
     return render_template('wedding/detail.html', wedding=wedding,
                            guest_stats=guest_stats, group_stats=group_stats,
                            theme=theme, days_until=days_until,
-                           checklist_items=checklist_items, checklist_pct=checklist_pct)
+                           checklist_items=checklist_items, checklist_pct=checklist_pct,
+                           guests_page=guests_page, search_q=search_q,
+                           group_filter=group_filter, rsvp_filter=rsvp_filter,
+                           all_groups=all_groups, total=total)
 
 
 @wedding_bp.route('/wedding/<int:wedding_id>/edit', methods=['GET', 'POST'])

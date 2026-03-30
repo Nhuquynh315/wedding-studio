@@ -1,0 +1,43 @@
+{% set rsvp_colors = {'pending':'warning','confirmed':'success','declined':'danger'} %}
+{% set rsvp_labels = {'pending':'Pending','confirmed':'Accepted','declined':'Declined'} %}
+{% for guest in guests_page.items %}
+<tr>
+    <td><input type="checkbox" class="guest-checkbox" value="{{ guest.id }}"></td>
+    <td class="fw-medium">{{ guest.full_name }}</td>
+    <td class="text-muted">{{ guest.email or '—' }}</td>
+    <td class="text-muted">{{ guest.phone or '—' }}</td>
+    <td>{{ guest.group_name or '—' }}</td>
+    <td>{{ guest.meal_preference or '—' }}</td>
+    <td>
+        <div class="dropdown">
+            <button class="badge bg-{{ rsvp_colors.get(guest.rsvp_status,'secondary') }} border-0 dropdown-toggle py-2 px-2"
+                    type="button" data-bs-toggle="dropdown"
+                    id="rsvpBtn{{ guest.id }}"
+                    style="cursor:pointer; font-size:0.75rem;">
+                {{ rsvp_labels.get(guest.rsvp_status, guest.rsvp_status) }}
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" style="min-width:130px;">
+                <li><button class="dropdown-item small" type="button"
+                        onclick="updateRsvp({{ guest.id }}, 'accepted')">&#10003; Accepted</button></li>
+                <li><button class="dropdown-item small" type="button"
+                        onclick="updateRsvp({{ guest.id }}, 'pending')">&#8987; Pending</button></li>
+                <li><button class="dropdown-item small" type="button"
+                        onclick="updateRsvp({{ guest.id }}, 'declined')">&#10007; Declined</button></li>
+            </ul>
+        </div>
+    </td>
+    <td class="text-end">
+        <button type="button" class="btn btn-outline-primary btn-sm"
+                data-bs-toggle="modal" data-bs-target="#editGuestModal"
+                data-guest-id="{{ guest.id }}"
+                data-full-name="{{ guest.full_name }}"
+                data-email="{{ guest.email or '' }}"
+                data-phone="{{ guest.phone or '' }}"
+                data-group="{{ guest.group_name or '' }}"
+                data-meal="{{ guest.meal_preference or '' }}"
+                data-rsvp="{{ guest.rsvp_status }}">Edit</button>
+    </td>
+</tr>
+{% else %}
+<tr><td colspan="8" class="text-center text-muted py-4">No guests match your filters.</td></tr>
+{% endfor %}

@@ -1,21 +1,70 @@
 import csv
 import io
 
-from flask import Blueprint, flash, redirect, url_for, request, Response
+import openpyxl
+from openpyxl.styles import Font
+from flask import Blueprint, flash, jsonify, redirect, render_template, url_for, request, Response
 from flask_login import login_required, current_user
+from werkzeug.utils import secure_filename
 
 from app import db
 from app.models import Guest, Wedding
 from app.routes.utils import get_wedding_or_403, get_guest_or_403
-from app.services.csv_service import parse_guest_csv
+from app.services.csv_service import parse_guest_csv, parse_guest_excel
 
 guests_bp = Blueprint('guests', __name__)
 
 _GUESTS_TAB = '#guests'
 
+_RSVP_DB     = {'accepted': 'confirmed', 'pending': 'pending', 'declined': 'declined'}
+_RSVP_LABELS = {'confirmed': 'Accepted', 'pending': 'Pending', 'declined': 'Declined'}
+_RSVP_COLORS = {'confirmed': 'success',  'pending': 'warning', 'declined': 'danger'}
+
 VALID_GROUPS = {'Bride\'s Family', 'Groom\'s Family', 'Friends', 'Colleagues', 'Other'}
 VALID_MEALS  = {'Standard', 'Vegetarian', 'Vegan', 'Halal', 'Kosher', 'Other'}
 VALID_RSVP   = {'pending', 'confirmed', 'declined'}
+
+_PER_PAGE = 50
+
+
+@guests_bp.route('/wedding/<int:wedding_id>/guests/search')
+@login_required
+def search_guests(wedding_id):
+    get_wedding_or_403(wedding_id)
+
+    q_str        = request.args.get('q',     '').strip()
+    group_filter = request.args.get('group', '').strip()
+    rsvp_filter  = request.args.get('rsvp',  '').strip()
+    meal_filter  = request.args.get('meal',  '').strip()
+    page         = request.args.get('page', 1, type=int)
+
+    q = Guest.query.filter_by(wedding_id=wedding_id)
+    if q_str:
+        q = q.filter(db.or_(
+            Guest.full_name.ilike(f'%{q_str}%'),
+            Guest.email.ilike(f'%{q_str}%'),
+        ))
+    if group_filter:
+        q = q.filter(Guest.group_name == group_filter)
+    db_rsvp = _RSVP_DB.get(rsvp_filter)
+    if db_rsvp:
+        q = q.filter(Guest.rsvp_status == db_rsvp)
+    if meal_filter:
+        q = q.filter(Guest.meal_preference == meal_filter)
+
+    guests_page = q.order_by(Guest.full_name).paginate(
+        page=page, per_page=_PER_PAGE, error_out=False
+    )
+
+    rows_html       = render_template('wedding/_guest_rows.html',       guests_page=guests_page)
+    pagination_html = render_template('wedding/_guest_pagination.html', guests_page=guests_page)
+
+    return jsonify({
+        'html':            rows_html,
+        'pagination_html': pagination_html,
+        'filtered_total':  guests_page.total,
+        'filtered':        bool(q_str or group_filter or rsvp_filter or meal_filter),
+    })
 
 
 @guests_bp.route('/wedding/<int:wedding_id>/guests/add', methods=['POST'])
@@ -145,22 +194,97 @@ def export_guests(wedding_id):
     )
 
 
+@guests_bp.route('/wedding/<int:wedding_id>/guests/export-excel')
+@login_required
+def export_guests_excel(wedding_id):
+    wedding = get_wedding_or_403(wedding_id)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'Guests'
+
+    headers = ['Full Name', 'Email', 'Phone', 'Group Name', 'Meal Preference', 'RSVP Status']
+    ws.append(headers)
+    for cell in ws[1]:
+        cell.font = Font(bold=True)
+
+    for guest in wedding.guests:
+        ws.append([
+            guest.full_name,
+            guest.email           or '',
+            guest.phone           or '',
+            guest.group_name      or '',
+            guest.meal_preference or '',
+            guest.rsvp_status,
+        ])
+
+    col_widths = [20, 25, 15, 20, 18, 15]
+    for col, width in enumerate(col_widths, start=1):
+        ws.column_dimensions[openpyxl.utils.get_column_letter(col)].width = width
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+
+    filename = f"guests_{wedding.partner1_name}_{wedding.partner2_name}.xlsx".replace(' ', '_')
+    return Response(
+        buf.getvalue(),
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename="{filename}"'},
+    )
+
+
+@guests_bp.route('/wedding/<int:wedding_id>/guests/download-excel-template')
+@login_required
+def download_excel_template(wedding_id):
+    get_wedding_or_403(wedding_id)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'Guests'
+
+    headers = ['Full Name', 'Email', 'Phone', 'Group Name', 'Meal Preference', 'RSVP Status']
+    ws.append(headers)
+    for cell in ws[1]:
+        cell.font = Font(bold=True)
+
+    ws.append(['John Smith', 'john@example.com', '+1555010101', "Groom's Family", 'Standard', 'pending'])
+    ws.append(['Jane Doe',   'jane@example.com', '+1555010102', "Bride's Family",  'Vegetarian', 'accepted'])
+
+    col_widths = [20, 25, 15, 20, 18, 15]
+    for col, width in enumerate(col_widths, start=1):
+        ws.column_dimensions[openpyxl.utils.get_column_letter(col)].width = width
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+
+    return Response(
+        buf.getvalue(),
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': 'attachment; filename="guest_list_template.xlsx"'},
+    )
+
+
 @guests_bp.route('/wedding/<int:wedding_id>/guests/import-csv', methods=['POST'])
 @login_required
 def import_guests(wedding_id):
     get_wedding_or_403(wedding_id)
     detail_url = url_for('wedding.wedding_detail', wedding_id=wedding_id) + _GUESTS_TAB
 
-    csv_file = request.files.get('csv_file')
-    if not csv_file or csv_file.filename == '':
-        flash('Please select a CSV file to upload.', 'danger')
+    guest_file = request.files.get('guest_file')
+    if not guest_file or guest_file.filename == '':
+        flash('Please select a file to upload.', 'danger')
         return redirect(detail_url)
 
-    if not csv_file.filename.lower().endswith('.csv'):
-        flash('Only .csv files are accepted.', 'danger')
+    filename = secure_filename(guest_file.filename).lower()
+    if filename.endswith('.csv'):
+        guests, errors = parse_guest_csv(guest_file)
+    elif filename.endswith('.xlsx') or filename.endswith('.xls'):
+        guests, errors = parse_guest_excel(guest_file)
+    else:
+        flash('Please upload a CSV or Excel file (.csv, .xlsx).', 'danger')
         return redirect(detail_url)
-
-    guests, errors = parse_guest_csv(csv_file)
 
     if not guests and errors:
         for msg in errors:
@@ -202,6 +326,84 @@ def import_guests(wedding_id):
     for msg in errors:
         flash(msg, 'warning')
 
+    return redirect(detail_url)
+
+
+@guests_bp.route('/guest/<int:guest_id>/update-rsvp', methods=['POST'])
+@login_required
+def update_rsvp(guest_id):
+    guest = get_guest_or_403(guest_id)
+    data = request.get_json(silent=True) or {}
+    db_status = _RSVP_DB.get(data.get('rsvp_status', '').lower())
+    if not db_status:
+        return {'error': 'Invalid RSVP status'}, 400
+    guest.rsvp_status = db_status
+    try:
+        db.session.commit()
+        return {'ok': True, 'db_status': db_status,
+                'label': _RSVP_LABELS[db_status], 'color': _RSVP_COLORS[db_status]}
+    except Exception:
+        db.session.rollback()
+        return {'error': 'Could not update'}, 500
+
+
+@guests_bp.route('/wedding/<int:wedding_id>/guests/bulk-update', methods=['POST'])
+@login_required
+def bulk_update_guests(wedding_id):
+    get_wedding_or_403(wedding_id)
+    data      = request.get_json(silent=True) or {}
+    guest_ids = [int(i) for i in data.get('guest_ids', []) if str(i).isdigit()]
+    action    = data.get('action', '')
+
+    if not guest_ids:
+        return {'error': 'No guests selected'}, 400
+
+    base = Guest.query.filter(Guest.id.in_(guest_ids), Guest.wedding_id == wedding_id)
+
+    if action.startswith('rsvp_'):
+        db_status = _RSVP_DB.get(action[5:])
+        if not db_status:
+            return {'error': 'Invalid action'}, 400
+        base.update({'rsvp_status': db_status}, synchronize_session=False)
+    elif action == 'delete':
+        base.delete(synchronize_session=False)
+    else:
+        return {'error': 'Invalid action'}, 400
+
+    try:
+        db.session.commit()
+        return {'ok': True}
+    except Exception:
+        db.session.rollback()
+        return {'error': 'Could not complete action'}, 500
+
+
+@guests_bp.route('/wedding/<int:wedding_id>/guests/delete-selected', methods=['POST'])
+@login_required
+def delete_selected_guests(wedding_id):
+    get_wedding_or_403(wedding_id)
+    detail_url = url_for('wedding.wedding_detail', wedding_id=wedding_id) + _GUESTS_TAB
+
+    raw_ids = request.form.getlist('guest_ids')
+    ids = [int(i) for i in raw_ids if i.isdigit()]
+
+    if not ids:
+        flash('No guests selected.', 'warning')
+        return redirect(detail_url)
+
+    count = Guest.query.filter(
+        Guest.id.in_(ids),
+        Guest.wedding_id == wedding_id,
+    ).delete(synchronize_session=False)
+
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        flash('Something went wrong. Please try again.', 'danger')
+        return redirect(detail_url)
+
+    flash(f'{count} guest{"s" if count != 1 else ""} deleted.', 'success')
     return redirect(detail_url)
 
 

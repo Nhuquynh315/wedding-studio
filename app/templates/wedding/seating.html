@@ -120,6 +120,7 @@
     flex: 1;
     overflow: auto;
     background: #f5f3ef;
+    position: relative;
 }
 .s-canvas {
     position: relative;
@@ -131,6 +132,53 @@
     background-size: 50px 50px;
     transform-origin: top left;
 }
+/* ── Empty canvas state ──────────────────────────────────────────── */
+.canvas-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    pointer-events: none;
+    z-index: 2;
+}
+.canvas-empty-icon {
+    font-size: 2.8rem;
+    color: #cec4bc;
+}
+.canvas-empty-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem;
+    font-weight: 400;
+    color: #9a8a80;
+    margin: 0;
+}
+.canvas-empty-sub {
+    font-family: 'Jost', sans-serif;
+    font-size: .8rem;
+    color: #b8a89e;
+    margin: 0;
+    text-align: center;
+}
+.canvas-empty-btns {
+    display: flex;
+    gap: .5rem;
+    pointer-events: auto;
+}
+.canvas-empty-btns button {
+    font-family: 'Jost', sans-serif;
+    font-size: .8rem;
+    padding: .45rem 1rem;
+    border-radius: 8px;
+    border: 1.5px solid #ecdde3;
+    background: #fff;
+    color: var(--rose);
+    cursor: pointer;
+    transition: all .12s;
+}
+.canvas-empty-btns button:hover { background: var(--rose); color: #fff; border-color: var(--rose); }
 
 /* ── Guest panel ─────────────────────────────────────────────────── */
 .sp-hd {
@@ -151,13 +199,69 @@
     color: var(--text-muted);
 }
 .sp-filters {
-    padding: .65rem 1rem;
+    padding: .6rem .85rem;
     border-bottom: 1px solid var(--border);
     display: flex;
     flex-direction: column;
     gap: .4rem;
     flex-shrink: 0;
 }
+/* ── Pill filter inputs in seating panel ─────────────────────────── */
+.sf-input {
+    width: 100%;
+    height: 34px;
+    border: 1px solid #e8e0d8;
+    border-radius: 999px;
+    padding: 0 14px;
+    font-size: .8rem;
+    background: #fff;
+    outline: none;
+    color: var(--text-dark);
+    font-family: 'Jost', sans-serif;
+    transition: border-color .15s, box-shadow .15s;
+    box-sizing: border-box;
+}
+.sf-input:focus {
+    border-color: var(--rose);
+    box-shadow: 0 0 0 3px rgba(185,107,123,.1);
+}
+.sf-search-wrap { position: relative; }
+.sf-search-icon {
+    position: absolute;
+    left: 11px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: .72rem;
+    color: #b8a89e;
+    pointer-events: none;
+}
+.sf-search { padding-left: 30px; }
+.sf-select {
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    padding-right: 28px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23b8a89e' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+}
+.sf-filter-row {
+    display: flex;
+    gap: .35rem;
+}
+.sf-filter-row .sf-input { flex: 1; min-width: 0; }
+.sf-clear {
+    font-size: .72rem;
+    color: #b8a89e;
+    text-align: right;
+    text-decoration: none;
+    display: block;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s;
+}
+.sf-clear.visible { opacity: 1; pointer-events: auto; }
+.sf-clear:hover { color: var(--rose); }
 .sp-list {
     flex: 1;
     overflow-y: auto;
@@ -542,13 +646,28 @@
             </p>
         </div>
         <div class="sp-filters">
-            <input type="text" id="guestSearch" class="dp-input" placeholder="Search guests…" style="margin:0;">
-            <select id="groupFilter" class="dp-input" style="margin:0;">
-                <option value="">All groups</option>
-                {% for g in groups %}
-                <option value="{{ g }}">{{ g }}</option>
-                {% endfor %}
-            </select>
+            <div class="sf-search-wrap">
+                <i class="bi bi-search sf-search-icon"></i>
+                <input type="text" id="guestSearch" class="sf-input sf-search" placeholder="Search guests…" autocomplete="off">
+            </div>
+            <div class="sf-filter-row">
+                <select id="groupFilter" class="sf-input sf-select">
+                    <option value="">All groups</option>
+                    {% for g in groups %}
+                    <option value="{{ g }}">{{ g }}</option>
+                    {% endfor %}
+                </select>
+                <select id="mealFilter" class="sf-input sf-select">
+                    <option value="">All meals</option>
+                    <option value="Vegetarian">Veg</option>
+                    <option value="Vegan">Vegan</option>
+                    <option value="Halal">Halal</option>
+                    <option value="Kosher">Kosher</option>
+                    <option value="Standard">Standard</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <a href="#" id="sfClear" class="sf-clear">Clear filters</a>
         </div>
         <div class="sp-list" id="unassignedList"
              ondragover="unassignedDragOver(event)"
@@ -562,6 +681,7 @@
                  data-guest-id="{{ g.id }}"
                  data-group="{{ g.group_name or '' }}"
                  data-name="{{ g.full_name.lower() }}"
+                 data-meal="{{ g.meal_preference or '' }}"
                  ondragstart="pillDragStart(event, {{ g.id }})"
                  ondragend="dragEnd(event)">
                 <span class="pill-meal">
@@ -618,6 +738,18 @@
             </div>
         </div>
         <div class="canvas-scroll" id="canvasScroll">
+            {% if not tables %}
+            <div class="canvas-empty" id="canvasEmpty">
+                <i class="bi bi-grid-3x3-gap canvas-empty-icon"></i>
+                <p class="canvas-empty-title">No tables yet</p>
+                <p class="canvas-empty-sub">Add your first table to start building<br>your seating chart.</p>
+                <div class="canvas-empty-btns">
+                    <button onclick="addTable('round')">＋ Round Table</button>
+                    <button onclick="addTable('rectangle')">＋ Rectangle</button>
+                    <button onclick="addTable('head')">＋ Head Table</button>
+                </div>
+            </div>
+            {% endif %}
             <div class="s-canvas" id="canvas">
                 {% for t in tables %}
                 <div class="tbl-el tbl-{{ t.shape }}" id="table-{{ t.id }}"
@@ -1000,6 +1132,9 @@ async function addTable(shape) {
 }
 
 function renderTable(t) {
+    const emptyEl = document.getElementById('canvasEmpty');
+    if (emptyEl) emptyEl.remove();
+
     TABLES[t.id] = {
         id: t.id,
         number: t.table_number,
@@ -1058,6 +1193,7 @@ function pillHTML(guestId) {
          data-guest-id="${guestId}"
          data-group="${escHtml(g.group)}"
          data-name="${escHtml(g.name.toLowerCase())}"
+         data-meal="${escHtml(g.meal)}"
          ondragstart="pillDragStart(event,${guestId})"
          ondragend="dragEnd(event)">
         <span class="pill-meal">${mealIcon(g.meal)}</span>
@@ -1312,17 +1448,26 @@ function setZoom(val) {
 }
 
 // ── Guest filter ─────────────────────────────────────────────────
+var sfDebounce = null;
+
 function filterGuests() {
-    const search = document.getElementById('guestSearch').value.toLowerCase();
+    const search = document.getElementById('guestSearch').value.toLowerCase().trim();
     const group  = document.getElementById('groupFilter').value;
-    const pills  = document.querySelectorAll('#unassignedList .guest-pill');
+    const meal   = document.getElementById('mealFilter').value;
+    const clearLink = document.getElementById('sfClear');
+    const hasFilters = search || group || meal;
+    if (clearLink) clearLink.classList.toggle('visible', !!hasFilters);
+
+    const pills = document.querySelectorAll('#unassignedList .guest-pill');
     let unassignedVisible = 0;
     pills.forEach(function(pill) {
-        const name      = pill.dataset.name || '';
+        const name      = pill.dataset.name  || '';
         const pillGroup = pill.dataset.group || '';
+        const pillMeal  = pill.dataset.meal  || '';
         const nameMatch  = !search || name.includes(search);
         const groupMatch = !group  || pillGroup === group;
-        if (nameMatch && groupMatch) {
+        const mealMatch  = !meal   || pillMeal  === meal;
+        if (nameMatch && groupMatch && mealMatch) {
             pill.classList.remove('hidden');
             if (!pill.classList.contains('pill-assigned')) unassignedVisible++;
         } else {
@@ -1333,8 +1478,19 @@ function filterGuests() {
     if (el) el.textContent = unassignedVisible;
 }
 
-document.getElementById('guestSearch').addEventListener('input', filterGuests);
+document.getElementById('guestSearch').addEventListener('input', function() {
+    clearTimeout(sfDebounce);
+    sfDebounce = setTimeout(filterGuests, 280);
+});
 document.getElementById('groupFilter').addEventListener('change', filterGuests);
+document.getElementById('mealFilter').addEventListener('change', filterGuests);
+document.getElementById('sfClear').addEventListener('click', function(e) {
+    e.preventDefault();
+    document.getElementById('guestSearch').value = '';
+    document.getElementById('groupFilter').value  = '';
+    document.getElementById('mealFilter').value   = '';
+    filterGuests();
+});
 
 // ── Toast helper ─────────────────────────────────────────────────
 function showToast(msg, type) {

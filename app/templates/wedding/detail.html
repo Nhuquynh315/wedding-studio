@@ -375,10 +375,99 @@
 /* ── Guest table styles ──────────────────────────────────────────── */
 .color-swatch { display: inline-block; width: 1.1rem; height: 1.1rem; border-radius: 0.2rem; border: 1px solid rgba(0,0,0,0.12); vertical-align: middle; }
 
+/* ── Guest filter bar ────────────────────────────────────────────── */
+.guest-filter-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+.gfb-inputs {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 0;
+}
+.gfb-search-wrap { position: relative; display: flex; align-items: center; }
+.gfb-search-icon {
+    position: absolute;
+    left: 12px;
+    color: #b8a89e;
+    font-size: 0.78rem;
+    pointer-events: none;
+    z-index: 1;
+}
+.gfb-input {
+    height: 40px;
+    border: 1px solid #e8e0d8;
+    border-radius: 999px;
+    padding: 0 16px;
+    font-size: 0.875rem;
+    background: #fff;
+    outline: none;
+    color: #3a2e28;
+    font-family: 'Jost', sans-serif;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.gfb-input:focus {
+    border-color: var(--ws-rose);
+    box-shadow: 0 0 0 3px rgba(185,107,123,0.12);
+}
+.gfb-search { padding-left: 34px; width: 280px; }
+.gfb-select {
+    padding-right: 30px;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23b8a89e' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+}
+.gfb-clear {
+    font-size: 0.8rem;
+    color: #b8a89e;
+    text-decoration: none;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+}
+.gfb-clear.visible { opacity: 1; pointer-events: auto; }
+.gfb-clear:hover { color: var(--ws-rose); text-decoration: underline; }
+#guestResultCount {
+    font-size: 0.82rem;
+    color: #8a7a70;
+    margin-bottom: 0.6rem;
+    min-height: 1.2em;
+}
+#guestResultCount .cnt-clear {
+    color: var(--ws-rose);
+    text-decoration: underline;
+    cursor: pointer;
+    margin-left: 0.2rem;
+}
+#guestTableBody.gfb-loading tr {
+    opacity: 0.45;
+    pointer-events: none;
+    transition: opacity 0.15s;
+}
+
 /* ── Responsive ──────────────────────────────────────────────────── */
 @media (max-width: 900px) {
     .kpi-row { grid-template-columns: 1fr 1fr; }
     .kpi-card.kpi-featured { grid-column: span 2; }
+}
+@media (max-width: 767px) {
+    .guest-filter-bar { flex-direction: column; align-items: stretch; }
+    .gfb-inputs { width: 100%; }
+    .gfb-search-wrap { width: 100%; }
+    .gfb-search { width: 100%; }
+    #gfbGroup, #gfbRsvp { flex: 1; min-width: 0; }
+    #gfbMeal { width: 100%; }
 }
 @media (max-width: 640px) {
     .overview-lower { grid-template-columns: 1fr; }
@@ -639,17 +728,22 @@
     {# Import from CSV #}
     <div class="card border-0 shadow-sm mb-3" style="border-radius:14px;">
         <div class="card-body p-4">
-            <h5 class="card-title fw-semibold mb-1">Import from CSV</h5>
-            <p class="text-muted small mb-3">
-                Upload a <code>.csv</code> file with columns:
-                <code>full_name, email, phone, group_name, meal_preference, rsvp_status</code>.
-                <a href="{{ url_for('static', filename='sample_guests.csv') }}" download>Download Template</a>
-            </p>
+            <h5 class="card-title fw-semibold mb-1">Import Guest List</h5>
+            <p class="text-muted small mb-1">Upload guest list (.csv or .xlsx)</p>
+            <div class="dropdown mb-3">
+                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button"
+                        data-bs-toggle="dropdown">Download template</button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="{{ url_for('static', filename='sample_guests.csv') }}" download>CSV (.csv)</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('guests.download_excel_template', wedding_id=wedding.id) }}">Excel (.xlsx)</a></li>
+                </ul>
+            </div>
             <form method="POST" action="{{ url_for('guests.import_guests', wedding_id=wedding.id) }}"
                   enctype="multipart/form-data" novalidate>
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="d-flex align-items-center gap-3 flex-wrap">
-                    <input type="file" class="form-control w-auto" id="csv_file" name="csv_file" accept=".csv" required>
+                    <input type="file" class="form-control w-auto" id="guest_file" name="guest_file"
+                           accept=".csv,.xlsx,.xls" required>
                     <button type="submit" class="btn btn-outline-primary">Import</button>
                 </div>
             </form>
@@ -707,49 +801,106 @@
         </div>
     </div>
 
-    {# Guest table #}
-    {% if wedding.guests %}
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-        <div class="d-flex align-items-center gap-2">
-            <label class="form-label mb-0 text-muted small fw-semibold">Filter:</label>
-            <select id="groupFilter" class="form-select form-select-sm w-auto">
+    {# Guest filter bar #}
+    <div class="guest-filter-bar"
+         id="guestFilterBar"
+         data-search-url="{{ url_for('guests.search_guests', wedding_id=wedding.id) }}"
+         data-total="{{ total }}">
+        <div class="gfb-inputs">
+            <div class="gfb-search-wrap">
+                <i class="bi bi-search gfb-search-icon"></i>
+                <input type="text" id="gfbSearch" class="gfb-input gfb-search"
+                       placeholder="Search name or email…" autocomplete="off">
+            </div>
+            <select id="gfbGroup" class="gfb-input gfb-select">
                 <option value="">All groups</option>
-                {% set groups = wedding.guests | map(attribute='group_name') | select | unique | sort %}
-                {% for group in groups %}<option>{{ group }}</option>{% endfor %}
+                {% for group in all_groups %}
+                <option>{{ group }}</option>
+                {% endfor %}
             </select>
+            <select id="gfbRsvp" class="gfb-input gfb-select">
+                <option value="">All RSVP</option>
+                <option value="accepted">Accepted</option>
+                <option value="pending">Pending</option>
+                <option value="declined">Declined</option>
+            </select>
+            <select id="gfbMeal" class="gfb-input gfb-select">
+                <option value="">All meals</option>
+                {% for meal in ['Standard','Vegetarian','Vegan','Halal','Kosher','Other'] %}
+                <option>{{ meal }}</option>
+                {% endfor %}
+            </select>
+            <a href="#" id="gfbClear" class="gfb-clear">Clear all</a>
         </div>
-        <div class="d-flex gap-2">
-            <a href="{{ url_for('guests.export_guests', wedding_id=wedding.id) }}"
-               class="btn btn-outline-secondary btn-sm">&#8595; Export CSV</a>
-            <button type="button" class="btn btn-outline-danger btn-sm"
-                    data-bs-toggle="modal" data-bs-target="#deleteAllGuestsModal">Delete All</button>
+        <div class="d-flex gap-2 align-items-center flex-shrink-0">
+            <div class="dropdown d-none" id="bulkActionsDropdown">
+                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button"
+                        data-bs-toggle="dropdown">Bulk Actions (<span id="selectedCount">0</span>)</button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><button class="dropdown-item" type="button" onclick="bulkAction('rsvp_accepted')">Mark as Accepted</button></li>
+                    <li><button class="dropdown-item" type="button" onclick="bulkAction('rsvp_pending')">Mark as Pending</button></li>
+                    <li><button class="dropdown-item" type="button" onclick="bulkAction('rsvp_declined')">Mark as Declined</button></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><button class="dropdown-item text-danger" type="button" onclick="bulkAction('delete')">Delete selected</button></li>
+                </ul>
+            </div>
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button"
+                        data-bs-toggle="dropdown">&#8595; Export</button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="{{ url_for('guests.export_guests', wedding_id=wedding.id) }}">CSV (.csv)</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('guests.export_guests_excel', wedding_id=wedding.id) }}">Excel (.xlsx)</a></li>
+                </ul>
+            </div>
         </div>
     </div>
+
+    <p id="guestResultCount"></p>
+
+    {% if total > 0 %}
+
     <div class="card border-0 shadow-sm" style="border-radius:14px;">
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
                     <thead class="table-light">
                         <tr>
+                            <th style="width:2.5rem;">
+                                <input type="checkbox" id="selectAllGuests" title="Select all">
+                            </th>
                             <th>Name</th><th>Email</th><th>Phone</th>
                             <th>Group</th><th>Meal</th><th>RSVP</th>
                             <th class="text-end">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="guestTableBody">
-                        {% set rsvp_badges = {'pending':'secondary','confirmed':'success','declined':'danger'} %}
+                        {% set rsvp_colors = {'pending':'warning','confirmed':'success','declined':'danger'} %}
                         {% set rsvp_labels = {'pending':'Pending','confirmed':'Accepted','declined':'Declined'} %}
-                        {% for guest in wedding.guests %}
-                        <tr data-group="{{ guest.group_name or '' }}">
+                        {% for guest in guests_page.items %}
+                        <tr>
+                            <td><input type="checkbox" class="guest-checkbox" value="{{ guest.id }}"></td>
                             <td class="fw-medium">{{ guest.full_name }}</td>
                             <td class="text-muted">{{ guest.email or '—' }}</td>
                             <td class="text-muted">{{ guest.phone or '—' }}</td>
                             <td>{{ guest.group_name or '—' }}</td>
                             <td>{{ guest.meal_preference or '—' }}</td>
                             <td>
-                                <span class="badge bg-{{ rsvp_badges.get(guest.rsvp_status,'secondary') }}">
-                                    {{ rsvp_labels.get(guest.rsvp_status, guest.rsvp_status | capitalize) }}
-                                </span>
+                                <div class="dropdown">
+                                    <button class="badge bg-{{ rsvp_colors.get(guest.rsvp_status,'secondary') }} border-0 dropdown-toggle py-2 px-2"
+                                            type="button" data-bs-toggle="dropdown"
+                                            id="rsvpBtn{{ guest.id }}"
+                                            style="cursor:pointer; font-size:0.75rem;">
+                                        {{ rsvp_labels.get(guest.rsvp_status, guest.rsvp_status) }}
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end" style="min-width:130px;">
+                                        <li><button class="dropdown-item small" type="button"
+                                                onclick="updateRsvp({{ guest.id }}, 'accepted')">✓ Accepted</button></li>
+                                        <li><button class="dropdown-item small" type="button"
+                                                onclick="updateRsvp({{ guest.id }}, 'pending')">⏳ Pending</button></li>
+                                        <li><button class="dropdown-item small" type="button"
+                                                onclick="updateRsvp({{ guest.id }}, 'declined')">✗ Declined</button></li>
+                                    </ul>
+                                </div>
                             </td>
                             <td class="text-end">
                                 <button type="button" class="btn btn-outline-primary btn-sm"
@@ -761,18 +912,40 @@
                                         data-group="{{ guest.group_name or '' }}"
                                         data-meal="{{ guest.meal_preference or '' }}"
                                         data-rsvp="{{ guest.rsvp_status }}">Edit</button>
-                                <button type="button" class="btn btn-outline-danger btn-sm"
-                                        data-bs-toggle="modal" data-bs-target="#deleteGuestModal"
-                                        data-guest-id="{{ guest.id }}"
-                                        data-guest-name="{{ guest.full_name }}">Delete</button>
                             </td>
                         </tr>
+                        {% else %}
+                        <tr><td colspan="8" class="text-center text-muted py-4">No guests match your filters.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
+
+    {# Pagination #}
+    <nav id="guestPagination" class="mt-3" aria-label="Guest pages">
+    {% if guests_page.pages > 1 %}
+        <ul class="pagination pagination-sm justify-content-center mb-0">
+            <li class="page-item{% if not guests_page.has_prev %} disabled{% endif %}">
+                <a class="page-link guest-page-link" href="#" data-page="{{ guests_page.prev_num }}">&laquo;</a>
+            </li>
+            {% for p in guests_page.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if p %}
+            <li class="page-item{% if p == guests_page.page %} active{% endif %}">
+                <a class="page-link guest-page-link" href="#" data-page="{{ p }}">{{ p }}</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">…</span></li>
+            {% endif %}
+            {% endfor %}
+            <li class="page-item{% if not guests_page.has_next %} disabled{% endif %}">
+                <a class="page-link guest-page-link" href="#" data-page="{{ guests_page.next_num }}">&raquo;</a>
+            </li>
+        </ul>
+    {% endif %}
+    </nav>
+
     {% else %}
     <div class="text-center text-muted py-4">
         <p class="mb-0">No guests added yet. Use the form above to add your first guest.</p>
@@ -1184,16 +1357,187 @@ function setInvView(mode) {
     activateSection(location.hash.replace('#', ''));
 })();
 
-/* ── Group filter ───────────────────────────────────────────────── */
-const groupFilter = document.getElementById('groupFilter');
-if (groupFilter) {
-    groupFilter.addEventListener('change', function () {
-        const selected = this.value;
-        document.querySelectorAll('#guestTableBody tr').forEach(function (row) {
-            row.style.display = (!selected || row.dataset.group === selected) ? '' : 'none';
-        });
+/* ── Checkbox binding (called on init and after AJAX table swap) ─── */
+function bindCheckboxes() {
+    var selectAll    = document.getElementById('selectAllGuests');
+    var bulkDropdown = document.getElementById('bulkActionsDropdown');
+    var countSpan    = document.getElementById('selectedCount');
+    if (!selectAll) return;
+
+    function syncBulk() {
+        var all     = document.querySelectorAll('.guest-checkbox');
+        var checked = document.querySelectorAll('.guest-checkbox:checked');
+        selectAll.indeterminate = checked.length > 0 && checked.length < all.length;
+        selectAll.checked = all.length > 0 && checked.length === all.length;
+        if (countSpan)    countSpan.textContent = checked.length;
+        if (bulkDropdown) bulkDropdown.classList.toggle('d-none', checked.length === 0);
+    }
+
+    // Remove old listener by cloning, then re-add
+    var fresh = selectAll.cloneNode(true);
+    selectAll.parentNode.replaceChild(fresh, selectAll);
+    fresh.addEventListener('change', function () {
+        document.querySelectorAll('.guest-checkbox').forEach(function (cb) { cb.checked = fresh.checked; });
+        syncBulk();
+    });
+    document.querySelectorAll('.guest-checkbox').forEach(function (cb) {
+        cb.addEventListener('change', syncBulk);
     });
 }
+bindCheckboxes();
+
+/* ── Inline RSVP update ─────────────────────────────────────────── */
+function updateRsvp(guestId, status) {
+    var csrfToken = '{{ csrf_token() }}';
+    fetch('/guest/' + guestId + '/update-rsvp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+        body: JSON.stringify({ rsvp_status: status })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+        if (!d.ok) return;
+        var btn = document.getElementById('rsvpBtn' + guestId);
+        if (!btn) return;
+        btn.className = 'badge bg-' + d.color + ' border-0 dropdown-toggle py-2 px-2';
+        btn.style.cursor = 'pointer';
+        btn.style.fontSize = '0.75rem';
+        // Update text node in-place (Bootstrap caret is CSS ::after, not a DOM node)
+        var textNode = Array.from(btn.childNodes).find(function (n) { return n.nodeType === 3; });
+        if (textNode) textNode.textContent = ' ' + d.label + ' '; else btn.textContent = d.label;
+    });
+}
+
+/* ── Bulk action (RSVP / delete) ────────────────────────────────── */
+function bulkAction(action) {
+    var checked = document.querySelectorAll('.guest-checkbox:checked');
+    if (checked.length === 0) return;
+    if (action === 'delete' &&
+        !confirm('Delete ' + checked.length + ' guest' + (checked.length > 1 ? 's' : '') + '? This cannot be undone.')) return;
+    var ids = Array.from(checked).map(function (cb) { return parseInt(cb.value, 10); });
+    var csrfToken = '{{ csrf_token() }}';
+    fetch('{{ url_for("guests.bulk_update_guests", wedding_id=wedding.id) }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+        body: JSON.stringify({ guest_ids: ids, action: action })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+        if (d.ok) location.reload();
+    });
+}
+
+/* ── Guest auto-filter with debounce ────────────────────────────── */
+(function () {
+    var bar = document.getElementById('guestFilterBar');
+    if (!bar) return;
+
+    var searchInput  = document.getElementById('gfbSearch');
+    var groupSel     = document.getElementById('gfbGroup');
+    var rsvpSel      = document.getElementById('gfbRsvp');
+    var mealSel      = document.getElementById('gfbMeal');
+    var clearLink    = document.getElementById('gfbClear');
+    var resultCount  = document.getElementById('guestResultCount');
+    var tbody        = document.getElementById('guestTableBody');
+    var paginationEl = document.getElementById('guestPagination');
+    var searchUrl    = bar.dataset.searchUrl;
+    var grandTotal   = parseInt(bar.dataset.total, 10) || 0;
+    var debounceTimer = null;
+
+    function hasFilters() {
+        return searchInput.value.trim() !== '' ||
+               groupSel.value !== '' ||
+               rsvpSel.value  !== '' ||
+               mealSel.value  !== '';
+    }
+
+    function updateClearLink() {
+        clearLink.classList.toggle('visible', hasFilters());
+    }
+
+    function setResultCount(filteredTotal, isFiltered) {
+        if (!resultCount) return;
+        if (!isFiltered) {
+            resultCount.textContent = grandTotal.toLocaleString() + ' guests total';
+        } else {
+            resultCount.innerHTML =
+                filteredTotal.toLocaleString() + ' of ' +
+                grandTotal.toLocaleString() + ' guests match your filters' +
+                ' &middot; <a href="#" class="cnt-clear">Clear all</a>';
+            resultCount.querySelector('.cnt-clear').addEventListener('click', function (e) {
+                e.preventDefault(); clearAll();
+            });
+        }
+    }
+
+    function runFilter(page) {
+        page = page || 1;
+        updateClearLink();
+
+        var params = new URLSearchParams();
+        var q = searchInput.value.trim();
+        if (q)               params.set('q', q);
+        if (groupSel.value)  params.set('group', groupSel.value);
+        if (rsvpSel.value)   params.set('rsvp',  rsvpSel.value);
+        if (mealSel.value)   params.set('meal',  mealSel.value);
+        if (page > 1)        params.set('page',  page);
+
+        if (tbody) tbody.classList.add('gfb-loading');
+
+        fetch(searchUrl + (params.toString() ? '?' + params.toString() : ''))
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (tbody) {
+                    tbody.classList.remove('gfb-loading');
+                    tbody.innerHTML = d.html;
+                    bindCheckboxes();
+                }
+                if (paginationEl) paginationEl.innerHTML = d.pagination_html;
+                setResultCount(d.filtered_total, d.filtered);
+            })
+            .catch(function () {
+                if (tbody) tbody.classList.remove('gfb-loading');
+            });
+    }
+
+    function clearAll() {
+        searchInput.value = '';
+        groupSel.value    = '';
+        rsvpSel.value     = '';
+        mealSel.value     = '';
+        runFilter(1);
+    }
+
+    // Search: debounced 350ms
+    searchInput.addEventListener('input', function () {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(function () { runFilter(1); }, 350);
+    });
+
+    // Dropdowns: immediate
+    [groupSel, rsvpSel, mealSel].forEach(function (sel) {
+        sel.addEventListener('change', function () { runFilter(1); });
+    });
+
+    // Clear all
+    clearLink.addEventListener('click', function (e) { e.preventDefault(); clearAll(); });
+
+    // Pagination: event delegation (works for both initial and AJAX-rendered links)
+    if (paginationEl) {
+        paginationEl.addEventListener('click', function (e) {
+            var link = e.target.closest('.guest-page-link');
+            if (!link) return;
+            e.preventDefault();
+            var pg = parseInt(link.dataset.page, 10);
+            if (pg && !link.closest('.page-item').classList.contains('disabled')) {
+                runFilter(pg);
+            }
+        });
+    }
+
+    // Show initial total count
+    setResultCount(grandTotal, false);
+})();
 
 /* ── Delete guest modal ─────────────────────────────────────────── */
 const deleteGuestModal = document.getElementById('deleteGuestModal');
