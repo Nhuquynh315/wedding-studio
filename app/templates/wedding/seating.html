@@ -317,6 +317,9 @@
 }
 .pill-meal { font-size: .75rem; flex-shrink: 0; }
 .guest-pill.hidden { display: none; }
+.guest-pill:not(.pill-assigned) {
+    border-left: 3px solid #c9687a;
+}
 .guest-pill.pill-assigned {
     background: #f9f7f5;
     border-color: #e0d8d3;
@@ -597,6 +600,334 @@
 .meal-k  { color: #7a5acc; font-weight: 700; font-size: .65rem; }
 .meal-o  { color: #aa8060; font-weight: 700; font-size: .65rem; }
 
+/* ── Notes indicator on table card ──────────────────────────────── */
+.tbl-notes-dot {
+    font-size: .8rem;
+    color: #8a7f7a;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+/* ── View toggle ─────────────────────────────────────────────────── */
+.sp-view-toggle {
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin: .4rem .85rem .1rem;
+    flex-shrink: 0;
+}
+.sp-view-btn {
+    flex: 1;
+    padding: .28rem 0;
+    font-family: 'Jost', sans-serif;
+    font-size: .72rem;
+    font-weight: 500;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all .12s;
+}
+.sp-view-btn.active { background: var(--rose); color: #fff; }
+.sp-view-btn:not(.active):hover { background: #f5ede8; color: var(--text-dark); }
+
+/* ── Click-to-assign inline panel ───────────────────────────────── */
+.assign-panel {
+    background: #fdfaf8;
+    border: 1.5px solid #ecdde3;
+    border-radius: 10px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.assign-panel-hd {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .5rem .7rem .35rem;
+    border-bottom: 1px solid #f0ebe6;
+}
+.assign-panel-title {
+    font-family: 'Jost', sans-serif;
+    font-size: .74rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+}
+.assign-panel-close {
+    width: 20px; height: 20px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: .85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-left: .3rem;
+}
+.assign-panel-close:hover { color: var(--rose); background: #fdf0f2; }
+.assign-current-row {
+    padding: .3rem .7rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: 'Jost', sans-serif;
+    font-size: .72rem;
+    background: #f5ede8;
+    border-bottom: 1px solid #f0ebe6;
+}
+.assign-current-label { color: var(--text-muted); }
+.assign-unassign-btn {
+    font-size: .68rem;
+    color: var(--rose);
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+    font-family: 'Jost', sans-serif;
+}
+.assign-search-wrap { padding: .4rem .6rem .3rem; }
+.assign-search {
+    width: 100%;
+    height: 30px;
+    border: 1px solid #e8e0d8;
+    border-radius: 6px;
+    padding: 0 10px;
+    font-size: .75rem;
+    font-family: 'Jost', sans-serif;
+    outline: none;
+    background: #fff;
+    color: var(--text-dark);
+    box-sizing: border-box;
+}
+.assign-search:focus { border-color: var(--rose); }
+.assign-table-list {
+    max-height: 190px;
+    overflow-y: auto;
+    padding: 0 .5rem .4rem;
+    display: flex;
+    flex-direction: column;
+    gap: .18rem;
+}
+.assign-table-row {
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .28rem .4rem;
+    border-radius: 6px;
+    background: #fff;
+    border: 1px solid #ede8e3;
+    transition: border-color .1s;
+}
+.assign-table-row:hover:not(.full) { border-color: var(--rose); }
+.assign-table-row.highlighted:not(.full) { border-color: var(--rose); background: #fdf8f9; }
+.assign-table-row.full { opacity: .55; }
+.assign-tbl-name {
+    font-family: 'Jost', sans-serif;
+    font-size: .74rem;
+    font-weight: 500;
+    color: var(--text-dark);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.assign-tbl-fill { font-size: .68rem; color: var(--text-muted); white-space: nowrap; }
+.assign-tbl-group { font-size: .63rem; color: var(--rose); white-space: nowrap; }
+.assign-tbl-full { font-size: .63rem; color: #aaa; background: #f0ebe6; border-radius: 4px; padding: .08rem .3rem; white-space: nowrap; }
+.assign-btn {
+    font-family: 'Jost', sans-serif;
+    font-size: .67rem;
+    font-weight: 500;
+    padding: .18rem .5rem;
+    background: var(--rose);
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background .1s;
+    white-space: nowrap;
+}
+.assign-btn:hover { background: var(--rose-dark); }
+.assign-kbd-hint {
+    padding: .2rem .7rem .3rem;
+    font-size: .6rem;
+    color: #c0b0a8;
+    font-family: 'Jost', sans-serif;
+    border-top: 1px solid #f0ebe6;
+}
+
+/* ── Group view ─────────────────────────────────────────────────── */
+#groupView { flex: 1; overflow-y: auto; padding: .5rem .85rem; display: none; }
+.group-view { display: flex; flex-direction: column; gap: .45rem; }
+.group-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+}
+.group-card-hd {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .4rem .7rem;
+    background: #fdfaf8;
+    border-bottom: 1px solid #f0ebe6;
+    gap: .4rem;
+}
+.group-card-name {
+    font-family: 'Jost', sans-serif;
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.group-card-meta {
+    font-family: 'Jost', sans-serif;
+    font-size: .63rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+.group-card-meta .uct { color: var(--rose); font-weight: 600; }
+.group-card-body { padding: .4rem .65rem .5rem; }
+.group-bulk-row {
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+    margin-bottom: .35rem;
+}
+.group-bulk-label {
+    font-family: 'Jost', sans-serif;
+    font-size: .68rem;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+.group-bulk-select {
+    flex: 1;
+    min-width: 0;
+    height: 27px;
+    border: 1px solid #e8e0d8;
+    border-radius: 6px;
+    font-size: .68rem;
+    font-family: 'Jost', sans-serif;
+    padding: 0 5px;
+    outline: none;
+    background: #fff;
+    color: var(--text-dark);
+    cursor: pointer;
+}
+.group-bulk-select:focus { border-color: var(--rose); }
+.group-bulk-btn {
+    font-family: 'Jost', sans-serif;
+    font-size: .67rem;
+    font-weight: 600;
+    padding: 0 .55rem;
+    height: 27px;
+    background: var(--rose);
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background .1s;
+}
+.group-bulk-btn:hover { background: var(--rose-dark); }
+.group-guest-mini {
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+    padding: .14rem 0;
+    font-family: 'Jost', sans-serif;
+    font-size: .71rem;
+    color: var(--text-dark);
+    border-bottom: 1px solid #f5f0ec;
+}
+.group-guest-mini:last-child { border-bottom: none; }
+.group-guest-mini .gmini-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.group-all-assigned { font-size: .68rem; color: #5a9a6a; font-style: italic; }
+
+/* ── Quick-add in detail panel ──────────────────────────────────── */
+.qa-section { padding-bottom: .75rem; margin-bottom: .75rem; border-bottom: 1px solid var(--border); }
+.qa-title {
+    font-family: 'Jost', sans-serif;
+    font-size: .68rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin-bottom: .4rem;
+}
+.qa-search {
+    width: 100%;
+    height: 32px;
+    border: 1.5px solid var(--border);
+    border-radius: 7px;
+    padding: 0 .65rem;
+    font-family: 'Jost', sans-serif;
+    font-size: .78rem;
+    outline: none;
+    color: var(--text-dark);
+    background: #fff;
+    margin-bottom: .35rem;
+    box-sizing: border-box;
+}
+.qa-search:focus { border-color: var(--rose); }
+.qa-results { display: flex; flex-direction: column; gap: .2rem; max-height: 130px; overflow-y: auto; }
+.qa-guest-row {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .22rem .35rem;
+    border-radius: 5px;
+    font-family: 'Jost', sans-serif;
+    font-size: .74rem;
+    color: var(--text-dark);
+    background: #f9f7f5;
+}
+.qa-guest-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.qa-add-btn {
+    font-size: .64rem;
+    font-weight: 600;
+    padding: .14rem .4rem;
+    background: #f0faf5;
+    color: #3a8a5a;
+    border: 1px solid #b0d8c0;
+    border-radius: 4px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all .1s;
+    font-family: 'Jost', sans-serif;
+    white-space: nowrap;
+}
+.qa-add-btn:hover { background: #3a8a5a; color: #fff; border-color: #3a8a5a; }
+.qa-empty { font-size: .71rem; color: var(--text-muted); font-style: italic; padding: .2rem 0; }
+
+/* ── Flash animations ────────────────────────────────────────────── */
+@keyframes flashGreen {
+    0%, 60% { background: #d4f0e0; border-color: #5fa67a; }
+    100%     { background: ''; border-color: ''; }
+}
+@keyframes flashRed {
+    0%, 60% { background: #fde8e8; border-color: #d47a7a; }
+    100%     { background: ''; border-color: ''; }
+}
+.pill-flash-green { animation: flashGreen .65s ease forwards; }
+.pill-flash-red   { animation: flashRed .65s ease forwards; }
+
 /* ── Footer action links ─────────────────────────────────────────── */
 .sp-action-link {
     display: flex;
@@ -630,6 +961,66 @@
     display: flex;
     gap: .5rem;
 }
+/* ── Clickable unassigned count ──────────────────────────────────── */
+#unassignedStatBtn {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    text-decoration: none;
+}
+#unassignedStatBtn:hover { text-decoration: underline; color: var(--rose); }
+
+/* ── Export dropdown ─────────────────────────────────────────────── */
+.export-dd {
+    position: relative;
+    flex: 1;
+}
+.export-dd-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .35rem;
+    font-family: 'Jost', sans-serif;
+    font-size: .78rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: .3rem;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    transition: all .12s;
+}
+.export-dd-btn:hover { color: var(--rose); background: #fdf0f2; }
+.export-dd-menu {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #fdfaf8;
+    border: 1px solid #ecdde3;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0,0,0,.1);
+    z-index: 200;
+    min-width: 140px;
+}
+.export-dd-menu.open { display: block; }
+.export-dd-menu a {
+    display: block;
+    padding: .5rem .85rem;
+    font-family: 'Jost', sans-serif;
+    font-size: .78rem;
+    color: var(--text-dark);
+    text-decoration: none;
+    transition: background .1s;
+}
+.export-dd-menu a:hover { background: #fdf0f2; color: var(--rose); }
 </style>
 {% endblock %}
 
@@ -641,8 +1032,10 @@
         <div class="sp-hd">
             <p class="sp-title">Seating</p>
             <p class="sp-count">
-                <span id="unassignedCount">{{ unassigned|length }}</span> unassigned ·
-                {{ accepted_count }} confirmed
+                <button id="unassignedStatBtn" onclick="setAssignFilter('unassigned')">
+                    <span id="unassignedCount">{{ unassigned|length }}</span> unassigned
+                </button>
+                · {{ accepted_count }} confirmed
             </p>
         </div>
         <div class="sp-filters">
@@ -667,7 +1060,18 @@
                     <option value="Other">Other</option>
                 </select>
             </div>
+            <div class="sf-filter-row">
+                <select id="assignFilter" class="sf-input sf-select" style="flex:1;">
+                    <option value="">All guests</option>
+                    <option value="unassigned">Unassigned only</option>
+                    <option value="assigned">Assigned only</option>
+                </select>
+            </div>
             <a href="#" id="sfClear" class="sf-clear">Clear filters</a>
+        </div>
+        <div class="sp-view-toggle">
+            <button class="sp-view-btn active" id="viewBtnGuest" onclick="switchView('guest')">Guests</button>
+            <button class="sp-view-btn" id="viewBtnGroup" onclick="switchView('group')">By Group</button>
         </div>
         <div class="sp-list" id="unassignedList"
              ondragover="unassignedDragOver(event)"
@@ -710,14 +1114,21 @@
             </p>
             {% endif %}
         </div>
+        <div id="groupView"><div class="group-view" id="groupViewInner"></div></div>
         <div class="sp-footer">
             <button class="sp-auto-btn" id="autoAssignBtn" onclick="autoAssign()">
                 ✦ Auto-Assign
             </button>
             <div class="sp-action-row">
-                <a href="{{ url_for('seating.export_csv', wedding_id=wedding.id) }}" class="sp-action-link" style="flex:1;">
-                    <i class="bi bi-download"></i> Export CSV
-                </a>
+                <div class="export-dd">
+                    <button class="export-dd-btn" id="exportDdBtn" onclick="toggleExportDd(event)">
+                        <i class="bi bi-download"></i> Export
+                    </button>
+                    <div class="export-dd-menu" id="exportDdMenu">
+                        <a href="{{ url_for('seating.export_csv', wedding_id=wedding.id, format='csv') }}">Download CSV</a>
+                        <a href="{{ url_for('seating.export_csv', wedding_id=wedding.id, format='excel') }}">Download Excel</a>
+                    </div>
+                </div>
                 <a href="{{ url_for('seating.print_seating', wedding_id=wedding.id) }}" target="_blank" class="sp-action-link" style="flex:1;">
                     <i class="bi bi-printer"></i> Print
                 </a>
@@ -761,6 +1172,8 @@
                         <div class="tbl-hd-l">
                             <span class="tbl-shape-dot tbl-shape-{{ t.shape }}"></span>
                             <span class="tbl-name-txt">{{ t.display_name() }}</span>
+                            <i class="bi bi-sticky tbl-notes-dot" id="tnote-{{ t.id }}"
+                               {% if t.notes %}title="{{ t.notes[:60] }}"{% else %}style="display:none"{% endif %}></i>
                         </div>
                         <div class="tbl-hd-r">
                             <span class="tbl-cap-badge{% if t.guests|length >= t.capacity %} at-cap{% endif %}" id="tcap-{{ t.id }}">{{ t.guests|length }}/{{ t.capacity }}</span>
@@ -860,6 +1273,13 @@
         <button class="dp-close" onclick="closeDetail()">✕</button>
     </div>
     <div class="dp-body">
+        <div class="qa-section">
+            <div class="qa-title">Quick Add Guests</div>
+            <input type="text" class="qa-search" id="qaSearch" placeholder="Search unassigned guests…" autocomplete="off" oninput="runQaSearch()">
+            <div class="qa-results" id="qaResults">
+                <div class="qa-empty">Search to find unassigned guests</div>
+            </div>
+        </div>
         <form id="detailForm" onsubmit="saveDetail(event)">
             <label class="dp-label">Table Name</label>
             <input type="text" id="dpName" class="dp-input" placeholder="e.g. Family Table">
@@ -908,7 +1328,8 @@ TABLES[{{ t.id }}] = {
     name: {{ (t.table_name or '')|tojson }},
     capacity: {{ t.capacity }},
     shape: {{ t.shape|tojson }},
-    count: {{ t.guests|length }}
+    count: {{ t.guests|length }},
+    notes: {{ (t.notes or '')|tojson }}
 };
 {% endfor %}
 
@@ -1159,10 +1580,15 @@ function tableHTML(t) {
     const displayName = t.display_name || t.table_name || ('Table ' + t.number);
     const count = t.count || 0;
     const atCap = count >= t.capacity ? ' at-cap' : '';
+    const notesTip = t.notes ? ` title="${escHtml(t.notes.slice(0, 60))}"` : '';
+    const notesIcon = t.notes
+        ? `<i class="bi bi-sticky tbl-notes-dot"${notesTip} id="tnote-${t.id}"></i>`
+        : `<i class="bi bi-sticky tbl-notes-dot" id="tnote-${t.id}" style="display:none"></i>`;
     return `<div class="tbl-hd" onmousedown="pickUpTable(event,${t.id})">
         <div class="tbl-hd-l">
             <span class="tbl-shape-dot tbl-shape-${t.shape}"></span>
             <span class="tbl-name-txt">${escHtml(displayName)}</span>
+            ${notesIcon}
         </div>
         <div class="tbl-hd-r">
             <span class="tbl-cap-badge${atCap}" id="tcap-${t.id}">${count}/${t.capacity}</span>
@@ -1171,6 +1597,18 @@ function tableHTML(t) {
         </div>
     </div>
     <div class="tbl-chips" id="tchips-${t.id}"></div>`;
+}
+
+function updateNotesIndicator(tableId, notes) {
+    const icon = document.getElementById('tnote-' + tableId);
+    if (!icon) return;
+    if (notes) {
+        icon.title = notes.slice(0, 60);
+        icon.style.display = '';
+    } else {
+        icon.title = '';
+        icon.style.display = 'none';
+    }
 }
 
 function chipHTML(guestId, tableId) {
@@ -1338,9 +1776,11 @@ function openDetail(tableId, e) {
     document.getElementById('dpName').value = tbl.name || '';
     document.getElementById('dpCapacity').value = tbl.capacity;
     document.getElementById('dpShape').value = tbl.shape;
-    document.getElementById('dpNotes').value = '';
+    document.getElementById('dpNotes').value = tbl.notes || '';
     populateDetailGuests(tableId);
     document.getElementById('detailPanel').classList.add('open');
+    const qaEl = document.getElementById('qaSearch');
+    if (qaEl) { qaEl.value = ''; renderQaResults(); }
 }
 
 function closeDetail() {
@@ -1352,6 +1792,7 @@ async function saveDetail(e) {
     e.preventDefault();
     const tableId = currentDetailTableId;
     if (!tableId) return;
+    const saveBtn = document.querySelector('#detailForm .dp-save-btn');
     const fd = new FormData();
     fd.append('table_name', document.getElementById('dpName').value);
     fd.append('capacity', document.getElementById('dpCapacity').value);
@@ -1364,35 +1805,47 @@ async function saveDetail(e) {
     });
     const data = await resp.json();
     if (!resp.ok || !data.ok) {
-        showToast(data.error || 'Could not save.', 'danger');
+        if (saveBtn) {
+            saveBtn.textContent = 'Save failed — try again';
+            saveBtn.style.background = '#c62828';
+            setTimeout(function () {
+                saveBtn.textContent = 'Save Changes';
+                saveBtn.style.background = '';
+            }, 2500);
+        }
         return;
     }
     // Update local state
     const tbl = TABLES[tableId];
     if (tbl) {
-        tbl.name = data.table_name || '';
+        tbl.name   = data.table_name || '';
         tbl.capacity = data.capacity;
-        tbl.shape = data.shape;
+        tbl.shape  = data.shape;
+        tbl.notes  = data.notes || '';
     }
-    // Update table element DOM
+    // Update canvas card DOM
     const el = document.getElementById('table-' + tableId);
     if (el) {
-        // Update shape class
         el.className = 'tbl-el tbl-' + data.shape;
-        // Update name text
         const nameEl = el.querySelector('.tbl-name-txt');
-        if (nameEl) nameEl.textContent = data.display_name || data.table_name || ('Table ' + tbl.number);
-        // Update shape dot
+        if (nameEl) nameEl.textContent = data.display_name || data.table_name || ('Table ' + (tbl ? tbl.number : ''));
         const dot = el.querySelector('.tbl-shape-dot');
-        if (dot) {
-            dot.className = 'tbl-shape-dot tbl-shape-' + data.shape;
-        }
-        // Update capacity badge
+        if (dot) dot.className = 'tbl-shape-dot tbl-shape-' + data.shape;
         updateCount(tableId);
+        updateNotesIndicator(tableId, data.notes || '');
     }
-    // Update detail panel title
-    document.getElementById('dpTitle').textContent = data.display_name || data.table_name || ('Table ' + (tbl ? tbl.number : ''));
-    showToast('Table updated.', 'success');
+    // Green feedback then auto-close
+    if (saveBtn) {
+        saveBtn.textContent = '✓ Saved!';
+        saveBtn.style.background = '#5a8a5a';
+    }
+    setTimeout(function () {
+        closeDetail();
+        if (saveBtn) {
+            saveBtn.textContent = 'Save Changes';
+            saveBtn.style.background = '';
+        }
+    }, 800);
 }
 
 function populateDetailGuests(tableId) {
@@ -1454,22 +1907,27 @@ function filterGuests() {
     const search = document.getElementById('guestSearch').value.toLowerCase().trim();
     const group  = document.getElementById('groupFilter').value;
     const meal   = document.getElementById('mealFilter').value;
+    const assign = document.getElementById('assignFilter').value;
     const clearLink = document.getElementById('sfClear');
-    const hasFilters = search || group || meal;
+    const hasFilters = search || group || meal || assign;
     if (clearLink) clearLink.classList.toggle('visible', !!hasFilters);
 
     const pills = document.querySelectorAll('#unassignedList .guest-pill');
     let unassignedVisible = 0;
     pills.forEach(function(pill) {
-        const name      = pill.dataset.name  || '';
-        const pillGroup = pill.dataset.group || '';
-        const pillMeal  = pill.dataset.meal  || '';
-        const nameMatch  = !search || name.includes(search);
-        const groupMatch = !group  || pillGroup === group;
-        const mealMatch  = !meal   || pillMeal  === meal;
-        if (nameMatch && groupMatch && mealMatch) {
+        const name       = pill.dataset.name  || '';
+        const pillGroup  = pill.dataset.group || '';
+        const pillMeal   = pill.dataset.meal  || '';
+        const isAssigned = pill.classList.contains('pill-assigned');
+        const nameMatch   = !search || name.includes(search);
+        const groupMatch  = !group  || pillGroup === group;
+        const mealMatch   = !meal   || pillMeal  === meal;
+        const assignMatch = !assign
+            || (assign === 'unassigned' && !isAssigned)
+            || (assign === 'assigned'   && isAssigned);
+        if (nameMatch && groupMatch && mealMatch && assignMatch) {
             pill.classList.remove('hidden');
-            if (!pill.classList.contains('pill-assigned')) unassignedVisible++;
+            if (!isAssigned) unassignedVisible++;
         } else {
             pill.classList.add('hidden');
         }
@@ -1478,18 +1936,39 @@ function filterGuests() {
     if (el) el.textContent = unassignedVisible;
 }
 
+function setAssignFilter(value) {
+    const sel = document.getElementById('assignFilter');
+    if (sel) sel.value = value;
+    filterGuests();
+    document.getElementById('unassignedList').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 document.getElementById('guestSearch').addEventListener('input', function() {
     clearTimeout(sfDebounce);
     sfDebounce = setTimeout(filterGuests, 280);
 });
 document.getElementById('groupFilter').addEventListener('change', filterGuests);
 document.getElementById('mealFilter').addEventListener('change', filterGuests);
+document.getElementById('assignFilter').addEventListener('change', filterGuests);
 document.getElementById('sfClear').addEventListener('click', function(e) {
     e.preventDefault();
-    document.getElementById('guestSearch').value = '';
+    document.getElementById('guestSearch').value  = '';
     document.getElementById('groupFilter').value  = '';
     document.getElementById('mealFilter').value   = '';
+    document.getElementById('assignFilter').value = '';
     filterGuests();
+});
+
+// ── Export dropdown ──────────────────────────────────────────────
+function toggleExportDd(e) {
+    e.stopPropagation();
+    document.getElementById('exportDdMenu').classList.toggle('open');
+}
+document.addEventListener('click', function(e) {
+    const menu = document.getElementById('exportDdMenu');
+    if (menu && !e.target.closest('.export-dd')) {
+        menu.classList.remove('open');
+    }
 });
 
 // ── Toast helper ─────────────────────────────────────────────────
@@ -1522,5 +2001,402 @@ document.addEventListener('click', function(e) {
         }
     }
 });
+
+// ════════════════════════════════════════════════════════════════
+// METHOD 1 — CLICK-TO-ASSIGN
+// ════════════════════════════════════════════════════════════════
+let currentAssignGuestId = null;
+let assignHighlightIdx = -1;
+
+// Event delegation: click on any guest pill opens assign panel
+document.getElementById('unassignedList').addEventListener('click', function(e) {
+    if (e.target.closest('.assign-panel')) return;
+    const pill = e.target.closest('.guest-pill');
+    if (!pill) return;
+    const guestId = parseInt(pill.dataset.guestId);
+    if (isNaN(guestId)) return;
+    // Toggle: close if same pill already open
+    const existing = document.getElementById('activeAssignPanel');
+    if (existing && currentAssignGuestId === guestId) {
+        closeAssignPanel();
+        return;
+    }
+    openAssignPanel(guestId, pill);
+});
+
+function openAssignPanel(guestId, pillEl) {
+    closeAssignPanel();
+    currentAssignGuestId = guestId;
+    const panel = buildAssignPanel(guestId);
+    pillEl.insertAdjacentElement('afterend', panel);
+    const searchEl = panel.querySelector('.assign-search');
+    if (searchEl) searchEl.focus();
+}
+
+function closeAssignPanel() {
+    const existing = document.getElementById('activeAssignPanel');
+    if (existing) existing.remove();
+    currentAssignGuestId = null;
+    assignHighlightIdx = -1;
+}
+
+function buildAssignPanel(guestId) {
+    const g = GUESTS[guestId];
+    const div = document.createElement('div');
+    div.className = 'assign-panel';
+    div.id = 'activeAssignPanel';
+
+    let currentHtml = '';
+    if (g && g.tableId != null) {
+        const tbl = TABLES[g.tableId];
+        const name = tbl ? (tbl.name || ('Table ' + tbl.number)) : '?';
+        currentHtml = `<div class="assign-current-row">
+            <span class="assign-current-label">At ${escHtml(name)}</span>
+            <button class="assign-unassign-btn" onclick="unassignFromPanel(${guestId})">Remove from table</button>
+        </div>`;
+    }
+
+    div.innerHTML = `
+        <div class="assign-panel-hd">
+            <span class="assign-panel-title">Assign ${escHtml(g ? g.name : '')}</span>
+            <button class="assign-panel-close" onclick="closeAssignPanel()">✕</button>
+        </div>
+        ${currentHtml}
+        <div class="assign-search-wrap">
+            <input type="text" class="assign-search" placeholder="Search tables…"
+                   oninput="onAssignSearch(${guestId})" autocomplete="off">
+        </div>
+        <div class="assign-table-list" id="assignTableList"></div>
+        <div class="assign-kbd-hint">↑↓ navigate · 1–9 quick select · Enter assign · Esc close</div>`;
+
+    renderAssignTableList(guestId, '');
+    return div;
+}
+
+function onAssignSearch(guestId) {
+    const panel = document.getElementById('activeAssignPanel');
+    if (!panel) return;
+    const search = panel.querySelector('.assign-search').value.trim();
+    renderAssignTableList(guestId, search);
+}
+
+function hasSameGroup(guestId, tableId) {
+    const g = GUESTS[guestId];
+    if (!g || !g.group) return false;
+    return Object.values(GUESTS).some(function(og) {
+        return og.id !== guestId && og.tableId === tableId && og.group === g.group;
+    });
+}
+
+function getSortedTables(guestId, search) {
+    const tables = Object.values(TABLES);
+    const lower = search.toLowerCase();
+    const filtered = search
+        ? tables.filter(function(t) {
+            return (t.name || ('Table ' + t.number)).toLowerCase().includes(lower);
+          })
+        : tables;
+    return filtered.sort(function(a, b) {
+        const ag = hasSameGroup(guestId, a.id) ? 0 : 1;
+        const bg = hasSameGroup(guestId, b.id) ? 0 : 1;
+        if (ag !== bg) return ag - bg;
+        return (b.capacity - b.count) - (a.capacity - a.count);
+    });
+}
+
+function renderAssignTableList(guestId, search) {
+    const listEl = document.getElementById('assignTableList');
+    if (!listEl) return;
+    const tables = getSortedTables(guestId, search);
+    assignHighlightIdx = 0;
+
+    if (tables.length === 0) {
+        listEl.innerHTML = '<div class="qa-empty" style="padding:.3rem .4rem;">No tables found</div>';
+        return;
+    }
+
+    listEl.innerHTML = tables.map(function(t, i) {
+        const isFull = t.count >= t.capacity;
+        const name = t.name || ('Table ' + t.number);
+        const sameGrp = hasSameGroup(guestId, t.id);
+        const kbdTag = i < 9 ? `<span style="font-size:.58rem;color:#c8b8b0;margin-right:.15rem;">${i+1}</span>` : '';
+        const grpTag = sameGrp ? '<span class="assign-tbl-group">same group</span>' : '';
+        const fillTag = isFull
+            ? '<span class="assign-tbl-full">FULL</span>'
+            : `<span class="assign-tbl-fill">${t.count}/${t.capacity}</span>`;
+        const btn = isFull ? '' : `<button class="assign-btn" onclick="assignFromPanel(${guestId},${t.id})">Assign</button>`;
+        const hlClass = i === 0 && !isFull ? ' highlighted' : '';
+        return `<div class="assign-table-row${isFull ? ' full' : ''}${hlClass}" data-tidx="${i}" data-tid="${t.id}">
+            ${kbdTag}<span class="assign-tbl-name">${escHtml(name)}</span>${grpTag}${fillTag}${btn}
+        </div>`;
+    }).join('');
+}
+
+async function assignFromPanel(guestId, tableId) {
+    const oldTableId = GUESTS[guestId] ? GUESTS[guestId].tableId : null;
+    const resp = await fetch('/seating/assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ guest_id: guestId, table_id: tableId }),
+    });
+    const data = await resp.json();
+    const pill = document.getElementById('pill-' + guestId);
+    if (!resp.ok || !data.ok) {
+        if (pill) {
+            pill.classList.add('pill-flash-red');
+            pill.addEventListener('animationend', function() { pill.classList.remove('pill-flash-red'); }, { once: true });
+        }
+        showToast(data.error || 'Could not assign guest.', 'danger');
+        return;
+    }
+    if (oldTableId != null) removeChipFromTable(guestId, oldTableId);
+    addChipToTable(guestId, tableId);
+    updatePillAssignment(guestId, tableId);
+    if (pill) {
+        pill.classList.add('pill-flash-green');
+        pill.addEventListener('animationend', function() { pill.classList.remove('pill-flash-green'); }, { once: true });
+    }
+    closeAssignPanel();
+    const tbl = TABLES[tableId];
+    showToast('✓ Assigned to ' + escHtml(tbl ? (tbl.name || 'Table ' + tbl.number) : '?'), 'success');
+    if (currentDetailTableId === tableId || currentDetailTableId === oldTableId) {
+        populateDetailGuests(currentDetailTableId);
+        renderQaResults();
+    }
+}
+
+async function unassignFromPanel(guestId) {
+    const resp = await fetch('/seating/unassign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ guest_id: guestId }),
+    });
+    const data = await resp.json();
+    if (!resp.ok || !data.ok) { showToast(data.error || 'Could not unassign.', 'danger'); return; }
+    const oldTableId = GUESTS[guestId] ? GUESTS[guestId].tableId : null;
+    if (oldTableId != null) removeChipFromTable(guestId, oldTableId);
+    updatePillAssignment(guestId, null);
+    closeAssignPanel();
+    if (currentDetailTableId === oldTableId) { populateDetailGuests(currentDetailTableId); renderQaResults(); }
+}
+
+// Keyboard navigation for assign panel
+document.addEventListener('keydown', function(e) {
+    const panel = document.getElementById('activeAssignPanel');
+    if (!panel || currentAssignGuestId == null) return;
+    if (e.key === 'Escape') { closeAssignPanel(); return; }
+
+    // 1-9 quick select
+    if (e.key >= '1' && e.key <= '9') {
+        const idx = parseInt(e.key) - 1;
+        const rows = panel.querySelectorAll('.assign-table-row');
+        if (rows[idx] && !rows[idx].classList.contains('full')) {
+            assignFromPanel(currentAssignGuestId, parseInt(rows[idx].dataset.tid));
+        }
+        return;
+    }
+
+    // Arrow navigation
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const avail = Array.from(panel.querySelectorAll('.assign-table-row:not(.full)'));
+        if (!avail.length) return;
+        avail.forEach(function(r) { r.classList.remove('highlighted'); });
+        if (e.key === 'ArrowDown') assignHighlightIdx = Math.min(assignHighlightIdx + 1, avail.length - 1);
+        else assignHighlightIdx = Math.max(assignHighlightIdx - 1, 0);
+        avail[assignHighlightIdx].classList.add('highlighted');
+        avail[assignHighlightIdx].scrollIntoView({ block: 'nearest' });
+        return;
+    }
+
+    // Enter confirms highlighted
+    if (e.key === 'Enter') {
+        const highlighted = panel.querySelector('.assign-table-row.highlighted:not(.full)');
+        const first = panel.querySelector('.assign-table-row:not(.full)');
+        const target = highlighted || first;
+        if (target) assignFromPanel(currentAssignGuestId, parseInt(target.dataset.tid));
+    }
+});
+
+// ════════════════════════════════════════════════════════════════
+// METHOD 2 — TABLE-FIRST QUICK ADD (in detail panel)
+// ════════════════════════════════════════════════════════════════
+var qaDebounce = null;
+
+function runQaSearch() {
+    clearTimeout(qaDebounce);
+    qaDebounce = setTimeout(renderQaResults, 180);
+}
+
+function renderQaResults() {
+    const tableId = currentDetailTableId;
+    const results = document.getElementById('qaResults');
+    if (!results || !tableId) return;
+    const tbl = TABLES[tableId];
+    const isFull = tbl && tbl.count >= tbl.capacity;
+    const search = (document.getElementById('qaSearch').value || '').toLowerCase().trim();
+
+    const unassigned = Object.values(GUESTS).filter(function(g) {
+        if (g.tableId != null) return false;
+        if (!search) return true;
+        return g.name.toLowerCase().includes(search) || (g.group || '').toLowerCase().includes(search);
+    }).sort(function(a, b) { return a.name.localeCompare(b.name); }).slice(0, 10);
+
+    if (!search) {
+        results.innerHTML = '<div class="qa-empty">Search to find unassigned guests</div>';
+        return;
+    }
+    if (unassigned.length === 0) {
+        results.innerHTML = '<div class="qa-empty">No matches</div>';
+        return;
+    }
+    results.innerHTML = unassigned.map(function(g) {
+        const addBtn = isFull
+            ? '<span style="font-size:.63rem;color:#aaa;">Full</span>'
+            : `<button class="qa-add-btn" onclick="quickAddGuest(${g.id},${tableId})">+ Add</button>`;
+        return `<div class="qa-guest-row">
+            <span class="qa-guest-name">${mealIcon(g.meal)} ${escHtml(g.name)}</span>${addBtn}
+        </div>`;
+    }).join('');
+}
+
+async function quickAddGuest(guestId, tableId) {
+    const tbl = TABLES[tableId];
+    if (tbl && tbl.count >= tbl.capacity) { showToast('Table is at capacity.', 'danger'); return; }
+    const resp = await fetch('/seating/assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ guest_id: guestId, table_id: tableId }),
+    });
+    const data = await resp.json();
+    if (!resp.ok || !data.ok) { showToast(data.error || 'Could not add guest.', 'danger'); return; }
+    const oldTableId = GUESTS[guestId] ? GUESTS[guestId].tableId : null;
+    if (oldTableId != null) removeChipFromTable(guestId, oldTableId);
+    addChipToTable(guestId, tableId);
+    updatePillAssignment(guestId, tableId);
+    populateDetailGuests(tableId);
+    renderQaResults();
+    const g = GUESTS[guestId];
+    showToast('✓ Added ' + escHtml(g ? g.name : 'guest'), 'success');
+}
+
+// ════════════════════════════════════════════════════════════════
+// METHOD 3 — VIEW TOGGLE + GROUP BULK ASSIGN
+// ════════════════════════════════════════════════════════════════
+let currentView = 'guest';
+
+function switchView(view) {
+    currentView = view;
+    document.getElementById('viewBtnGuest').classList.toggle('active', view === 'guest');
+    document.getElementById('viewBtnGroup').classList.toggle('active', view === 'group');
+    const listEl = document.getElementById('unassignedList');
+    const groupEl = document.getElementById('groupView');
+    listEl.style.display = view === 'guest' ? '' : 'none';
+    groupEl.style.display = view === 'group' ? '' : 'none';
+    if (view === 'group') renderGroupView();
+    closeAssignPanel();
+}
+
+function renderGroupView() {
+    const container = document.getElementById('groupViewInner');
+    if (!container) return;
+
+    const groups = {};
+    const ungrouped = [];
+    Object.values(GUESTS).forEach(function(g) {
+        if (g.group) {
+            if (!groups[g.group]) groups[g.group] = [];
+            groups[g.group].push(g);
+        } else {
+            ungrouped.push(g);
+        }
+    });
+
+    let html = '';
+    Object.keys(groups).sort().forEach(function(gName) {
+        html += buildGroupCard(gName, groups[gName]);
+    });
+    if (ungrouped.length > 0) html += buildGroupCard('(No group)', ungrouped);
+    container.innerHTML = html;
+}
+
+function buildGroupCard(groupName, members) {
+    const unassigned = members.filter(function(g) { return g.tableId == null; });
+    const total = members.length;
+
+    // Table options: only tables with at least 1 free seat, sorted most-empty first
+    const tableOpts = Object.values(TABLES)
+        .filter(function(t) { return t.capacity - t.count > 0; })
+        .sort(function(a, b) { return (b.capacity - b.count) - (a.capacity - a.count); })
+        .map(function(t) {
+            const space = t.capacity - t.count;
+            const fitsAll = space >= unassigned.length ? ' ← fits all' : '';
+            const name = t.name || ('Table ' + t.number);
+            return `<option value="${t.id}">${escHtml(name)} (${t.count}/${t.capacity}${fitsAll})</option>`;
+        }).join('');
+
+    let bulkSection = '';
+    if (unassigned.length === 0) {
+        bulkSection = '<div class="group-all-assigned">✓ All assigned</div>';
+    } else if (tableOpts) {
+        bulkSection = `<div class="group-bulk-row">
+            <span class="group-bulk-label">Assign ${unassigned.length} to:</span>
+            <select class="group-bulk-select"><option value="">— table —</option>${tableOpts}</select>
+            <button class="group-bulk-btn" data-group="${escHtml(groupName)}" onclick="bulkAssignGroup(this.dataset.group, this.previousElementSibling.value, this)">Go</button>
+        </div>`;
+    } else {
+        bulkSection = '<div class="group-all-assigned" style="color:#b8a89e;">No tables with free seats</div>';
+    }
+
+    const memberRows = members.slice().sort(function(a, b) { return a.name.localeCompare(b.name); })
+        .map(function(g) {
+            const tbl = g.tableId != null ? TABLES[g.tableId] : null;
+            const badge = tbl
+                ? `<span class="pill-table-badge">${escHtml(tbl.name || ('Table ' + tbl.number))}</span>`
+                : '<span style="font-size:.6rem;color:#c9687a;flex-shrink:0;">unassigned</span>';
+            return `<div class="group-guest-mini">${mealIcon(g.meal)}<span class="gmini-name">${escHtml(g.name)}</span>${badge}</div>`;
+        }).join('');
+
+    return `<div class="group-card">
+        <div class="group-card-hd">
+            <span class="group-card-name">${escHtml(groupName)}</span>
+            <span class="group-card-meta">${total} · <span class="uct">${unassigned.length} unassigned</span></span>
+        </div>
+        <div class="group-card-body">
+            ${bulkSection}
+            <div style="max-height:110px;overflow-y:auto;margin-top:.25rem;">${memberRows}</div>
+        </div>
+    </div>`;
+}
+
+async function bulkAssignGroup(groupName, tableIdStr, btn) {
+    const tableId = parseInt(tableIdStr);
+    if (!tableId) { showToast('Please select a table first.', 'warning'); return; }
+    const orig = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '…';
+    const resp = await fetch('/wedding/' + WEDDING_ID + '/seating/bulk-assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ group_name: groupName, table_id: tableId }),
+    });
+    const data = await resp.json();
+    btn.disabled = false;
+    btn.textContent = orig;
+    if (!resp.ok || !data.ok) { showToast(data.error || 'Bulk assign failed.', 'danger'); return; }
+    if (data.assigned_ids && data.assigned_ids.length > 0) {
+        data.assigned_ids.forEach(function(gid) {
+            const old = GUESTS[gid] ? GUESTS[gid].tableId : null;
+            if (old != null) removeChipFromTable(gid, old);
+            addChipToTable(gid, tableId);
+            updatePillAssignment(gid, tableId);
+        });
+    }
+    const msg = data.failed > 0
+        ? `Assigned ${data.assigned}. ${data.failed} couldn't fit (table full).`
+        : `✓ Assigned ${data.assigned} guests to table.`;
+    showToast(msg, data.failed > 0 ? 'warning' : 'success');
+    renderGroupView();
+}
 </script>
 {% endblock %}

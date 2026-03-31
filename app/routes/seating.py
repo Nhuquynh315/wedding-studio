@@ -1,6 +1,8 @@
 import csv
 import io
 
+import openpyxl
+from openpyxl.styles import Font, PatternFill
 from flask import Blueprint, jsonify, render_template, request, abort, make_response
 from flask_login import login_required, current_user
 
@@ -116,6 +118,7 @@ def edit_table(table_id):
         'display_name': table.display_name(),
         'capacity': table.capacity,
         'shape': table.shape,
+        'notes': table.notes or '',
     })
 
 
@@ -212,14 +215,17 @@ def auto_assign(wedding_id):
         unassigned,
         key=lambda g: (g.group_name or 'zzz', g.full_name)
     )
+    # Track counts in a local dict — relationship cache doesn't update mid-loop
+    counts = {t.id: len(t.guests) for t in tables}
     assigned_count = 0
     failed_count = 0
     for guest in unassigned_sorted:
         placed = False
         for table in tables:
-            if len(table.guests) < table.capacity:
+            if counts[table.id] < table.capacity:
                 guest.table_id = table.id
                 guest.table_number = table.table_number
+                counts[table.id] += 1
                 placed = True
                 assigned_count += 1
                 break
@@ -246,6 +252,7 @@ def auto_assign(wedding_id):
 @login_required
 def export_csv(wedding_id):
     wedding = get_wedding_or_403(wedding_id)
+    fmt = request.args.get('format', 'csv')
     tables = (WeddingTable.query
               .filter_by(wedding_id=wedding_id)
               .order_by(WeddingTable.table_number)
@@ -255,6 +262,48 @@ def export_csv(wedding_id):
                   .filter(Guest.table_id.is_(None))
                   .order_by(Guest.full_name)
                   .all())
+
+    if fmt == 'excel':
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = 'Seating Chart'
+        headers = ['Table Number', 'Table Name', 'Guest Name', 'Meal Preference', 'Group']
+        ws.append(headers)
+        header_font = Font(bold=True)
+        header_fill = PatternFill(start_color='C9E8D0', end_color='C9E8D0', fill_type='solid')
+        for cell in ws[1]:
+            cell.font = header_font
+            cell.fill = header_fill
+        for table in tables:
+            for guest in sorted(table.guests, key=lambda g: g.full_name):
+                ws.append([
+                    table.table_number,
+                    table.display_name(),
+                    guest.full_name,
+                    guest.meal_preference or 'Standard',
+                    guest.group_name or '',
+                ])
+        for guest in unassigned:
+            ws.append([
+                '',
+                'Unassigned',
+                guest.full_name,
+                guest.meal_preference or 'Standard',
+                guest.group_name or '',
+            ])
+        col_widths = [14, 20, 22, 18, 20]
+        for col, width in enumerate(col_widths, start=1):
+            ws.column_dimensions[openpyxl.utils.get_column_letter(col)].width = width
+        buf = io.BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+        filename = f'seating-{wedding.partner1_name}-{wedding.partner2_name}.xlsx'.replace(' ', '-')
+        response = make_response(buf.getvalue())
+        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+
+    # Default: CSV
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow(['Table Number', 'Table Name', 'Guest Name', 'Group', 'Meal Preference'])
@@ -281,6 +330,51 @@ def export_csv(wedding_id):
     filename = f'seating-{wedding.partner1_name}-{wedding.partner2_name}.csv'.replace(' ', '-')
     response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
+
+
+@seating_bp.route('/wedding/<int:wedding_id>/seating/bulk-assign', methods=['POST'])
+@login_required
+def bulk_assign(wedding_id):
+    wedding = get_wedding_or_403(wedding_id)
+    data = request.get_json(force=True, silent=True) or {}
+    group_name = data.get('group_name')
+    table_id = data.get('table_id')
+    if not group_name or not table_id:
+        return jsonify({'ok': False, 'error': 'Missing group_name or table_id'}), 400
+    table = get_table_or_403(table_id)
+    if table.wedding_id != wedding_id:
+        abort(403)
+    NO_GROUP_LABEL = '(No group)'
+    q = Guest.query.filter_by(wedding_id=wedding_id, rsvp_status='confirmed').filter(Guest.table_id.is_(None))
+    if group_name == NO_GROUP_LABEL:
+        q = q.filter(db.or_(Guest.group_name.is_(None), Guest.group_name == ''))
+    else:
+        q = q.filter(Guest.group_name == group_name)
+    unassigned = q.order_by(Guest.full_name).all()
+    available = table.capacity - len(table.guests)
+    assigned_ids = []
+    failed = 0
+    for guest in unassigned:
+        if available <= 0:
+            failed += 1
+            continue
+        guest.table_id = table.id
+        guest.table_number = table.table_number
+        assigned_ids.append(guest.id)
+        available -= 1
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        return jsonify({'ok': False, 'error': 'Database error'}), 500
+    final_count = len(table.guests)
+    return jsonify({
+        'ok': True,
+        'assigned': len(assigned_ids),
+        'failed': failed,
+        'assigned_ids': assigned_ids,
+        'table_count': final_count,
+    })
 
 
 @seating_bp.route('/wedding/<int:wedding_id>/seating/print')

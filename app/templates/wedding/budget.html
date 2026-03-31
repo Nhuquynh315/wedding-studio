@@ -318,6 +318,211 @@
     color: #8a7f7a;
 }
 
+/* ── Template selector ────────────────────────────────────────────── */
+.tmpl-intro {
+    background: #fff;
+    border: 1px solid #e8e0d8;
+    border-radius: 12px;
+    padding: 1.5rem 1.5rem 1.75rem;
+}
+.tmpl-heading {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.65rem;
+    font-weight: 400;
+    color: #2d2420;
+    margin: 0 0 .2rem;
+}
+.tmpl-sub { font-size: .82rem; color: #a09080; margin-bottom: 1.1rem; }
+.tmpl-rec-note {
+    background: #fdf8f5;
+    border: 1px solid #ecdde3;
+    border-radius: 8px;
+    padding: .55rem .85rem;
+    font-size: .78rem;
+    color: #7a6058;
+    margin-bottom: 1rem;
+}
+.tmpl-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: .6rem;
+    margin-bottom: 1.1rem;
+}
+@media (max-width: 600px) { .tmpl-grid { grid-template-columns: repeat(2, 1fr); } }
+.tmpl-card {
+    border: 1.5px solid #e8e0d8;
+    border-radius: 10px;
+    padding: .8rem .75rem;
+    cursor: pointer;
+    transition: all .15s;
+    background: #fff;
+    text-align: center;
+    user-select: none;
+}
+.tmpl-card:hover { border-color: #c9687a; background: #fdf8f9; }
+.tmpl-card.selected { border-color: #c9687a; background: #fdf8f9; box-shadow: 0 0 0 2px rgba(201,104,122,.14); }
+.tmpl-emoji { font-size: 1.45rem; display: block; margin-bottom: .3rem; }
+.tmpl-name { font-family: 'Jost', sans-serif; font-size: .78rem; font-weight: 600; color: #2d2420; margin-bottom: .12rem; }
+.tmpl-desc { font-size: .63rem; color: #a09080; line-height: 1.35; }
+.tmpl-rec-badge {
+    display: inline-block;
+    font-size: .58rem;
+    background: #c9687a;
+    color: #fff;
+    border-radius: 4px;
+    padding: .08rem .32rem;
+    margin-top: .22rem;
+    font-family: 'Jost', sans-serif;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+.tmpl-apply-btn {
+    font-family: 'Jost', sans-serif;
+    font-size: .84rem;
+    font-weight: 500;
+    padding: .52rem 1.5rem;
+    background: #c9687a;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background .12s;
+}
+.tmpl-apply-btn:hover { background: #a8566a; }
+.tmpl-apply-btn:disabled { background: #e0cfd2; color: #b0909a; cursor: default; }
+.tmpl-back-btn {
+    font-family: 'Jost', sans-serif;
+    font-size: .82rem;
+    padding: .5rem 1.1rem;
+    border: 1.5px solid #e8e0d8;
+    background: #fff;
+    color: #5a4a40;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all .12s;
+}
+.tmpl-back-btn:hover { border-color: #c9687a; color: #c9687a; }
+/* Preview table */
+.tmpl-preview-intro {
+    font-family: 'Jost', sans-serif;
+    font-size: .84rem;
+    color: #5a4a40;
+    margin-bottom: .85rem;
+}
+.tmpl-estimate-note {
+    font-size: .75rem;
+    color: #9a8060;
+    background: #fdf8f0;
+    border: 1px solid #e8d8c0;
+    border-radius: 6px;
+    padding: .4rem .7rem;
+    margin-bottom: .75rem;
+}
+.tmpl-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Jost', sans-serif;
+    font-size: .82rem;
+    margin-bottom: .75rem;
+}
+.tmpl-table th {
+    font-size: .63rem;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: #8a7f7a;
+    padding: .4rem .7rem;
+    text-align: left;
+    border-bottom: 1.5px solid #f0e8e4;
+}
+.tmpl-table th:not(:first-child) { text-align: right; }
+.tmpl-table td {
+    padding: .38rem .7rem;
+    border-bottom: 1px solid #f7f3f0;
+    color: #2d2420;
+    vertical-align: middle;
+}
+.tmpl-table td:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+.tmpl-table tbody tr:last-child td { border-bottom: none; }
+.tmpl-table tfoot td {
+    border-top: 1.5px solid #e8e0d8;
+    font-weight: 600;
+    padding-top: .5rem;
+    color: #2d2420;
+}
+.tmpl-cat-cell { display: flex; align-items: center; gap: .5rem; }
+.tmpl-cat-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
+.tmpl-error-msg {
+    font-size: .78rem;
+    color: #c9687a;
+    background: #fdf0f2;
+    border: 1px solid #ecdde3;
+    border-radius: 6px;
+    padding: .45rem .75rem;
+    margin-bottom: .75rem;
+    display: none;
+}
+
+/* ── Suggestions dropdown ──────────────────────────────────────────── */
+.sug-dd-wrap { position: relative; flex-shrink: 0; }
+.sug-dd-btn {
+    height: 38px;
+    padding: 0 .7rem;
+    border: 1px solid #e8e0d8;
+    border-radius: 7px;
+    background: #fff;
+    font-family: 'Jost', sans-serif;
+    font-size: .74rem;
+    color: #8a7f7a;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all .12s;
+}
+.sug-dd-btn:hover { border-color: #c9687a; color: #c9687a; }
+.sug-dd-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    background: #fff;
+    border: 1px solid #e8d0d4;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,.1);
+    z-index: 300;
+    min-width: 220px;
+    overflow: hidden;
+}
+.sug-dd-menu.open { display: block; }
+.sug-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: .38rem .75rem;
+    font-family: 'Jost', sans-serif;
+    font-size: .78rem;
+    color: #2d2420;
+    cursor: pointer;
+    transition: background .1s;
+    gap: .75rem;
+}
+.sug-item:hover { background: #fdf0f2; }
+.sug-item-amt { font-size: .7rem; color: #a09080; white-space: nowrap; }
+
+/* ── Reset link ────────────────────────────────────────────────────── */
+.budget-reset-link {
+    font-family: 'Jost', sans-serif;
+    font-size: .7rem;
+    color: #c8bdb8;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    text-decoration: none;
+    transition: color .12s;
+}
+.budget-reset-link:hover { color: #c9687a; text-decoration: underline; }
+
 /* ── Responsive ───────────────────────────────────────────────────── */
 @media (max-width: 900px) {
     .budget-summary { grid-template-columns: 1fr 1fr; }
@@ -360,7 +565,7 @@
         <div class="summary-amount" id="summaryPaid">
             ${{ '{:,.0f}'.format(total_actual_paid) }}
         </div>
-        <div class="summary-sub">{{ budget_pct if budget_pct is defined else 0 }}% of budget</div>
+        <div class="summary-sub" id="summaryPaidPct">{{ ((total_actual_paid / total_budget * 100) | round | int) if total_budget else 0 }}% of budget</div>
     </div>
     {# Remaining #}
     <div class="summary-card">
@@ -393,7 +598,14 @@
 
 {# ── Category sections ────────────────────────────────────────────── #}
 <div class="section-hdr">
-    <span class="section-hdr-title">Categories &amp; Expenses</span>
+    <span class="section-hdr-title" style="display:flex; align-items:center; gap:.75rem;">
+        Categories &amp; Expenses
+        {% if categories %}
+        <button class="budget-reset-link" data-bs-toggle="modal" data-bs-target="#resetModal">
+            Reset &amp; choose different template
+        </button>
+        {% endif %}
+    </span>
     <button class="btn-cat-action" data-bs-toggle="collapse" data-bs-target="#addCatForm">
         <i class="bi bi-plus-lg"></i> Add Category
     </button>
@@ -406,7 +618,13 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="field grow">
             <label>Category Name</label>
-            <input type="text" name="name" class="form-control" placeholder="e.g. Hair & Makeup" required>
+            <div style="display:flex; gap:.35rem;">
+                <input type="text" name="name" id="catNameInput" class="form-control" placeholder="e.g. Hair & Makeup" required>
+                <div class="sug-dd-wrap">
+                    <button type="button" class="sug-dd-btn" onclick="toggleSugDd(event)">Common ▾</button>
+                    <div class="sug-dd-menu" id="suggestionsMenu"></div>
+                </div>
+            </div>
         </div>
         <div class="field" style="width:130px;">
             <label>Allocated ($)</label>
@@ -580,10 +798,49 @@
     </div>
     {% endfor %}
 {% else %}
-    <div style="text-align:center; padding:2.5rem; color:#a09080;">
-        <i class="bi bi-wallet2" style="font-size:2.5rem; display:block; margin-bottom:0.75rem; color:#d8cec8;"></i>
-        <p>No budget categories yet. Add one above to get started.</p>
+<div class="tmpl-intro">
+    <h2 class="tmpl-heading">Set up your budget</h2>
+    <p class="tmpl-sub">Choose a template that matches your wedding style, or start from scratch.</p>
+    <div class="tmpl-rec-note">
+        Based on your <strong>{{ wedding.style | capitalize }}</strong> wedding style, we recommend this template.
+        You can switch to another if you prefer.
     </div>
+    <div class="tmpl-grid">
+        {% set style_cards = [
+            ('rustic',     '🌿', 'Rustic',     'Barn, greenery, handcrafted details'),
+            ('modern',     '✨', 'Modern',     'Clean lines, contemporary, minimalist luxury'),
+            ('luxury',     '💎', 'Luxury',     'Grand venue, fine dining, premium everything'),
+            ('beach',      '🌊', 'Beach',      'Open-air, relaxed, natural coastal elements'),
+            ('vintage',    '🌸', 'Vintage',    'Antique charm, soft tones, timeless romance'),
+            ('minimalist', '🤍', 'Minimalist', 'Simple, intentional, beautifully understated'),
+        ] %}
+        {% for slug, emoji, name, desc in style_cards %}
+        <div class="tmpl-card{% if slug == wedding.style %} selected{% endif %}"
+             id="tmpl-{{ slug }}" onclick="selectTemplate('{{ slug }}')">
+            <span class="tmpl-emoji">{{ emoji }}</span>
+            <div class="tmpl-name">{{ name }}</div>
+            <div class="tmpl-desc">{{ desc }}</div>
+            {% if slug == wedding.style %}
+            <span class="tmpl-rec-badge">Recommended</span>
+            {% endif %}
+        </div>
+        {% endfor %}
+        <div class="tmpl-card" id="tmpl-custom" onclick="selectTemplate('custom')">
+            <span class="tmpl-emoji">⚙️</span>
+            <div class="tmpl-name">Custom</div>
+            <div class="tmpl-desc">I'll build my own from scratch</div>
+        </div>
+    </div>
+    <div id="tmplPreviewSection">
+        <p class="tmpl-preview-intro" id="tmplPreviewIntro"></p>
+        <div class="tmpl-estimate-note" id="tmplEstimateNote" style="display:none">
+            Based on $10,000 estimate — update your total budget to get accurate amounts.
+        </div>
+        <div id="tmplTableContainer"></div>
+        <div class="tmpl-error-msg" id="tmplError"></div>
+        <button class="tmpl-apply-btn" id="tmplConfirmBtn" onclick="applyTemplate()" style="width:100%; margin-top:.5rem;">✓ Apply this budget →</button>
+    </div>
+</div>
 {% endif %}
 </div>
 
@@ -617,6 +874,31 @@
     {% endfor %}
 </div>
 {% endif %}
+
+{# ── Reset Budget Modal ───────────────────────────────────────────── #}
+<div class="modal fade" id="resetModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" style="font-family:'Cormorant Garamond',serif; font-weight:400; font-size:1.35rem;">Reset Budget</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size:.84rem; color:#5a4a40;">
+                    This will delete all your budget categories and expenses.
+                    <strong>This cannot be undone.</strong>
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" action="{{ url_for('budget.reset_budget', wedding_id=wedding.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger btn-sm">Reset Budget</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
 {# ── Edit Category Modal ──────────────────────────────────────────── #}
 <div class="modal fade" id="editCatModal" tabindex="-1">
@@ -778,6 +1060,8 @@
                 // Update summary bar
                 const paidEl = document.getElementById('summaryPaid');
                 if (paidEl) paidEl.textContent = '$' + fmt(data.total_actual_paid);
+                const paidPctEl = document.getElementById('summaryPaidPct');
+                if (paidPctEl) paidPctEl.textContent = data.pct + '% of budget';
                 const remEl = document.getElementById('summaryRemaining');
                 if (remEl) {
                     remEl.textContent = '$' + fmt(Math.abs(data.remaining));
@@ -932,6 +1216,254 @@
         return Math.round(n).toLocaleString('en-US');
     }
 
+})();
+
+/* ═══════════════════════════════════════════════════════════════════
+   TEMPLATE SELECTOR
+═══════════════════════════════════════════════════════════════════ */
+(function () {
+    const WEDDING_STYLE = {{ wedding.style | tojson }};
+    const TOTAL_BUDGET  = {{ total_budget }} || 10000;
+    const CSRF          = document.querySelector('meta[name="csrf-token"]').content;
+    const WEDDING_ID    = {{ wedding.id }};
+
+    const TMPL_DATA = {
+        rustic: [
+            { name: 'Barn/Venue Hire',    pct: 0.18, color: '#a8c890' },
+            { name: 'Catering & Drinks',  pct: 0.32, color: '#e8a87c' },
+            { name: 'Photography',        pct: 0.10, color: '#c8a878' },
+            { name: 'Flowers & Greenery', pct: 0.12, color: '#90b878' },
+            { name: 'Attire',             pct: 0.08, color: '#d4b898' },
+            { name: 'Music',              pct: 0.05, color: '#c9687a' },
+            { name: 'Handcrafted Decor',  pct: 0.06, color: '#b8a890' },
+            { name: 'Transport',          pct: 0.03, color: '#a8b8a0' },
+            { name: 'Stationery',         pct: 0.03, color: '#c8b8a8' },
+            { name: 'Miscellaneous',      pct: 0.03, color: '#b0b0a8' },
+        ],
+        modern: [
+            { name: 'Venue',               pct: 0.28, color: '#8a9bb8' },
+            { name: 'Catering & Bar',      pct: 0.30, color: '#e8a87c' },
+            { name: 'Photography & Video', pct: 0.12, color: '#a8c8d8' },
+            { name: 'Minimal Floral',      pct: 0.08, color: '#a8d8a8' },
+            { name: 'Attire',              pct: 0.08, color: '#d4d4d4' },
+            { name: 'DJ & Lighting',       pct: 0.06, color: '#c9687a' },
+            { name: 'Transport',           pct: 0.03, color: '#b8b8c8' },
+            { name: 'Stationery',          pct: 0.03, color: '#c0c8d0' },
+            { name: 'Hair & Makeup',       pct: 0.02, color: '#e8c4b8' },
+        ],
+        luxury: [
+            { name: 'Venue',                pct: 0.30, color: '#c9b870' },
+            { name: 'Catering & Champagne', pct: 0.28, color: '#e8a87c' },
+            { name: 'Photography & Video',  pct: 0.12, color: '#a8c8d8' },
+            { name: 'Flowers & Styling',    pct: 0.10, color: '#d4a8d8' },
+            { name: 'Couture Attire',       pct: 0.08, color: '#f0d4a8' },
+            { name: 'Live Entertainment',   pct: 0.05, color: '#c9687a' },
+            { name: 'Transport',            pct: 0.03, color: '#8a9bb8' },
+            { name: 'Stationery & Gifts',   pct: 0.02, color: '#a8b8c8' },
+            { name: 'Hair, Makeup & Spa',   pct: 0.02, color: '#e8c4b8' },
+        ],
+        beach: [
+            { name: 'Venue & Permits',       pct: 0.20, color: '#7cb8e8' },
+            { name: 'Catering',              pct: 0.30, color: '#e8a87c' },
+            { name: 'Photography',           pct: 0.12, color: '#a8d8a8' },
+            { name: 'Flowers & Decor',       pct: 0.10, color: '#d4a8d8' },
+            { name: 'Attire',                pct: 0.08, color: '#f0d4a8' },
+            { name: 'Music & Entertainment', pct: 0.06, color: '#c9687a' },
+            { name: 'Transport',             pct: 0.04, color: '#8a9bb8' },
+            { name: 'Stationery & Invites',  pct: 0.03, color: '#a8c8d8' },
+            { name: 'Hair & Makeup',         pct: 0.04, color: '#e8c4a8' },
+            { name: 'Miscellaneous',         pct: 0.03, color: '#b8b8a8' },
+        ],
+        vintage: [
+            { name: 'Venue & Hall Hire',  pct: 0.22, color: '#c8b89a' },
+            { name: 'Catering & Tea',     pct: 0.28, color: '#e8a87c' },
+            { name: 'Photography',        pct: 0.12, color: '#c8a878' },
+            { name: 'Antique Floral',     pct: 0.10, color: '#d4a8d8' },
+            { name: 'Vintage Attire',     pct: 0.10, color: '#f0d4a8' },
+            { name: 'Live Band',          pct: 0.06, color: '#c9687a' },
+            { name: 'Vintage Transport',  pct: 0.05, color: '#a8b098' },
+            { name: 'Stationery',         pct: 0.04, color: '#c8b8a8' },
+            { name: 'Hair & Makeup',      pct: 0.03, color: '#e8c4b8' },
+        ],
+        minimalist: [
+            { name: 'Venue',          pct: 0.30, color: '#b8b8b8' },
+            { name: 'Catering',       pct: 0.32, color: '#e8a87c' },
+            { name: 'Photography',    pct: 0.15, color: '#a8b8c8' },
+            { name: 'Simple Florals', pct: 0.08, color: '#c8d8c0' },
+            { name: 'Attire',         pct: 0.08, color: '#d8d8d0' },
+            { name: 'Music',          pct: 0.04, color: '#c9687a' },
+            { name: 'Stationery',     pct: 0.03, color: '#c0c8c8' },
+        ],
+    };
+
+    let selectedStyle = null;
+
+    const STYLE_LABELS = {
+        rustic: 'Rustic', modern: 'Modern', luxury: 'Luxury',
+        beach: 'Beach', vintage: 'Vintage', minimalist: 'Minimalist',
+    };
+
+    function esc(s) {
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function renderPreview(style) {
+        var tmpl = TMPL_DATA[style];
+        var section = document.getElementById('tmplPreviewSection');
+        if (!section) return;
+
+        var useEstimate = !TOTAL_BUDGET || TOTAL_BUDGET <= 0;
+        var base = useEstimate ? 10000 : TOTAL_BUDGET;
+
+        var introEl = document.getElementById('tmplPreviewIntro');
+        var noteEl  = document.getElementById('tmplEstimateNote');
+        if (introEl) {
+            var label = STYLE_LABELS[style] || style;
+            introEl.textContent = 'Here\u2019s what we\u2019ll create for your ' + label
+                + ' budget based on your total budget of $' + base.toLocaleString() + ':';
+        }
+        if (noteEl) noteEl.style.display = useEstimate ? '' : 'none';
+
+        var totalAmt = 0;
+        var rows = tmpl.map(function(item) {
+            var amt = Math.round(base * item.pct / 10) * 10;
+            totalAmt += amt;
+            return '<tr>'
+                + '<td><span class="tmpl-cat-cell"><span class="tmpl-cat-dot" style="background:'
+                + item.color + '"></span>' + esc(item.name) + '</span></td>'
+                + '<td>$' + amt.toLocaleString() + '</td>'
+                + '<td>' + Math.round(item.pct * 100) + '%</td>'
+                + '</tr>';
+        }).join('');
+
+        var container = document.getElementById('tmplTableContainer');
+        if (container) {
+            container.innerHTML = '<table class="tmpl-table">'
+                + '<thead><tr><th>Category</th><th>Allocated</th><th>%</th></tr></thead>'
+                + '<tbody>' + rows + '</tbody>'
+                + '<tfoot><tr><td>Total</td><td>$' + totalAmt.toLocaleString() + '</td><td>100%</td></tr></tfoot>'
+                + '</table>';
+        }
+
+        var errEl = document.getElementById('tmplError');
+        if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+
+        var btn = document.getElementById('tmplConfirmBtn');
+        if (btn) { btn.disabled = false; btn.textContent = '✓ Apply this budget →'; }
+        section.style.display = '';
+    }
+
+    window.selectTemplate = function(style) {
+        document.querySelectorAll('.tmpl-card').forEach(function(c) { c.classList.remove('selected'); });
+        var card = document.getElementById('tmpl-' + style);
+        if (card) card.classList.add('selected');
+        selectedStyle = style;
+
+        var section = document.getElementById('tmplPreviewSection');
+
+        if (style === 'custom') {
+            if (section) section.style.display = 'none';
+            var form = document.getElementById('addCatForm');
+            if (form) {
+                bootstrap.Collapse.getOrCreateInstance(form).show();
+                setTimeout(function() { form.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 120);
+                var nameInput = document.getElementById('catNameInput');
+                if (nameInput) setTimeout(function() { nameInput.focus(); }, 300);
+            }
+            return;
+        }
+
+        if (TMPL_DATA[style]) renderPreview(style);
+    };
+
+    window.applyTemplate = async function() {
+        if (!selectedStyle || selectedStyle === 'custom') return;
+        var btn   = document.getElementById('tmplConfirmBtn');
+        var errEl = document.getElementById('tmplError');
+        if (btn)   { btn.disabled = true; btn.textContent = 'Applying\u2026'; }
+        if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+        try {
+            var resp = await fetch('/wedding/' + WEDDING_ID + '/budget/apply-template', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+                body: JSON.stringify({ style: selectedStyle }),
+            });
+            var data = await resp.json();
+            if (data.success) {
+                if (btn) btn.textContent = '✓ Budget created!';
+                setTimeout(function() { window.location.href = data.redirect; }, 800);
+            } else {
+                var msg = data.message || 'Could not apply template.';
+                if (msg.toLowerCase().includes('already')) {
+                    msg = 'You already have budget categories. Reset your budget first to use a template.';
+                }
+                if (errEl) { errEl.textContent = msg; errEl.style.display = ''; }
+                if (btn)   { btn.disabled = false; btn.textContent = '✓ Apply this budget →'; }
+            }
+        } catch(e) {
+            if (errEl) { errEl.textContent = 'Something went wrong. Please try again.'; errEl.style.display = ''; }
+            if (btn)   { btn.disabled = false; btn.textContent = '✓ Apply this budget →'; }
+        }
+    };
+
+    // Auto-select on page load (after all functions defined)
+    if (document.getElementById('tmplPreviewSection')) {
+        var initStyle = TMPL_DATA[WEDDING_STYLE] ? WEDDING_STYLE : Object.keys(TMPL_DATA)[0];
+        selectTemplate(initStyle);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       COMMON CATEGORIES SUGGESTIONS DROPDOWN
+    ═══════════════════════════════════════════════════════════════ */
+    var SUGGESTIONS = [
+        { name: 'Venue',           base: 2500 },
+        { name: 'Catering',        base: 3000 },
+        { name: 'Photography',     base: 1200 },
+        { name: 'Videography',     base: 800  },
+        { name: 'Flowers & Decor', base: 800  },
+        { name: 'Music & DJ',      base: 600  },
+        { name: 'Hair & Makeup',   base: 400  },
+        { name: 'Attire',          base: 1000 },
+        { name: 'Transport',       base: 300  },
+        { name: 'Wedding Cake',    base: 400  },
+        { name: 'Stationery',      base: 200  },
+        { name: 'Honeymoon',       base: 2000 },
+        { name: 'Miscellaneous',   base: 300  },
+    ];
+
+    var sugMenu = document.getElementById('suggestionsMenu');
+    if (sugMenu) {
+        var scale = (TOTAL_BUDGET > 0 ? TOTAL_BUDGET : 10000) / 10000;
+        sugMenu.innerHTML = SUGGESTIONS.map(function(s) {
+            var amt = Math.round(s.base * scale / 10) * 10;
+            return '<div class="sug-item" data-name="' + esc(s.name) + '" data-amt="' + amt + '">'
+                + '<span>' + esc(s.name) + '</span>'
+                + '<span class="sug-item-amt">$' + amt.toLocaleString() + '</span>'
+                + '</div>';
+        }).join('');
+        sugMenu.addEventListener('click', function(e) {
+            var item = e.target.closest('.sug-item');
+            if (!item) return;
+            applySuggestion(item.dataset.name, parseInt(item.dataset.amt));
+        });
+    }
+
+    window.toggleSugDd = function(e) {
+        e.stopPropagation();
+        if (sugMenu) sugMenu.classList.toggle('open');
+    };
+
+    function applySuggestion(name, amount) {
+        var nameInput = document.getElementById('catNameInput');
+        var allocInput = document.querySelector('.add-cat-form input[name="allocated_amount"]');
+        if (nameInput) nameInput.value = name;
+        if (allocInput) { allocInput.value = amount; allocInput.focus(); }
+        if (sugMenu) sugMenu.classList.remove('open');
+    }
+
+    document.addEventListener('click', function() {
+        if (sugMenu) sugMenu.classList.remove('open');
+    });
 })();
 </script>
 {% endblock %}

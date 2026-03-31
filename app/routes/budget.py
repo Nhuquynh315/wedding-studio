@@ -10,6 +10,75 @@ from app.routes.utils import get_budget_category_or_403, get_expense_or_403, get
 
 budget_bp = Blueprint('budget', __name__)
 
+TEMPLATES = {
+    'rustic': [
+        ('Barn/Venue Hire',    0.18, '#a8c890'),
+        ('Catering & Drinks',  0.32, '#e8a87c'),
+        ('Photography',        0.10, '#c8a878'),
+        ('Flowers & Greenery', 0.12, '#90b878'),
+        ('Attire',             0.08, '#d4b898'),
+        ('Music',              0.05, '#c9687a'),
+        ('Handcrafted Decor',  0.06, '#b8a890'),
+        ('Transport',          0.03, '#a8b8a0'),
+        ('Stationery',         0.03, '#c8b8a8'),
+        ('Miscellaneous',      0.03, '#b0b0a8'),
+    ],
+    'modern': [
+        ('Venue',               0.28, '#8a9bb8'),
+        ('Catering & Bar',      0.30, '#e8a87c'),
+        ('Photography & Video', 0.12, '#a8c8d8'),
+        ('Minimal Floral',      0.08, '#a8d8a8'),
+        ('Attire',              0.08, '#d4d4d4'),
+        ('DJ & Lighting',       0.06, '#c9687a'),
+        ('Transport',           0.03, '#b8b8c8'),
+        ('Stationery',          0.03, '#c0c8d0'),
+        ('Hair & Makeup',       0.02, '#e8c4b8'),
+    ],
+    'luxury': [
+        ('Venue',                 0.30, '#c9b870'),
+        ('Catering & Champagne',  0.28, '#e8a87c'),
+        ('Photography & Video',   0.12, '#a8c8d8'),
+        ('Flowers & Styling',     0.10, '#d4a8d8'),
+        ('Couture Attire',        0.08, '#f0d4a8'),
+        ('Live Entertainment',    0.05, '#c9687a'),
+        ('Transport',             0.03, '#8a9bb8'),
+        ('Stationery & Gifts',    0.02, '#a8b8c8'),
+        ('Hair, Makeup & Spa',    0.02, '#e8c4b8'),
+    ],
+    'beach': [
+        ('Venue & Permits',       0.20, '#7cb8e8'),
+        ('Catering',              0.30, '#e8a87c'),
+        ('Photography',           0.12, '#a8d8a8'),
+        ('Flowers & Decor',       0.10, '#d4a8d8'),
+        ('Attire',                0.08, '#f0d4a8'),
+        ('Music & Entertainment', 0.06, '#c9687a'),
+        ('Transport',             0.04, '#8a9bb8'),
+        ('Stationery & Invites',  0.03, '#a8c8d8'),
+        ('Hair & Makeup',         0.04, '#e8c4a8'),
+        ('Miscellaneous',         0.03, '#b8b8a8'),
+    ],
+    'vintage': [
+        ('Venue & Hall Hire',  0.22, '#c8b89a'),
+        ('Catering & Tea',     0.28, '#e8a87c'),
+        ('Photography',        0.12, '#c8a878'),
+        ('Antique Floral',     0.10, '#d4a8d8'),
+        ('Vintage Attire',     0.10, '#f0d4a8'),
+        ('Live Band',          0.06, '#c9687a'),
+        ('Vintage Transport',  0.05, '#a8b098'),
+        ('Stationery',         0.04, '#c8b8a8'),
+        ('Hair & Makeup',      0.03, '#e8c4b8'),
+    ],
+    'minimalist': [
+        ('Venue',          0.30, '#b8b8b8'),
+        ('Catering',       0.32, '#e8a87c'),
+        ('Photography',    0.15, '#a8b8c8'),
+        ('Simple Florals', 0.08, '#c8d8c0'),
+        ('Attire',         0.08, '#d8d8d0'),
+        ('Music',          0.04, '#c9687a'),
+        ('Stationery',     0.03, '#c0c8c8'),
+    ],
+}
+
 
 def _utcnow():
     return datetime.now(timezone.utc)
@@ -324,6 +393,55 @@ def toggle_paid(expense_id):
     except Exception:
         db.session.rollback()
         return jsonify({'ok': False}), 500
+
+
+# ── Apply template ───────────────────────────────────────────────────
+@budget_bp.route('/wedding/<int:wedding_id>/budget/apply-template', methods=['POST'])
+@login_required
+def apply_template(wedding_id):
+    wedding = get_wedding_or_403(wedding_id)
+    if wedding.budget_categories:
+        return jsonify({'success': False, 'message': 'You already have categories'}), 400
+    data = request.get_json(force=True, silent=True) or {}
+    style = data.get('style', '').strip().lower()
+    if style not in TEMPLATES:
+        return jsonify({'success': False, 'message': 'Unknown style'}), 400
+    base = float(wedding.total_budget or 10000) or 10000
+    try:
+        for name, pct, color in TEMPLATES[style]:
+            allocated = round(base * pct / 10) * 10
+            db.session.add(BudgetCategory(
+                wedding_id=wedding_id,
+                name=name,
+                allocated_amount=allocated,
+                color=color,
+            ))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'Database error'}), 500
+    flash(
+        '✓ Budget template applied! All amounts are suggestions — adjust them to match your actual plans.',
+        'success',
+    )
+    return jsonify({'success': True, 'redirect': url_for('budget.budget', wedding_id=wedding_id)})
+
+
+# ── Reset budget ──────────────────────────────────────────────────────
+@budget_bp.route('/wedding/<int:wedding_id>/budget/reset', methods=['POST'])
+@login_required
+def reset_budget(wedding_id):
+    wedding = get_wedding_or_403(wedding_id)
+    try:
+        for cat in list(wedding.budget_categories):
+            db.session.delete(cat)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        flash('Could not reset budget.', 'danger')
+        return redirect(url_for('budget.budget', wedding_id=wedding_id))
+    flash('Budget reset. Choose a template to get started.', 'success')
+    return redirect(url_for('budget.budget', wedding_id=wedding_id))
 
 
 # ── Budget summary JSON (for overview AJAX) ───────────────────────────
