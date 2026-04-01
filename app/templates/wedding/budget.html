@@ -7,6 +7,8 @@
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital@0;1&family=DM+Sans:wght@300;400&family=Cormorant+Garamond:wght@300;400&family=Nunito:wght@400&family=Libre+Baskerville:ital@0;1&family=Jost:wght@300;400&display=swap');
+
 /* ── Summary bar ──────────────────────────────────────────────────── */
 .budget-summary {
     display: grid;
@@ -352,18 +354,32 @@
 .tmpl-card {
     border: 1.5px solid #e8e0d8;
     border-radius: 10px;
-    padding: .8rem .75rem;
+    height: 140px;
     cursor: pointer;
-    transition: all .15s;
+    transition: all .15s ease;
     background: #fff;
-    text-align: center;
     user-select: none;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
-.tmpl-card:hover { border-color: #c9687a; background: #fdf8f9; }
-.tmpl-card.selected { border-color: #c9687a; background: #fdf8f9; box-shadow: 0 0 0 2px rgba(201,104,122,.14); }
-.tmpl-emoji { font-size: 1.45rem; display: block; margin-bottom: .3rem; }
-.tmpl-name { font-family: 'Jost', sans-serif; font-size: .78rem; font-weight: 600; color: #2d2420; margin-bottom: .12rem; }
-.tmpl-desc { font-size: .63rem; color: #a09080; line-height: 1.35; }
+.tmpl-card:hover { border-color: #d4b8b0; background: #fefcfb; }
+.tmpl-card.selected { border: 2px solid #c9687a; background: #fdf8f6; box-shadow: 0 0 0 3px rgba(201,104,122,.10); }
+.tmpl-card.selected .tmpl-name { color: #c9687a; }
+/* Card body */
+.tmpl-card-body { padding: 14px 14px 10px; display: flex; flex-direction: column; flex: 1; }
+/* Style name — base */
+.tmpl-name { font-size: 17px; color: #2d2420; margin-bottom: 4px; line-height: 1.2; }
+/* Per-style name fonts */
+.tmpl-name--rustic     { font-family: 'Playfair Display', serif; font-style: italic; font-weight: 400; }
+.tmpl-name--modern     { font-family: 'DM Sans', sans-serif; font-weight: 300; letter-spacing: .08em; }
+.tmpl-name--luxury     { font-family: 'Cormorant Garamond', serif; font-weight: 300; letter-spacing: .06em; font-size: 20px; }
+.tmpl-name--beach      { font-family: 'Nunito', sans-serif; font-weight: 400; }
+.tmpl-name--vintage    { font-family: 'Libre Baskerville', serif; font-weight: 400; font-style: italic; }
+.tmpl-name--minimalist { font-family: 'Jost', sans-serif; font-weight: 300; letter-spacing: .15em; text-transform: uppercase; font-size: 13px; }
+.tmpl-name--custom     { font-family: 'Jost', sans-serif; font-weight: 400; color: #8a7f7a; }
+/* Description */
+.tmpl-desc { font-family: 'Jost', sans-serif; font-size: 12px; color: #8a7f7a; font-weight: 300; line-height: 1.35; }
 .tmpl-rec-badge {
     display: inline-block;
     font-size: .58rem;
@@ -391,18 +407,6 @@
 }
 .tmpl-apply-btn:hover { background: #a8566a; }
 .tmpl-apply-btn:disabled { background: #e0cfd2; color: #b0909a; cursor: default; }
-.tmpl-back-btn {
-    font-family: 'Jost', sans-serif;
-    font-size: .82rem;
-    padding: .5rem 1.1rem;
-    border: 1.5px solid #e8e0d8;
-    background: #fff;
-    color: #5a4a40;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all .12s;
-}
-.tmpl-back-btn:hover { border-color: #c9687a; color: #c9687a; }
 /* Preview table */
 .tmpl-preview-intro {
     font-family: 'Jost', sans-serif;
@@ -606,9 +610,11 @@
         </button>
         {% endif %}
     </span>
+    {% if categories %}
     <button class="btn-cat-action" data-bs-toggle="collapse" data-bs-target="#addCatForm">
         <i class="bi bi-plus-lg"></i> Add Category
     </button>
+    {% endif %}
 </div>
 
 {# Add category form (collapsed by default) #}
@@ -807,28 +813,30 @@
     </div>
     <div class="tmpl-grid">
         {% set style_cards = [
-            ('rustic',     '🌿', 'Rustic',     'Barn, greenery, handcrafted details'),
-            ('modern',     '✨', 'Modern',     'Clean lines, contemporary, minimalist luxury'),
-            ('luxury',     '💎', 'Luxury',     'Grand venue, fine dining, premium everything'),
-            ('beach',      '🌊', 'Beach',      'Open-air, relaxed, natural coastal elements'),
-            ('vintage',    '🌸', 'Vintage',    'Antique charm, soft tones, timeless romance'),
-            ('minimalist', '🤍', 'Minimalist', 'Simple, intentional, beautifully understated'),
+            ('rustic',     'Rustic',     'Barn, greenery, handcrafted details'),
+            ('modern',     'Modern',     'Clean lines, contemporary, minimalist luxury'),
+            ('luxury',     'Luxury',     'Grand venue, fine dining, premium everything'),
+            ('beach',      'Beach',      'Open-air, relaxed, natural coastal elements'),
+            ('vintage',    'Vintage',    'Antique charm, soft tones, timeless romance'),
+            ('minimalist', 'Minimalist', 'Simple, intentional, beautifully understated'),
         ] %}
-        {% for slug, emoji, name, desc in style_cards %}
+        {% for slug, name, desc in style_cards %}
         <div class="tmpl-card{% if slug == wedding.style %} selected{% endif %}"
              id="tmpl-{{ slug }}" onclick="selectTemplate('{{ slug }}')">
-            <span class="tmpl-emoji">{{ emoji }}</span>
-            <div class="tmpl-name">{{ name }}</div>
-            <div class="tmpl-desc">{{ desc }}</div>
-            {% if slug == wedding.style %}
-            <span class="tmpl-rec-badge">Recommended</span>
-            {% endif %}
+            <div class="tmpl-card-body">
+                <div class="tmpl-name tmpl-name--{{ slug }}">{{ name }}</div>
+                <div class="tmpl-desc">{{ desc }}</div>
+                {% if slug == wedding.style %}
+                <span class="tmpl-rec-badge">Recommended</span>
+                {% endif %}
+            </div>
         </div>
         {% endfor %}
         <div class="tmpl-card" id="tmpl-custom" onclick="selectTemplate('custom')">
-            <span class="tmpl-emoji">⚙️</span>
-            <div class="tmpl-name">Custom</div>
-            <div class="tmpl-desc">I'll build my own from scratch</div>
+            <div class="tmpl-card-body">
+                <div class="tmpl-name tmpl-name--custom">Custom</div>
+                <div class="tmpl-desc">I'll build my own from scratch</div>
+            </div>
         </div>
     </div>
     <div id="tmplPreviewSection">

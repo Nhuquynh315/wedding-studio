@@ -80,7 +80,7 @@
     background: #fff;
     border: 1px solid var(--border);
     border-radius: 12px;
-    padding: 1.25rem;
+    padding: 1.25rem 1.25rem 0;
     display: flex; flex-direction: column; gap: 0.75rem;
     transition: box-shadow 0.12s;
     position: relative;
@@ -147,22 +147,74 @@
 .vendor-actions {
     display: flex; align-items: center; gap: 0.5rem;
     flex-wrap: wrap; margin-top: auto;
-    padding-top: 0.5rem; border-top: 1px solid #f5f0ec;
+    padding: 0.75rem 1.25rem 1rem;
+    border-top: 1px solid #f5f0ec;
+    border-radius: 0 0 12px 12px;
 }
 .btn-vendor {
-    font-size: 0.75rem; font-family: 'Jost', sans-serif;
-    padding: 0.3rem 0.7rem; border-radius: 6px;
-    border: 1px solid var(--border); background: #fff;
+    font-family: 'Jost', sans-serif;
+    height: 32px;
+    padding: 0 0.7rem;
+    border-radius: 6px;
+    border: 1px solid var(--border); background: transparent;
     color: var(--text-muted); cursor: pointer;
     display: flex; align-items: center; gap: 0.3rem;
     transition: all 0.12s; text-decoration: none;
+    font-size: 0.75rem; white-space: nowrap;
 }
 .btn-vendor:hover { border-color: var(--rose); color: var(--rose); }
 .btn-vendor.btn-book {
     background: var(--rose); color: #fff; border-color: var(--rose);
 }
 .btn-vendor.btn-book:hover { background: var(--rose-dark); }
-.btn-vendor.btn-danger:hover { border-color: #c95a5a; color: #c95a5a; }
+.btn-vendor.btn-edit {
+    border-color: #c9687a;
+    color: #c9687a;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 0 20px;
+}
+.btn-vendor.btn-edit:hover { background: #c9687a; color: #fff; border-color: #c9687a; }
+.btn-vendor.btn-danger {
+    border-color: #d4c8c4;
+    color: #a89890;
+    font-size: 12px;
+    font-weight: 400;
+    padding: 0 14px;
+}
+.btn-vendor.btn-danger:hover { border-color: #e05555; color: #e05555; background: transparent; }
+
+/* ── Edit / Delete buttons ────────────────────────────────────────── */
+.vcard-edit-btn,
+.vcard-delete-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    border-radius: 6px;
+    font-family: 'Jost', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+    line-height: 1;
+}
+.vcard-edit-btn {
+    background: transparent;
+    border: 1px solid #c9687a;
+    color: #c9687a;
+    padding: 0 20px;
+    font-size: 13px;
+    font-weight: 500;
+}
+.vcard-edit-btn:hover { background: #c9687a; color: #fff; }
+.vcard-delete-btn {
+    background: transparent;
+    border: 1px solid #d4c8c4;
+    color: #a89890;
+    padding: 0 14px;
+    font-size: 12px;
+    font-weight: 400;
+}
+.vcard-delete-btn:hover { border-color: #e05555; color: #e05555; }
 
 /* ── Status dropdown in actions ───────────────────────────────────── */
 .status-select {
@@ -525,17 +577,18 @@
         </button>
         {% endif %}
 
-        <button class="btn-vendor ms-auto" data-bs-toggle="modal"
-                data-bs-target="#editVendorModal"
-                onclick="populateEdit({{ v | tojson }})">
-            <i class="bi bi-pencil"></i> Edit
+    </div>
+    <div style="display:flex; align-items:center; gap:8px; padding:12px 16px 16px 16px; border-top:1px solid #f0ebe4; margin-top:12px;">
+        <button class="vcard-edit-btn"
+            data-bs-toggle="modal"
+            data-bs-target="#editVendorModal"
+            onclick="populateEdit({{ v | tojson }})">
+            Edit
         </button>
         <form method="POST" action="{{ url_for('vendors.delete_vendor', vendor_id=v.id) }}"
               onsubmit="return confirm('Delete {{ v.business_name }}?');" style="margin:0;">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="btn-vendor btn-danger">
-                <i class="bi bi-trash"></i>
-            </button>
+            <button type="submit" class="vcard-delete-btn">Delete</button>
         </form>
     </div>
 

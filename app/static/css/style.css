@@ -118,3 +118,11 @@ footer {
     font-size: 0.875rem;
     font-family: 'Jost', sans-serif;
 }
+
+/* ── Vendor card button reset (override Bootstrap) ─────────────────── */
+.vendor-card button,
+.vendor-card [type="submit"] {
+    box-shadow: none !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+}
