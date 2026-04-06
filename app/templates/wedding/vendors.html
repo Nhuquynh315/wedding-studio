@@ -17,7 +17,7 @@
     display: flex; flex-direction: column; gap: 0.15rem;
 }
 .v-metric-num {
-    font-family: 'Cormorant Garamond', serif;
+    font-family: 'Jost', sans-serif;
     font-size: 1.9rem; font-weight: 300; line-height: 1;
     color: var(--text-dark);
 }
@@ -26,9 +26,11 @@
 /* ── Tab nav ──────────────────────────────────────────────────────── */
 .vendor-tabs {
     border-bottom: 1px solid var(--border);
-    display: flex; gap: 0; flex-wrap: wrap;
+    display: flex; gap: 0; flex-wrap: nowrap;
+    overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;
     margin-bottom: 1.5rem;
 }
+.vendor-tabs::-webkit-scrollbar { display: none; }
 .vendor-tab {
     padding: 0.55rem 1.1rem;
     font-size: 0.82rem; font-weight: 400;
@@ -36,7 +38,7 @@
     background: none; border: none;
     border-bottom: 2px solid transparent;
     cursor: pointer; transition: all 0.12s;
-    white-space: nowrap;
+    white-space: nowrap; flex-shrink: 0;
 }
 .vendor-tab:hover { color: var(--rose); }
 .vendor-tab.active {
@@ -163,6 +165,7 @@
     font-size: 0.75rem; white-space: nowrap;
 }
 .btn-vendor:hover { border-color: var(--rose); color: var(--rose); }
+.btn-vendor.dropdown-toggle::after { display: none; }
 .btn-vendor.btn-book {
     background: var(--rose); color: #fff; border-color: var(--rose);
 }
@@ -183,6 +186,22 @@
     padding: 0 14px;
 }
 .btn-vendor.btn-danger:hover { border-color: #e05555; color: #e05555; background: transparent; }
+
+/* ── Budget link line ─────────────────────────────────────────────── */
+.vendor-budget-link {
+    margin-top: 0.4rem;
+    font-size: 12px;
+}
+.vendor-budget-link a {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.vbl-linked { color: #a89890; }
+.vbl-linked:hover { color: #c9687a; }
+.vbl-warn { color: #c8953a; }
+.vbl-warn:hover { color: #a87520; }
 
 /* ── Edit / Delete buttons ────────────────────────────────────────── */
 .vcard-edit-btn,
@@ -224,6 +243,26 @@
     color: var(--text-muted); cursor: pointer;
 }
 
+/* ── Table sort bar ───────────────────────────────────────────────── */
+.table-sort-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;
+}
+.sort-select {
+    border: 1px solid #e8e0d8;
+    border-radius: 999px;
+    padding: 0 14px;
+    font-size: 13px;
+    font-family: 'Jost', sans-serif;
+    background: white;
+    color: #2d2420;
+    cursor: pointer;
+    height: 36px;
+    outline: none;
+    appearance: auto;
+}
+.sort-select:focus { border-color: var(--rose); }
+
 /* ── Comparison table ─────────────────────────────────────────────── */
 .compare-table {
     width: 100%; border-collapse: separate; border-spacing: 0;
@@ -233,8 +272,11 @@
     font-size: 0.65rem; font-weight: 600; letter-spacing: 0.1em;
     text-transform: uppercase; color: var(--text-muted);
     padding: 0.5rem 0.75rem; border-bottom: 2px solid var(--border);
-    background: var(--cream); text-align: left;
+    background: var(--cream); text-align: left; white-space: nowrap;
 }
+.sort-th { cursor: pointer; user-select: none; color: #2d2420; }
+.sort-th:hover { color: var(--rose); }
+.sort-arrow { font-size: 0.7rem; margin-left: 3px; opacity: 0.7; }
 .compare-table td {
     padding: 0.6rem 0.75rem;
     border-bottom: 1px solid #f5f0ec;
@@ -258,15 +300,6 @@
     box-shadow: 0 1px 4px rgba(0,0,0,.08);
 }
 
-/* ── Budget prompt toast ──────────────────────────────────────────── */
-#budgetPrompt {
-    position: fixed; bottom: 1.5rem; right: 1.5rem;
-    width: 320px; background: #fff;
-    border: 1px solid var(--border); border-radius: 12px;
-    box-shadow: 0 4px 24px rgba(0,0,0,.12);
-    padding: 1.25rem; z-index: 1200;
-    display: none;
-}
 </style>
 {% endblock %}
 
@@ -371,10 +404,24 @@
         </span>
     </div>
     <div class="d-flex gap-2 flex-wrap">
-        <a href="{{ url_for('vendors.export_vendors', wedding_id=wedding.id) }}"
-           class="btn-vendor" style="text-decoration:none;">
-            <i class="bi bi-download"></i> Export CSV
-        </a>
+        <div class="dropdown">
+            <button class="btn-vendor dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                    style="border:none; background:transparent; cursor:pointer;">
+                <i class="bi bi-download"></i> Export
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                    <a class="dropdown-item" href="{{ url_for('vendors.export_vendors', wedding_id=wedding.id) }}">
+                        <i class="bi bi-filetype-csv me-2" style="color:#c9687a;"></i>CSV
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="{{ url_for('vendors.export_vendors_excel', wedding_id=wedding.id) }}">
+                        <i class="bi bi-file-earmark-excel me-2" style="color:#217346;"></i>Excel
+                    </a>
+                </li>
+            </ul>
+        </div>
         <button class="btn-vendor btn-book" data-bs-toggle="modal" data-bs-target="#addVendorModal">
             <i class="bi bi-plus-lg"></i> Add Vendor
         </button>
@@ -382,36 +429,31 @@
 </div>
 
 {# ── Summary metrics ───────────────────────────────────────────────── #}
-<div class="row g-3 mb-4">
-    <div class="col-6 col-md-4 col-xl">
-        <div class="v-metric">
-            <div class="v-metric-num">{{ summary.total }}</div>
-            <div class="v-metric-label">Total Vendors</div>
-        </div>
+<div class="d-flex gap-3 flex-wrap mb-4">
+    <div class="stat-card" style="flex:1; min-width:150px;">
+        <span class="stat-label">Total Vendors</span>
+        <span class="stat-number">{{ summary.total }}</span>
+        <span class="stat-sub">across all categories</span>
     </div>
-    <div class="col-6 col-md-4 col-xl">
-        <div class="v-metric">
-            <div class="v-metric-num" id="sumBooked">{{ summary.booked }}</div>
-            <div class="v-metric-label">Booked</div>
-        </div>
+    <div class="stat-card" style="flex:1; min-width:150px;">
+        <span class="stat-label">Booked</span>
+        <span class="stat-number" id="sumBooked">{{ summary.booked }}</span>
+        <span class="stat-sub">confirmed vendors</span>
     </div>
-    <div class="col-6 col-md-4 col-xl">
-        <div class="v-metric">
-            <div class="v-metric-num" id="sumPending">{{ summary.pending }}</div>
-            <div class="v-metric-label">Pending Decision</div>
-        </div>
+    <div class="stat-card" style="flex:1; min-width:150px;">
+        <span class="stat-label">Pending Decision</span>
+        <span class="stat-number" id="sumPending">{{ summary.pending }}</span>
+        <span class="stat-sub">considering or backup</span>
     </div>
-    <div class="col-6 col-md-4 col-xl">
-        <div class="v-metric">
-            <div class="v-metric-num" id="sumQuoted">${{ '{:,.0f}'.format(summary.total_quoted) }}</div>
-            <div class="v-metric-label">Total Booked Value</div>
-        </div>
+    <div class="stat-card" style="flex:1; min-width:150px;">
+        <span class="stat-label">Total Booked Value</span>
+        <span class="stat-number" id="sumQuoted">${{ '{:,.0f}'.format(summary.total_quoted) }}</span>
+        <span class="stat-sub">quoted prices</span>
     </div>
-    <div class="col-6 col-md-4 col-xl">
-        <div class="v-metric">
-            <div class="v-metric-num" id="sumDeposits">{{ summary.deposits_paid }}</div>
-            <div class="v-metric-label">Deposits Paid</div>
-        </div>
+    <div class="stat-card" style="flex:1; min-width:150px;">
+        <span class="stat-label">Deposits Paid</span>
+        <span class="stat-number" id="sumDeposits">{{ summary.deposits_paid }}</span>
+        <span class="stat-sub">payments made</span>
     </div>
 </div>
 
@@ -433,7 +475,7 @@
             <i class="bi bi-grid-3x2-gap"></i> Cards
         </button>
         <button class="view-toggle-btn" id="btnTable" onclick="switchView('table')">
-            <i class="bi bi-table"></i> Compare
+            <i class="bi bi-table"></i> Table view
         </button>
     </div>
 </div>
@@ -536,6 +578,26 @@
     </div>
     {% endif %}
 
+    {# Budget link (booked vendors only) #}
+    {% if v.status == 'booked' %}
+    {% set linked_exp = linked_expenses.get(v.id) %}
+    <div class="vendor-budget-link" id="budgetLink-{{ v.id }}">
+        {% if linked_exp %}
+        <a href="{{ url_for('budget.budget', wedding_id=wedding.id) }}" class="vbl-linked">
+            <i class="bi bi-receipt"></i> In budget: {{ linked_exp.category.name if linked_exp.category else 'Uncategorized' }}
+        </a>
+        {% elif not has_budget %}
+        <a href="{{ url_for('budget.budget', wedding_id=wedding.id) }}" class="vbl-warn">
+            <i class="bi bi-exclamation-triangle"></i> Set up your budget to track this expense
+        </a>
+        {% else %}
+        <a href="{{ url_for('budget.budget', wedding_id=wedding.id) }}" class="vbl-warn">
+            <i class="bi bi-exclamation-triangle"></i> Not yet in budget
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+
     {# Star rating #}
     <div class="star-row" id="stars-{{ v.id }}"
          onmouseleave="resetStarHover({{ v.id }}, {{ v.rating or 0 }})">
@@ -582,7 +644,7 @@
         <button class="vcard-edit-btn"
             data-bs-toggle="modal"
             data-bs-target="#editVendorModal"
-            onclick="populateEdit({{ v | tojson }})">
+            data-vendor='{{ v.to_dict() | tojson }}'>
             Edit
         </button>
         <form method="POST" action="{{ url_for('vendors.delete_vendor', vendor_id=v.id) }}"
@@ -598,73 +660,93 @@
 </div>
 </div>{# /cardsView #}
 
-{# ── COMPARE TABLE VIEW ────────────────────────────────────────────── #}
-<div id="tableView" style="display:none; overflow-x:auto;">
-<table class="compare-table">
-    <thead>
-        <tr>
-            <th>Vendor</th>
-            <th>Category</th>
-            <th>Status</th>
-            <th>Quoted</th>
-            <th>Deposit</th>
-            <th>Rating</th>
-            <th>Contact</th>
+{# ── TABLE VIEW ────────────────────────────────────────────────────── #}
+<div id="tableView" style="display:none;">
+
+    {# Sort bar #}
+    <div class="table-sort-bar">
+        <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-family:'Jost',sans-serif; font-size:13px; color:var(--text-muted);">Sort by:</span>
+            <select id="sortSelect" class="sort-select">
+                <option value="name_az">Name A → Z</option>
+                <option value="name_za">Name Z → A</option>
+                <option value="quote_low">Quote: Low → High</option>
+                <option value="quote_high">Quote: High → Low</option>
+                <option value="rating_high">Rating: High → Low</option>
+                <option value="rating_low">Rating: Low → High</option>
+                <option value="status">Status</option>
+            </select>
+        </div>
+        <span id="tableStatusLine" style="font-family:'Jost',sans-serif; font-size:12px; color:var(--text-muted);"></span>
+    </div>
+
+    <div style="overflow-x:auto;">
+    <table class="compare-table" id="vendorTable">
+        <thead>
+            <tr>
+                <th class="sort-th" data-sort-az="name_az" data-sort-za="name_za">
+                    Vendor <span class="sort-arrow" id="arr-name"></span>
+                </th>
+                <th>Category</th>
+                <th class="sort-th" data-sort-az="status" data-sort-za="status">
+                    Status <span class="sort-arrow" id="arr-status"></span>
+                </th>
+                <th class="sort-th" data-sort-az="quote_low" data-sort-za="quote_high">
+                    Quoted <span class="sort-arrow" id="arr-quote"></span>
+                </th>
+                <th>Deposit</th>
+                <th class="sort-th" data-sort-az="rating_high" data-sort-za="rating_low">
+                    Rating <span class="sort-arrow" id="arr-rating"></span>
+                </th>
+                <th>Contact</th>
+            </tr>
+        </thead>
+        <tbody id="compareBody">
+        {% for v in all_vendors %}
+        <tr data-cat="{{ v.category.lower().replace(' ', '-').replace('&', '').replace('--', '-') }}"
+            data-name="{{ v.business_name }}"
+            data-quote="{{ v.quoted_price or 0 }}"
+            data-rating="{{ v.rating or 0 }}"
+            data-status="{{ v.status }}">
+            <td>
+                <strong style="font-size:0.9rem;">{{ v.business_name }}</strong>
+                {% if v.contact_name %}<br><span style="font-size:0.75rem; color:var(--text-muted);">{{ v.contact_name }}</span>{% endif %}
+            </td>
+            <td><span class="cat-badge cat-{{ v.category.split()[0] }}">{{ v.category }}</span></td>
+            <td><span class="status-badge status-{{ v.status }}">{{ v.status }}</span></td>
+            <td>{% if v.quoted_price %}${{ '{:,.0f}'.format(v.quoted_price) }}{% else %}<span style="color:var(--text-muted);">—</span>{% endif %}</td>
+            <td>
+                {% if v.deposit_amount %}
+                ${{ '{:,.0f}'.format(v.deposit_amount) }}
+                {% if v.deposit_paid %}<i class="bi bi-check-circle-fill deposit-paid-icon ms-1"></i>{% endif %}
+                {% else %}<span style="color:var(--text-muted);">—</span>{% endif %}
+            </td>
+            <td>
+                {% if v.rating %}
+                <span style="color:#e8b84b;">{{ '★' * v.rating }}{{ '☆' * (5 - v.rating) }}</span>
+                {% else %}<span style="color:var(--text-muted);">—</span>{% endif %}
+            </td>
+            <td style="font-size:0.78rem;">
+                {% if v.email %}<a href="mailto:{{ v.email }}" style="color:var(--rose);">{{ v.email }}</a><br>{% endif %}
+                {% if v.phone %}{{ v.phone }}{% endif %}
+            </td>
         </tr>
-    </thead>
-    <tbody id="compareBody">
-    {% for v in all_vendors %}
-    <tr data-cat="{{ v.category.lower().replace(' ', '-').replace('&', '').replace('--', '-') }}">
-        <td>
-            <strong style="font-size:0.9rem;">{{ v.business_name }}</strong>
-            {% if v.contact_name %}<br><span style="font-size:0.75rem; color:var(--text-muted);">{{ v.contact_name }}</span>{% endif %}
-        </td>
-        <td><span class="cat-badge cat-{{ v.category.split()[0] }}">{{ v.category }}</span></td>
-        <td><span class="status-badge status-{{ v.status }}">{{ v.status }}</span></td>
-        <td>{% if v.quoted_price %}${{ '{:,.0f}'.format(v.quoted_price) }}{% else %}<span style="color:var(--text-muted);">—</span>{% endif %}</td>
-        <td>
-            {% if v.deposit_amount %}
-            ${{ '{:,.0f}'.format(v.deposit_amount) }}
-            {% if v.deposit_paid %}<i class="bi bi-check-circle-fill deposit-paid-icon ms-1"></i>{% endif %}
-            {% else %}<span style="color:var(--text-muted);">—</span>{% endif %}
-        </td>
-        <td>
-            {% if v.rating %}
-            <span style="color:#e8b84b;">{{ '★' * v.rating }}{{ '☆' * (5 - v.rating) }}</span>
-            {% else %}<span style="color:var(--text-muted);">—</span>{% endif %}
-        </td>
-        <td style="font-size:0.78rem;">
-            {% if v.email %}<a href="mailto:{{ v.email }}" style="color:var(--rose);">{{ v.email }}</a><br>{% endif %}
-            {% if v.phone %}{{ v.phone }}{% endif %}
-        </td>
-    </tr>
-    {% endfor %}
-    </tbody>
-</table>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
 </div>
 
 {% endif %}{# /if all_vendors #}
 </div>{# /vendor-page #}
 
-{# ── Budget integration prompt ─────────────────────────────────────── #}
-<div id="budgetPrompt">
-    <div style="font-weight:600; font-size:0.9rem; margin-bottom:0.35rem;">
-        <i class="bi bi-wallet2" style="color:var(--rose);"></i> Add to budget?
-    </div>
-    <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:0.75rem;" id="budgetPromptText"></p>
-    <div class="d-flex gap-2">
-        <select id="budgetCatSelect" class="form-select form-select-sm" style="flex:1;">
-            {% for bc in budget_categories %}
-            <option value="{{ bc.id }}">{{ bc.name }}</option>
-            {% endfor %}
-        </select>
-        <button class="btn-vendor btn-book" onclick="confirmAddToBudget()" style="white-space:nowrap;">
-            Add it
-        </button>
-        <button class="btn-vendor" onclick="document.getElementById('budgetPrompt').style.display='none';">
-            Skip
-        </button>
-    </div>
+{# ── Budget toast ──────────────────────────────────────────────────── #}
+<div id="budgetToast" style="display:none; position:fixed; bottom:1.5rem; right:1.5rem;
+     background:#fff; border:1px solid #e8e0d8; border-radius:12px; padding:0.9rem 1.1rem;
+     box-shadow:0 4px 20px rgba(0,0,0,0.10); z-index:1080; font-family:'Jost',sans-serif;
+     font-size:0.84rem; color:#4a3e38; max-width:300px; line-height:1.4;">
+    <i class="bi bi-check-circle-fill" style="color:#5fa67a; margin-right:6px;"></i>
+    <span id="budgetToastText"></span>
 </div>
 
 {# ── ADD VENDOR MODAL ──────────────────────────────────────────────── #}
@@ -743,13 +825,100 @@ function switchTab(tab, btn) {
     }
 })();
 
-/* ── View toggle (cards / compare table) ─────────────────────────── */
+/* ── View toggle ──────────────────────────────────────────────────── */
 function switchView(v) {
-    document.getElementById('cardsView').style.display  = v === 'cards'  ? '' : 'none';
-    document.getElementById('tableView').style.display  = v === 'table'  ? '' : 'none';
+    document.getElementById('cardsView').style.display = v === 'cards' ? '' : 'none';
+    document.getElementById('tableView').style.display = v === 'table' ? '' : 'none';
     document.getElementById('btnCards').classList.toggle('active', v === 'cards');
     document.getElementById('btnTable').classList.toggle('active', v === 'table');
+    if (v === 'table') updateTableStatus();
 }
+
+/* ── Table sorting ────────────────────────────────────────────────── */
+const _sortLabels = {
+    name_az:     'Name A → Z',
+    name_za:     'Name Z → A',
+    quote_low:   'Quote: Low → High',
+    quote_high:  'Quote: High → Low',
+    rating_high: 'Rating: High → Low',
+    rating_low:  'Rating: Low → High',
+    status:      'Status',
+};
+const _sortArrows = { name: null, status: null, quote: null, rating: null };
+let _currentSort = 'name_az';
+
+function sortTable(criterion) {
+    _currentSort = criterion;
+    const tbody = document.querySelector('#vendorTable tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    rows.sort((a, b) => {
+        switch (criterion) {
+            case 'name_az':    return a.dataset.name.localeCompare(b.dataset.name);
+            case 'name_za':    return b.dataset.name.localeCompare(a.dataset.name);
+            case 'quote_low':  return (parseFloat(a.dataset.quote) || 0) - (parseFloat(b.dataset.quote) || 0);
+            case 'quote_high': return (parseFloat(b.dataset.quote) || 0) - (parseFloat(a.dataset.quote) || 0);
+            case 'rating_high':return (parseFloat(b.dataset.rating) || 0) - (parseFloat(a.dataset.rating) || 0);
+            case 'rating_low': return (parseFloat(a.dataset.rating) || 0) - (parseFloat(b.dataset.rating) || 0);
+            case 'status': {
+                const ord = { booked: 1, considering: 2, backup: 3, declined: 4 };
+                return (ord[a.dataset.status] || 5) - (ord[b.dataset.status] || 5);
+            }
+        }
+    });
+    rows.forEach(row => tbody.appendChild(row));
+
+    // Update arrows
+    const arrowMap = {
+        name_az: ['name', '↑'], name_za: ['name', '↓'],
+        quote_low: ['quote', '↑'], quote_high: ['quote', '↓'],
+        rating_high: ['rating', '↑'], rating_low: ['rating', '↓'],
+        status: ['status', '↑'],
+    };
+    ['name', 'status', 'quote', 'rating'].forEach(k => {
+        const el = document.getElementById(`arr-${k}`);
+        if (el) el.textContent = '';
+    });
+    const [key, arrow] = arrowMap[criterion] || [];
+    if (key) {
+        const el = document.getElementById(`arr-${key}`);
+        if (el) el.textContent = arrow;
+    }
+
+    localStorage.setItem('vendorSortPref', criterion);
+    updateTableStatus();
+}
+
+function updateTableStatus() {
+    const el = document.getElementById('tableStatusLine');
+    if (!el) return;
+    const visible = Array.from(document.querySelectorAll('#compareBody tr'))
+        .filter(r => r.style.display !== 'none').length;
+    el.textContent = `Showing ${visible} vendor${visible !== 1 ? 's' : ''} · sorted by ${_sortLabels[_currentSort] || ''}`;
+}
+
+/* Sort dropdown change */
+document.getElementById('sortSelect').addEventListener('change', e => sortTable(e.target.value));
+
+/* Clickable column headers */
+document.querySelectorAll('.sort-th').forEach(th => {
+    let lastSort = null;
+    th.addEventListener('click', function () {
+        const az = this.dataset.sortAz;
+        const za = this.dataset.sortZa;
+        const next = (lastSort === az && za !== az) ? za : az;
+        lastSort = next;
+        document.getElementById('sortSelect').value = next;
+        sortTable(next);
+    });
+});
+
+/* Restore from localStorage on load */
+(function () {
+    const saved = localStorage.getItem('vendorSortPref') || 'name_az';
+    const sel = document.getElementById('sortSelect');
+    if (sel) sel.value = saved;
+    sortTable(saved);
+})();
 
 /* ── Star rating (cards) ──────────────────────────────────────────── */
 function hoverStars(vid, val) {
@@ -813,11 +982,30 @@ function updateStatus(vid, newStatus) {
         if (card) card.classList.toggle('is-booked', d.status === 'booked');
         // Update summary
         updateSummary(d.summary);
-        // Budget prompt
-        if (d.prompt_budget) {
-            showBudgetPrompt(d);
+        // Show toast if budget expense was auto-created
+        if (d.budget_updated) {
+            const msg = d.category_name
+                ? `Added to budget under ${d.category_name}`
+                : 'Added to budget';
+            showBudgetToast(msg);
+            // Update the budget link line on the card
+            const linkEl = document.getElementById(`budgetLink-${vid}`);
+            if (linkEl) {
+                const catText = d.category_name || 'Uncategorized';
+                linkEl.innerHTML = `<a href="{{ url_for('budget.budget', wedding_id=wedding.id) }}" class="vbl-linked">` +
+                    `<i class="bi bi-receipt"></i> In budget: ${catText}</a>`;
+            }
         }
     });
+}
+
+let _toastTimer = null;
+function showBudgetToast(msg) {
+    const toast = document.getElementById('budgetToast');
+    document.getElementById('budgetToastText').textContent = msg;
+    toast.style.display = 'block';
+    clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => { toast.style.display = 'none'; }, 4000);
 }
 
 /* ── Toggle deposit ───────────────────────────────────────────────── */
@@ -864,6 +1052,13 @@ function toggleNotes(vid) {
 }
 
 /* ── Populate edit modal ──────────────────────────────────────────── */
+document.getElementById('editVendorModal').addEventListener('show.bs.modal', function(event) {
+    const btn = event.relatedTarget;
+    if (!btn || !btn.dataset.vendor) return;
+    const vendor = JSON.parse(btn.dataset.vendor);
+    populateEdit(vendor);
+});
+
 function populateEdit(v) {
     document.getElementById('editVendorForm').action = `/vendor/${v.id}/edit`;
     document.getElementById('edit_business_name').value  = v.business_name || '';
@@ -896,26 +1091,6 @@ function populateEdit(v) {
     }
 }
 
-/* ── Budget prompt ────────────────────────────────────────────────── */
-let _pendingVendorId = null;
-function showBudgetPrompt(data) {
-    _pendingVendorId = data.vendor_id;
-    const price = data.quoted_price ? `$${data.quoted_price.toLocaleString()}` : '';
-    document.getElementById('budgetPromptText').textContent =
-        `Add "${data.vendor_name}" (${price}) to your budget?`;
-    document.getElementById('budgetPrompt').style.display = 'block';
-}
-function confirmAddToBudget() {
-    if (!_pendingVendorId) return;
-    const catId = document.getElementById('budgetCatSelect').value;
-    fetch(`/vendor/${_pendingVendorId}/add-to-budget`, {
-        method: 'POST',
-        headers: {'X-CSRFToken': CSRF},
-    }).then(r => r.json()).then(d => {
-        document.getElementById('budgetPrompt').style.display = 'none';
-        _pendingVendorId = null;
-    });
-}
 
 /* ── Summary bar update ───────────────────────────────────────────── */
 function updateSummary(s) {

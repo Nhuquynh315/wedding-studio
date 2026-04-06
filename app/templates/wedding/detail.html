@@ -58,7 +58,7 @@
 /* ── KPI row ─────────────────────────────────────────────────────── */
 .kpi-row {
     display: grid;
-    grid-template-columns: 1.6fr 1fr 1fr 1fr;
+    grid-template-columns: repeat(4, 1fr);
     gap: 1rem;
     margin-bottom: 1.5rem;
 }
@@ -459,7 +459,6 @@
 /* ── Responsive ──────────────────────────────────────────────────── */
 @media (max-width: 900px) {
     .kpi-row { grid-template-columns: 1fr 1fr; }
-    .kpi-card.kpi-featured { grid-column: span 2; }
 }
 @media (max-width: 767px) {
     .guest-filter-bar { flex-direction: column; align-items: stretch; }
@@ -472,7 +471,6 @@
 @media (max-width: 640px) {
     .overview-lower { grid-template-columns: 1fr; }
     .kpi-row { grid-template-columns: 1fr 1fr; }
-    .kpi-card.kpi-featured { grid-column: span 2; }
 }
 </style>
 {% endblock %}
@@ -504,57 +502,38 @@
     </div>
 
     {# KPI row #}
+    {% set ov_total_budget = wedding.total_budget or 0 %}
+    {% set ov_paid_ns = namespace(v=0) %}
+    {% for e in wedding.expenses %}{% if e.is_paid %}{% set ov_paid_ns.v = ov_paid_ns.v + (e.actual_cost or 0) %}{% endif %}{% endfor %}
+    {% set ov_budget_pct = ((ov_paid_ns.v / ov_total_budget * 100) | round | int) if ov_total_budget else 0 %}
+    {% set checklist_done_count = checklist_items | selectattr('1') | list | length %}
     <div class="kpi-row">
-        {# Countdown #}
-        <div class="kpi-card kpi-featured">
-            {% if days_until is not none %}
-                {% if days_until > 0 %}
-                <div class="kpi-number">{{ days_until }}<span class="kpi-unit">days</span></div>
-                <div class="kpi-label">Until the wedding</div>
-                <div class="kpi-sub">{{ wedding.wedding_date.strftime('%B %-d, %Y') }}</div>
-                {% elif days_until == 0 %}
-                <div class="kpi-number" style="font-size:2rem;">Today!</div>
-                <div class="kpi-label">Your wedding day</div>
-                {% else %}
-                <div class="kpi-number" style="font-size:2rem;">{{ days_until | abs }}</div>
-                <div class="kpi-label">Days since the wedding</div>
-                {% endif %}
-            {% else %}
-            <div class="kpi-number">—</div>
-            <div class="kpi-label">Date not set</div>
-            {% endif %}
+        {# Total guests #}
+        <div class="stat-card">
+            <span class="stat-label">Total Guests</span>
+            <span class="stat-number">{{ guest_stats.total }}</span>
+            <span class="stat-sub">across all groups</span>
         </div>
 
-        {# RSVP #}
-        <div class="kpi-card">
-            <div class="kpi-number">{{ guest_stats.response_rate }}<span class="kpi-unit">%</span></div>
-            <div class="kpi-label">RSVP rate</div>
-            <div class="kpi-bar">
-                <div class="kpi-bar-fill" style="width:{{ guest_stats.response_rate }}%;"></div>
-            </div>
-            <div class="kpi-secondary">{{ guest_stats.accepted }} confirmed · {{ guest_stats.pending }} pending</div>
+        {# RSVPs confirmed #}
+        <div class="stat-card">
+            <span class="stat-label">RSVPs Confirmed</span>
+            <span class="stat-number">{{ guest_stats.accepted }}</span>
+            <span class="stat-sub">{{ guest_stats.response_rate }}% response rate</span>
         </div>
 
-        {# Budget #}
-        <div class="kpi-card">
-            <div class="kpi-number">0<span class="kpi-unit">%</span></div>
-            <div class="kpi-label">Budget tracked</div>
-            <div class="kpi-bar">
-                <div class="kpi-bar-fill" style="width:0%;"></div>
-            </div>
-            <div class="kpi-secondary">Add budget in Budget tab</div>
+        {# Budget used #}
+        <div class="stat-card">
+            <span class="stat-label">Budget Used</span>
+            <span class="stat-number">{{ ov_budget_pct }}%</span>
+            <span class="stat-sub">${{ '{:,.0f}'.format(ov_paid_ns.v) }} of ${{ '{:,.0f}'.format(ov_total_budget) }}</span>
         </div>
 
-        {# Checklist #}
-        <div class="kpi-card">
-            <div class="kpi-number">{{ checklist_pct }}<span class="kpi-unit">%</span></div>
-            <div class="kpi-label">Tasks complete</div>
-            <div class="kpi-bar">
-                <div class="kpi-bar-fill" style="width:{{ checklist_pct }}%;"></div>
-            </div>
-            <div class="kpi-secondary">
-                {{ checklist_items | selectattr('1') | list | length }} of {{ checklist_items | length }} done
-            </div>
+        {# Tasks completed #}
+        <div class="stat-card">
+            <span class="stat-label">Tasks Completed</span>
+            <span class="stat-number">{{ checklist_pct }}%</span>
+            <span class="stat-sub">{{ checklist_done_count }} of {{ checklist_items | length }} done</span>
         </div>
     </div>
 
@@ -592,44 +571,6 @@
             </dl>
         </div>
 
-        {# RSVP summary #}
-        <div class="planner-card" style="grid-column: span 2;">
-            <p class="planner-card-title">RSVP Summary</p>
-            {% if guest_stats.total > 0 %}
-            <div class="d-flex gap-4 mb-3">
-                <div>
-                    <div style="font-family:'Cormorant Garamond',serif; font-size:1.8rem; font-weight:300; line-height:1;">{{ guest_stats.total }}</div>
-                    <div style="font-family:'Jost',sans-serif; font-size:0.72rem; color:#b89a8a; text-transform:uppercase; letter-spacing:.06em;">Total Guests</div>
-                </div>
-                <div>
-                    <div style="font-family:'Cormorant Garamond',serif; font-size:1.8rem; font-weight:300; color:#5fa67a; line-height:1;">{{ guest_stats.accepted }}</div>
-                    <div style="font-family:'Jost',sans-serif; font-size:0.72rem; color:#b89a8a; text-transform:uppercase; letter-spacing:.06em;">Confirmed</div>
-                </div>
-                <div>
-                    <div style="font-family:'Cormorant Garamond',serif; font-size:1.8rem; font-weight:300; color:#c0a898; line-height:1;">{{ guest_stats.pending }}</div>
-                    <div style="font-family:'Jost',sans-serif; font-size:0.72rem; color:#b89a8a; text-transform:uppercase; letter-spacing:.06em;">Pending</div>
-                </div>
-                <div>
-                    <div style="font-family:'Cormorant Garamond',serif; font-size:1.8rem; font-weight:300; color:#d47a7a; line-height:1;">{{ guest_stats.declined }}</div>
-                    <div style="font-family:'Jost',sans-serif; font-size:0.72rem; color:#b89a8a; text-transform:uppercase; letter-spacing:.06em;">Declined</div>
-                </div>
-            </div>
-            <div class="rsvp-stacked mb-1">
-                {% if guest_stats.total > 0 %}
-                <div class="rsvp-stacked-confirmed" style="width:{{ (guest_stats.accepted / guest_stats.total * 100) | round | int }}%;"></div>
-                <div class="rsvp-stacked-pending"   style="width:{{ (guest_stats.pending  / guest_stats.total * 100) | round | int }}%;"></div>
-                <div class="rsvp-stacked-declined"  style="width:{{ (guest_stats.declined / guest_stats.total * 100) | round | int }}%;"></div>
-                {% endif %}
-            </div>
-            <div style="font-family:'Jost',sans-serif; font-size:0.72rem; color:#b89a8a;">
-                {{ guest_stats.response_rate }}% responded
-            </div>
-            {% else %}
-            <p style="font-family:'Jost',sans-serif; font-size:0.85rem; color:#b89a8a; margin:0;">
-                No guests added yet. Go to <button class="sidebar-link" data-section="guests" style="display:inline; padding:0; margin:0; text-decoration:underline; color:var(--ws-rose); font-size:inherit;">Guests</button> to start your list.
-            </p>
-            {% endif %}
-        </div>
     </div>
 </section>
 
@@ -645,22 +586,26 @@
     {# Summary card #}
     <div class="card border-0 shadow-sm mb-4" style="border-radius:14px;">
         <div class="card-body p-4">
-            <div class="row g-3 mb-4">
-                <div class="col-6 col-md-3 text-center">
-                    <div class="fs-2 fw-bold">{{ guest_stats.total }}</div>
-                    <div class="text-muted small">Total</div>
+            <div class="d-flex gap-3 flex-wrap mb-4">
+                <div class="stat-card" style="flex:1; min-width:140px;">
+                    <span class="stat-label">Total Guests</span>
+                    <span class="stat-number">{{ guest_stats.total }}</span>
+                    <span class="stat-sub">on the list</span>
                 </div>
-                <div class="col-6 col-md-3 text-center">
-                    <div class="fs-2 fw-bold text-success">{{ guest_stats.accepted }}</div>
-                    <div class="text-muted small">Confirmed</div>
+                <div class="stat-card" style="flex:1; min-width:140px;">
+                    <span class="stat-label">Confirmed</span>
+                    <span class="stat-number">{{ guest_stats.accepted }}</span>
+                    <span class="stat-sub">accepted invitation</span>
                 </div>
-                <div class="col-6 col-md-3 text-center">
-                    <div class="fs-2 fw-bold text-secondary">{{ guest_stats.pending }}</div>
-                    <div class="text-muted small">Pending</div>
+                <div class="stat-card" style="flex:1; min-width:140px;">
+                    <span class="stat-label">Pending</span>
+                    <span class="stat-number">{{ guest_stats.pending }}</span>
+                    <span class="stat-sub">awaiting response</span>
                 </div>
-                <div class="col-6 col-md-3 text-center">
-                    <div class="fs-2 fw-bold text-danger">{{ guest_stats.declined }}</div>
-                    <div class="text-muted small">Declined</div>
+                <div class="stat-card" style="flex:1; min-width:140px;">
+                    <span class="stat-label">Declined</span>
+                    <span class="stat-number">{{ guest_stats.declined }}</span>
+                    <span class="stat-sub">unable to attend</span>
                 </div>
             </div>
             {% if guest_stats.total > 0 %}

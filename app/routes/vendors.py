@@ -1,5 +1,8 @@
 import csv
 import io
+
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment
 from datetime import datetime, timezone
 from datetime import date as date_type
 
@@ -10,6 +13,7 @@ from flask_login import login_required
 from app import db
 from app.models import BudgetCategory, Expense, Vendor, VENDOR_CATEGORIES, VENDOR_STATUSES
 from app.routes.utils import get_vendor_or_403, get_wedding_or_403
+from app.routes.budget import find_matching_category
 
 vendors_bp = Blueprint('vendors', __name__)
 
@@ -72,26 +76,77 @@ def vendors(wedding_id):
                    .filter_by(wedding_id=wedding_id)
                    .order_by(Vendor.category, Vendor.business_name)
                    .all())
-    # Only tabs that have at least one vendor
+    # Tabs: use actual distinct category values from vendors (preserves order)
+    seen = set()
     used_categories = []
-    for cat in VENDOR_CATEGORIES:
-        if any(v.category == cat for v in all_vendors):
-            used_categories.append(cat)
+    for v in all_vendors:
+        if v.category not in seen:
+            seen.add(v.category)
+            used_categories.append(v.category)
+    used_categories.sort()
 
     summary = _vendor_summary(wedding)
     budget_categories = (BudgetCategory.query
                          .filter_by(wedding_id=wedding_id)
                          .order_by(BudgetCategory.name)
                          .all())
+
+    # Map vendor_id → linked expense (for budget link display)
+    linked_expenses = {
+        e.vendor_id: e
+        for e in Expense.query.filter_by(wedding_id=wedding_id)
+                               .filter(Expense.vendor_id.isnot(None)).all()
+    }
+
+    # Backfill: silently create missing budget expenses for already-booked vendors
+    if budget_categories:
+        needs_commit = False
+        for v in all_vendors:
+            if v.status == 'booked' and v.quoted_price and v.id not in linked_expenses:
+                cat = find_matching_category(wedding_id, v.category)
+                expense = Expense(
+                    wedding_id     = wedding_id,
+                    category_id    = cat.id if cat else None,
+                    vendor_id      = v.id,
+                    title          = v.business_name,
+                    estimated_cost = v.quoted_price,
+                    is_paid        = v.deposit_paid,
+                    actual_cost    = v.deposit_amount if v.deposit_paid else None,
+                    paid_date      = date_type.today() if v.deposit_paid else None,
+                )
+                db.session.add(expense)
+                linked_expenses[v.id] = expense
+                needs_commit = True
+        if needs_commit:
+            try:
+                db.session.commit()
+                # Re-fetch so expenses have IDs and category relationships loaded
+                linked_expenses = {
+                    e.vendor_id: e
+                    for e in Expense.query.filter_by(wedding_id=wedding_id)
+                                           .filter(Expense.vendor_id.isnot(None)).all()
+                }
+            except Exception:
+                db.session.rollback()
+
+    # Category options for the add/edit dropdowns
+    # If budget categories exist, use those names so vendor ↔ budget categories match exactly.
+    # Otherwise fall back to the hardcoded list.
+    form_categories = (
+        [bc.name for bc in budget_categories] if budget_categories else list(VENDOR_CATEGORIES)
+    )
+
     return render_template(
         'wedding/vendors.html',
         wedding=wedding,
         all_vendors=all_vendors,
         used_categories=used_categories,
-        vendor_categories=VENDOR_CATEGORIES,
+        vendor_categories=form_categories,
         vendor_statuses=VENDOR_STATUSES,
         summary=summary,
         budget_categories=budget_categories,
+        linked_expenses=linked_expenses,
+        has_budget=len(budget_categories) > 0,
         date_today=date_type.today(),
     )
 
@@ -106,9 +161,7 @@ def add_vendor(wedding_id):
         flash('Business name is required.', 'danger')
         return redirect(url_for('vendors.vendors', wedding_id=wedding_id))
 
-    category = request.form.get('category', 'Other').strip()
-    if category not in VENDOR_CATEGORIES:
-        category = 'Other'
+    category = request.form.get('category', 'Other').strip() or 'Other'
 
     vendor = Vendor(
         wedding_id           = wedding_id,
@@ -147,9 +200,7 @@ def edit_vendor(vendor_id):
         flash('Business name is required.', 'danger')
         return redirect(url_for('vendors.vendors', wedding_id=vendor.wedding_id))
 
-    category = request.form.get('category', vendor.category).strip()
-    if category not in VENDOR_CATEGORIES:
-        category = vendor.category
+    category = request.form.get('category', vendor.category).strip() or vendor.category
 
     vendor.business_name    = business_name
     vendor.category         = category
@@ -200,24 +251,40 @@ def update_status(vendor_id):
 
     old_status = vendor.status
     vendor.status = new_status
+
+    budget_updated = False
+    category_name = None
+
+    # Auto-create budget expense when marking as booked (and none exists yet)
+    if new_status == 'booked' and old_status != 'booked' and vendor.quoted_price:
+        existing = Expense.query.filter_by(vendor_id=vendor.id).first()
+        if not existing:
+            cat = find_matching_category(vendor.wedding_id, vendor.category)
+            expense = Expense(
+                wedding_id     = vendor.wedding_id,
+                category_id    = cat.id if cat else None,
+                vendor_id      = vendor.id,
+                title          = vendor.business_name,
+                estimated_cost = vendor.quoted_price,
+                is_paid        = False,
+            )
+            db.session.add(expense)
+            budget_updated = True
+            category_name = cat.name if cat else None
+
     try:
         db.session.commit()
     except Exception:
         db.session.rollback()
         return jsonify({'ok': False, 'error': 'DB error'}), 500
 
-    # Return whether we should prompt for budget integration
-    prompt_budget = (new_status == 'booked' and old_status != 'booked'
-                     and vendor.quoted_price and vendor.quoted_price > 0)
     summary = _vendor_summary(vendor.wedding)
     return jsonify({
         'ok': True,
         'status': new_status,
-        'prompt_budget': prompt_budget,
+        'budget_updated': budget_updated,
+        'category_name': category_name,
         'vendor_id': vendor.id,
-        'vendor_name': vendor.business_name,
-        'vendor_category': vendor.category,
-        'quoted_price': vendor.quoted_price,
         'summary': summary,
     })
 
@@ -228,6 +295,19 @@ def update_status(vendor_id):
 def toggle_deposit(vendor_id):
     vendor = get_vendor_or_403(vendor_id)
     vendor.deposit_paid = not vendor.deposit_paid
+
+    # Sync the linked budget expense (if any)
+    linked = Expense.query.filter_by(vendor_id=vendor.id).first()
+    if linked:
+        if vendor.deposit_paid:
+            linked.is_paid     = True
+            linked.actual_cost = vendor.deposit_amount
+            linked.paid_date   = date_type.today()
+        else:
+            linked.is_paid     = False
+            linked.actual_cost = None
+            linked.paid_date   = None
+
     try:
         db.session.commit()
         summary = _vendor_summary(vendor.wedding)
@@ -340,5 +420,61 @@ def export_vendors(wedding_id):
     return Response(
         output.getvalue(),
         mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename="{filename}"'},
+    )
+
+
+# ── Excel export ────────────────────────────────────────────────────────
+@vendors_bp.route('/wedding/<int:wedding_id>/vendors/export/excel')
+@login_required
+def export_vendors_excel(wedding_id):
+    wedding = get_wedding_or_403(wedding_id)
+    vendors_list = (Vendor.query
+                    .filter_by(wedding_id=wedding_id)
+                    .order_by(Vendor.category, Vendor.business_name)
+                    .all())
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'Vendors'
+
+    headers = [
+        'Category', 'Business Name', 'Contact Name', 'Email', 'Phone',
+        'Website', 'Status', 'Quoted Price', 'Deposit Amount', 'Deposit Paid',
+        'Deposit Due Date', 'Contracted', 'Contract Signed Date', 'Rating', 'Notes',
+    ]
+
+    header_fill = PatternFill(start_color='C9687A', end_color='C9687A', fill_type='solid')
+    header_font = Font(bold=True, color='FFFFFF')
+
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=header)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal='center')
+
+    for v in vendors_list:
+        ws.append([
+            v.category, v.business_name, v.contact_name or '', v.email or '',
+            v.phone or '', v.website or '', v.status,
+            v.quoted_price or '', v.deposit_amount or '', 'Yes' if v.deposit_paid else 'No',
+            v.deposit_due_date.isoformat() if v.deposit_due_date else '',
+            'Yes' if v.contracted else 'No',
+            v.contract_signed_date.isoformat() if v.contract_signed_date else '',
+            v.rating or '', v.notes or '',
+        ])
+
+    for col in ws.columns:
+        max_len = max((len(str(cell.value)) if cell.value else 0) for cell in col)
+        ws.column_dimensions[col[0].column_letter].width = min(max_len + 4, 40)
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    filename = f"{wedding.partner1_name}_{wedding.partner2_name}_vendors.xlsx".replace(' ', '_')
+    return Response(
+        output.getvalue(),
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         headers={'Content-Disposition': f'attachment; filename="{filename}"'},
     )

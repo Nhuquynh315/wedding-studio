@@ -506,38 +506,5 @@
     </div>
 </div>
 
-{% if weddings | length > 1 %}
-{# Other weddings quick links #}
-<div class="mt-4">
-    <span class="dash-section-label">Your Other Weddings</span>
-    {% for w in weddings %}
-    {% if w.id != active_wedding.id %}
-    <div class="wedding-list-item">
-        <div style="width:36px; height:36px; border-radius:8px; background:var(--rose-bg); display:flex; align-items:center; justify-content:center;">
-            <i class="bi bi-heart-fill" style="color:var(--rose); font-size:.85rem;"></i>
-        </div>
-        <div style="flex:1; min-width:0;">
-            <div style="font-weight:500; font-size:.9rem;">{{ w.partner1_name }} &amp; {{ w.partner2_name }}</div>
-            <div style="font-size:.75rem; color:var(--text-muted);">
-                {{ w.wedding_date.strftime('%B %-d, %Y') if w.wedding_date else 'Date TBD' }}
-                · {{ w.location }}
-            </div>
-        </div>
-        <form method="POST" action="{{ url_for('wedding.activate_wedding', wedding_id=w.id) }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" style="font-family:'Jost',sans-serif; font-size:.78rem; background:transparent; border:1px solid var(--border); border-radius:6px; padding:.3rem .75rem; color:var(--text-muted); cursor:pointer; white-space:nowrap;">
-                Switch
-            </button>
-        </form>
-        <a href="{{ url_for('wedding.wedding_detail', wedding_id=w.id) }}"
-           style="font-size:.78rem; color:var(--rose); text-decoration:none; white-space:nowrap;">
-            View <i class="bi bi-arrow-right"></i>
-        </a>
-    </div>
-    {% endif %}
-    {% endfor %}
-</div>
-{% endif %}
-
 {% endif %}{# end active_wedding #}
 {% endblock %}

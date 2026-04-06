@@ -126,3 +126,38 @@ footer {
     text-transform: none !important;
     letter-spacing: normal !important;
 }
+
+/* ── Reusable stat card ─────────────────────────────────────────────── */
+.stat-card {
+    background: white;
+    border: 1px solid #e8e0d8;
+    border-radius: 12px;
+    padding: 20px 24px;
+}
+.stat-card .stat-label {
+    font-family: 'Jost', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #a89890;
+    margin-bottom: 8px;
+    display: block;
+}
+.stat-card .stat-number {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 40px;
+    font-weight: 400;
+    color: #2d2420;
+    line-height: 1;
+    margin-bottom: 4px;
+    font-variant-numeric: lining-nums;
+    display: block;
+}
+.stat-card .stat-sub {
+    font-family: 'Jost', sans-serif;
+    font-size: 12px;
+    font-weight: 300;
+    color: #a89890;
+    display: block;
+}

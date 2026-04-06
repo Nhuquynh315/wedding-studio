@@ -10,6 +10,40 @@ from app.routes.utils import get_budget_category_or_403, get_expense_or_403, get
 
 budget_bp = Blueprint('budget', __name__)
 
+_VENDOR_CAT_KEYWORDS = {
+    'Venue':        ['venue'],
+    'Catering':     ['cater', 'food', 'drink'],
+    'Photography':  ['photo'],
+    'Videography':  ['video', 'film'],
+    'Flowers':      ['flower', 'floral', 'decor', 'bouquet'],
+    'Music':        ['music', 'dj', 'band', 'entertain'],
+    'Hair & Makeup':['hair', 'makeup', 'beauty', 'spa'],
+    'Transport':    ['transport', 'car', 'transfer'],
+    'Cake':         ['cake', 'dessert', 'sweet'],
+    'Stationery':   ['station', 'invite', 'print'],
+    'Officiant':    ['ceremony', 'other'],
+    'Other':        ['misc', 'other'],
+}
+
+
+def find_matching_category(wedding_id, vendor_category):
+    """Return the best-matching BudgetCategory for a vendor category, or None."""
+    categories = BudgetCategory.query.filter_by(wedding_id=wedding_id).all()
+    if not categories:
+        return None
+    # Exact match first (when vendor category IS a budget category name)
+    for cat in categories:
+        if cat.name == vendor_category:
+            return cat
+    # Fuzzy keyword fallback
+    keywords = _VENDOR_CAT_KEYWORDS.get(vendor_category, ['other', 'misc'])
+    for cat in categories:
+        name_lower = cat.name.lower()
+        for kw in keywords:
+            if kw in name_lower:
+                return cat
+    return categories[0]
+
 TEMPLATES = {
     'rustic': [
         ('Barn/Venue Hire',    0.18, '#a8c890'),
@@ -87,10 +121,10 @@ def _utcnow():
 def _budget_totals(wedding):
     """Return (total_estimated, total_actual_paid, total_allocated) for a wedding."""
     cats = wedding.budget_categories
-    total_estimated    = sum(e.estimated_cost or 0 for cat in cats for e in cat.expenses)
-    total_actual_paid  = sum(e.actual_cost or 0 for cat in cats for e in cat.expenses if e.is_paid)
-    total_actual_all   = sum(e.actual_cost or 0 for cat in cats for e in cat.expenses)
-    total_allocated    = sum(cat.allocated_amount or 0 for cat in cats)
+    total_estimated   = sum(e.estimated_cost or 0 for e in wedding.expenses)
+    total_actual_paid = sum(e.actual_cost or 0 for e in wedding.expenses if e.is_paid)
+    total_actual_all  = sum(e.actual_cost or 0 for e in wedding.expenses)
+    total_allocated   = sum(cat.allocated_amount or 0 for cat in cats)
     return total_estimated, total_actual_paid, total_actual_all, total_allocated
 
 
@@ -122,6 +156,10 @@ def budget(wedding_id):
     chart_estimated = [sum(e.estimated_cost or 0 for e in c.expenses) for c in categories]
     chart_actual    = [sum(e.actual_cost   or 0 for e in c.expenses if e.is_paid) for c in categories]
 
+    booked_vendor_names = [
+        v.business_name for v in wedding.vendors if v.status == 'booked'
+    ]
+
     return render_template(
         'wedding/budget.html',
         wedding=wedding,
@@ -139,6 +177,7 @@ def budget(wedding_id):
         chart_estimated=chart_estimated,
         chart_actual=chart_actual,
         date_today=date_type.today(),
+        booked_vendor_names=booked_vendor_names,
     )
 
 

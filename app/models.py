@@ -221,6 +221,23 @@ class Vendor(db.Model):
     wedding  = db.relationship('Wedding', back_populates='vendors')
     expenses = db.relationship('Expense', back_populates='vendor')
 
+    def to_dict(self):
+        return {
+            'id':               self.id,
+            'business_name':    self.business_name,
+            'category':         self.category,
+            'contact_name':     self.contact_name or '',
+            'email':            self.email or '',
+            'phone':            self.phone or '',
+            'website':          self.website or '',
+            'quoted_price':     self.quoted_price or '',
+            'deposit_amount':   self.deposit_amount or '',
+            'deposit_due_date': self.deposit_due_date.strftime('%Y-%m-%d') if self.deposit_due_date else '',
+            'status':           self.status or 'considering',
+            'rating':           self.rating or 0,
+            'notes':            self.notes or '',
+        }
+
     def __repr__(self):
         return f'<Vendor {self.business_name!r} ({self.category})>'
 

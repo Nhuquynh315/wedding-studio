@@ -90,7 +90,7 @@ def dashboard():
     # Budget stats for active wedding
     total_budget_amount = active.total_budget or 0
     cats = active.budget_categories
-    total_actual_paid = sum(e.actual_cost or 0 for cat in cats for e in cat.expenses if e.is_paid)
+    total_actual_paid = sum(e.actual_cost or 0 for e in active.expenses if e.is_paid)
     budget_pct = round(total_actual_paid / total_budget_amount * 100) if total_budget_amount else 0
     # Top 3 categories by estimated spend for the snapshot card
     budget_snapshot = sorted(

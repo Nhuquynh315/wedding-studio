@@ -16,44 +16,16 @@
     gap: 1rem;
     margin-bottom: 1.75rem;
 }
-.summary-card {
-    background: #fff;
-    border: 1px solid var(--border, #e8e0d8);
-    border-radius: 12px;
-    padding: 1.1rem 1.25rem;
-}
-.summary-label {
-    font-size: 0.68rem;
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: #8a7f7a;
-    display: block;
-    margin-bottom: 0.4rem;
-}
-.summary-amount {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.6rem;
-    font-weight: 300;
-    line-height: 1;
-    color: #2d2420;
-}
-.summary-amount.editable {
+.stat-number.editable {
     cursor: pointer;
-    border-bottom: 1px dashed #c8bdb8;
-    transition: border-color 0.12s;
+    transition: color 0.12s;
 }
-.summary-amount.editable:hover { border-color: var(--rose, #c9687a); }
-.summary-amount.over-budget { color: #c9687a; }
-.summary-sub {
-    font-size: 0.72rem;
-    color: #a09080;
-    margin-top: 0.3rem;
-}
+.stat-number.editable:hover { color: var(--rose, #c9687a); }
+.stat-sub.over-budget { color: #c9687a; }
 .summary-edit-input {
     font-family: 'Cormorant Garamond', serif;
-    font-size: 1.6rem;
-    font-weight: 300;
+    font-size: 40px;
+    font-weight: 400;
     border: none;
     border-bottom: 2px solid var(--rose, #c9687a);
     outline: none;
@@ -186,6 +158,20 @@
 .expense-table tr.is-paid .expense-title { text-decoration: line-through; color: #a09080; }
 .expense-table tr.is-paid { background: #f0faf4; }
 .expense-amount { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.expense-vendor-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    margin-left: 6px;
+    font-size: 11px;
+    color: #a89890;
+    text-decoration: none;
+    background: #f5f0ec;
+    border-radius: 4px;
+    padding: 1px 6px;
+    vertical-align: middle;
+}
+.expense-vendor-tag:hover { color: #c9687a; background: #f0e8e4; }
 .expense-amount.actual { color: #3a8a5a; font-weight: 500; }
 .due-overdue { color: #c9687a; font-weight: 500; }
 .due-soon    { color: #c9a84c; font-weight: 500; }
@@ -257,6 +243,14 @@
     transition: background 0.12s;
 }
 .btn-add-expense:hover { background: #a8566a; }
+.vendor-dup-warn {
+    font-size: 11px;
+    color: #c8953a;
+    margin-top: 3px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
 
 /* ── Add category form ────────────────────────────────────────────── */
 .add-cat-form {
@@ -544,45 +538,36 @@
 {# ── Summary bar ──────────────────────────────────────────────────── #}
 <div class="budget-summary">
     {# Total budget — inline editable #}
-    <div class="summary-card">
-        <span class="summary-label">Total Budget</span>
-        <div class="summary-amount editable"
-             id="totalBudgetDisplay"
-             data-amount="{{ total_budget }}"
-             data-wedding-id="{{ wedding.id }}"
-             title="Click to edit">
+    <div class="stat-card">
+        <span class="stat-label">Total Budget</span>
+        <span class="stat-number editable"
+              id="totalBudgetDisplay"
+              data-amount="{{ total_budget }}"
+              data-wedding-id="{{ wedding.id }}"
+              title="Click to edit">
             ${{ '{:,.0f}'.format(total_budget) }}
-        </div>
-        <div class="summary-sub">Click to edit</div>
+        </span>
+        <span class="stat-sub">Click to edit</span>
     </div>
     {# Total estimated #}
-    <div class="summary-card">
-        <span class="summary-label">Estimated Cost</span>
-        <div class="summary-amount" id="summaryEstimated">
-            ${{ '{:,.0f}'.format(total_estimated) }}
-        </div>
-        <div class="summary-sub">across all expenses</div>
+    <div class="stat-card">
+        <span class="stat-label">Estimated Cost</span>
+        <span class="stat-number" id="summaryEstimated">${{ '{:,.0f}'.format(total_estimated) }}</span>
+        <span class="stat-sub">across all expenses</span>
     </div>
     {# Total paid #}
-    <div class="summary-card">
-        <span class="summary-label">Total Paid</span>
-        <div class="summary-amount" id="summaryPaid">
-            ${{ '{:,.0f}'.format(total_actual_paid) }}
-        </div>
-        <div class="summary-sub" id="summaryPaidPct">{{ ((total_actual_paid / total_budget * 100) | round | int) if total_budget else 0 }}% of budget</div>
+    <div class="stat-card">
+        <span class="stat-label">Total Paid</span>
+        <span class="stat-number" id="summaryPaid">${{ '{:,.0f}'.format(total_actual_paid) }}</span>
+        <span class="stat-sub" id="summaryPaidPct">{{ ((total_actual_paid / total_budget * 100) | round | int) if total_budget else 0 }}% of budget</span>
     </div>
     {# Remaining #}
-    <div class="summary-card">
-        <span class="summary-label">Remaining</span>
-        <div class="summary-amount {% if remaining < 0 %}over-budget{% endif %}" id="summaryRemaining">
-            {% if remaining < 0 %}
-            <i class="bi bi-exclamation-triangle-fill" style="font-size:1.1rem; vertical-align:middle;"></i>
-            {% endif %}
-            ${{ '{:,.0f}'.format(remaining | abs) }}
-        </div>
-        <div class="summary-sub">
+    <div class="stat-card">
+        <span class="stat-label">Remaining</span>
+        <span class="stat-number" id="summaryRemaining">${{ '{:,.0f}'.format(remaining | abs) }}</span>
+        <span class="stat-sub {% if remaining < 0 %}over-budget{% endif %}" id="summaryRemainingText">
             {% if remaining < 0 %}over budget{% else %}left to spend{% endif %}
-        </div>
+        </span>
     </div>
 </div>
 
@@ -710,6 +695,12 @@
                         data-expense-id="{{ exp.id }}">
                         <td>
                             <span class="expense-title">{{ exp.title }}</span>
+                            {% if exp.vendor_id %}
+                            <a href="{{ url_for('vendors.vendors', wedding_id=wedding.id) }}#card-{{ exp.vendor_id }}"
+                               class="expense-vendor-tag">
+                                <i class="bi bi-shop"></i> vendor
+                            </a>
+                            {% endif %}
                             {% if exp.notes %}
                             <div style="font-size:0.72rem; color:#a09080;">{{ exp.notes }}</div>
                             {% endif %}
@@ -777,7 +768,12 @@
                     <input type="hidden" name="anchor"        value="cat-{{ cat.id }}">
                     <div class="field grow">
                         <label>Item</label>
-                        <input type="text" name="title" class="form-control" placeholder="Expense name" required>
+                        <input type="text" name="title" class="form-control expense-title-input"
+                               placeholder="Expense name" required autocomplete="off">
+                        <div class="vendor-dup-warn" style="display:none;">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            You have a booked vendor with this name. It may already be in your budget.
+                        </div>
                     </div>
                     <div class="field sm">
                         <label>Estimated ($)</label>
@@ -992,6 +988,20 @@
     const weddingId = {{ wedding.id }};
     const today = new Date(); today.setHours(0,0,0,0);
 
+    /* ── Duplicate vendor warning on add-expense forms ──────────── */
+    const bookedVendors = {{ booked_vendor_names | tojson }};
+    document.querySelectorAll('.expense-title-input').forEach(function(input) {
+        const warn = input.parentElement.querySelector('.vendor-dup-warn');
+        if (!warn) return;
+        input.addEventListener('input', function() {
+            const val = this.value.trim().toLowerCase();
+            const match = val.length >= 2 && bookedVendors.some(
+                name => name.toLowerCase().includes(val) || val.includes(name.toLowerCase())
+            );
+            warn.style.display = match ? 'flex' : 'none';
+        });
+    });
+
     /* ── Overdue highlighting for due dates ─────────────────────── */
     document.querySelectorAll('[class*="due-"]').forEach(function(el) {
         // already styled by server
@@ -1027,10 +1037,14 @@
                     input.replaceWith(totalDisplay);
                     // Update remaining
                     const remEl = document.getElementById('summaryRemaining');
+                    const remTextEl = document.getElementById('summaryRemainingText');
                     if (remEl) {
                         const rem = data.remaining;
                         remEl.textContent = '$' + fmt(Math.abs(rem));
-                        remEl.classList.toggle('over-budget', rem < 0);
+                        if (remTextEl) {
+                            remTextEl.textContent = rem < 0 ? 'over budget' : 'left to spend';
+                            remTextEl.classList.toggle('over-budget', rem < 0);
+                        }
                     }
                 })
                 .catch(function () { input.replaceWith(totalDisplay); });
@@ -1071,9 +1085,13 @@
                 const paidPctEl = document.getElementById('summaryPaidPct');
                 if (paidPctEl) paidPctEl.textContent = data.pct + '% of budget';
                 const remEl = document.getElementById('summaryRemaining');
+                const remTextEl = document.getElementById('summaryRemainingText');
                 if (remEl) {
                     remEl.textContent = '$' + fmt(Math.abs(data.remaining));
-                    remEl.classList.toggle('over-budget', data.remaining < 0);
+                    if (remTextEl) {
+                        remTextEl.textContent = data.remaining < 0 ? 'over budget' : 'left to spend';
+                        remTextEl.classList.toggle('over-budget', data.remaining < 0);
+                    }
                 }
             });
         });
