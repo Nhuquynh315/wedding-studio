@@ -1,7 +1,7 @@
 import json
 import re
 from collections import defaultdict
-from datetime import date
+from datetime import date, datetime
 
 from flask import Blueprint, flash, redirect, render_template, request, send_file, session, url_for
 from flask_login import login_required, current_user
@@ -49,41 +49,46 @@ def dashboard():
         'response_rate': round(accepted / total * 100) if total else 0,
     }
 
-    # Checklist — use real DB items if they exist, else show setup prompts
+    # Checklist — use real DB items if they exist, else fallback to setup prompts
     from app.models import ChecklistItem
     cl_items  = ChecklistItem.query.filter_by(wedding_id=active.id).all()
     today = date.today()
     if cl_items:
-        cl_total = len(cl_items)
-        cl_done  = sum(1 for i in cl_items if i.is_completed)
-        checklist_pct = round(cl_done / cl_total * 100) if cl_total else 0
-        # Next 3 incomplete items sorted by due date (nulls last)
-        incomplete = [i for i in cl_items if not i.is_completed]
-        next_tasks = sorted(
-            [i for i in incomplete if i.due_date],
-            key=lambda x: x.due_date
-        )[:3] or incomplete[:3]
-        checklist_items = [(i.title, i.is_completed) for i in cl_items]
+        cl_total        = len(cl_items)
+        cl_done         = sum(1 for i in cl_items if i.is_completed)
+        checklist_pct   = round(cl_done / cl_total * 100) if cl_total else 0
+        total_tasks     = cl_total
+        completed_count = cl_done
+        has_any_tasks   = True
+
+        # Overdue count across all pending items (not capped)
+        overdue_count = sum(
+            1 for i in cl_items
+            if not i.is_completed and i.due_date and i.due_date < today
+        )
+
+        # Pending tasks: sorted overdue-first then by due_date asc, no-date last. Limit 6.
+        pending_tasks = sorted(
+            [i for i in cl_items if not i.is_completed],
+            key=lambda x: (x.due_date is None, x.due_date or date.max)
+        )[:6]
+
+        # Completed tasks: most recently completed first. Limit 3 (used as filler).
+        completed_tasks = sorted(
+            [i for i in cl_items if i.is_completed],
+            key=lambda x: x.completed_at or datetime.min,
+            reverse=True
+        )[:3]
     else:
-        # Fallback setup checklist before first real items are added
-        theme = None
-        if active.ai_generated_theme:
-            try:
-                theme = json.loads(active.ai_generated_theme)
-            except (ValueError, TypeError):
-                pass
-        checklist_items = [
-            ('Set wedding date',      bool(active.wedding_date)),
-            ('Choose venue',          bool(active.venue_name)),
-            ('Generate AI theme',     bool(active.ai_generated_theme)),
-            ('Select accent colour',  theme is not None and bool(theme.get('selected_colour'))),
-            ('Add guest list',        total > 0),
-            ('Create invitation PDF', bool(active.designs)),
-        ]
-        cl_done  = sum(1 for _, v in checklist_items if v)
-        cl_total = len(checklist_items)
-        checklist_pct = round(cl_done / cl_total * 100)
-        next_tasks = []
+        cl_total        = 0
+        cl_done         = 0
+        checklist_pct   = 0
+        total_tasks     = 0
+        completed_count = 0
+        has_any_tasks   = False
+        overdue_count   = 0
+        pending_tasks   = []
+        completed_tasks = []
 
     days_until = (active.wedding_date - today).days if active.wedding_date else None
 
@@ -119,11 +124,15 @@ def dashboard():
         active_wedding=active,
         weddings=weddings,
         guest_stats=guest_stats,
-        checklist_items=checklist_items,
         checklist_pct=checklist_pct,
-        next_tasks=next_tasks,
         cl_done=cl_done,
         cl_total=cl_total,
+        pending_tasks=pending_tasks,
+        completed_tasks=completed_tasks,
+        overdue_count=overdue_count,
+        total_tasks=total_tasks,
+        completed_count=completed_count,
+        has_any_tasks=has_any_tasks,
         days_until=days_until,
         recent_guests=recent_guests,
         total_budget_amount=total_budget_amount,
@@ -335,7 +344,7 @@ def wedding_detail(wedding_id):
                            checklist_items=checklist_items, checklist_pct=checklist_pct,
                            guests_page=guests_page, search_q=search_q,
                            group_filter=group_filter, rsvp_filter=rsvp_filter,
-                           all_groups=all_groups, total=total)
+                           all_groups=all_groups, total=total, today=today)
 
 
 @wedding_bp.route('/wedding/<int:wedding_id>/edit', methods=['GET', 'POST'])

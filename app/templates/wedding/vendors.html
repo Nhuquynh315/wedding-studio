@@ -86,6 +86,7 @@
     display: flex; flex-direction: column; gap: 0.75rem;
     transition: box-shadow 0.12s;
     position: relative;
+    height: 100%;
 }
 .vendor-card:hover { box-shadow: 0 2px 16px rgba(0,0,0,.07); }
 .vendor-card.is-booked { border-color: #b8dfc8; }
@@ -148,7 +149,7 @@
 /* ── Card actions ─────────────────────────────────────────────────── */
 .vendor-actions {
     display: flex; align-items: center; gap: 0.5rem;
-    flex-wrap: wrap; margin-top: auto;
+    flex-wrap: wrap;
     padding: 0.75rem 1.25rem 1rem;
     border-top: 1px solid #f5f0ec;
     border-radius: 0 0 12px 12px;
@@ -502,7 +503,7 @@
 {% for v in all_vendors %}
 {% set slug = v.category.lower().replace(' ', '-').replace('&', '').replace('--', '-') %}
 {% set cat_class = v.category.split()[0] %}
-<div class="col-md-6 col-xl-4 vendor-col" data-cat="{{ slug }}">
+<div class="col-md-6 col-xl-4 vendor-col d-flex flex-column" data-cat="{{ slug }}">
 <div class="vendor-card {% if v.status == 'booked' %}is-booked{% endif %}" id="card-{{ v.id }}">
 
     {# Top: badges #}
@@ -640,7 +641,7 @@
         {% endif %}
 
     </div>
-    <div style="display:flex; align-items:center; gap:8px; padding:12px 16px 16px 16px; border-top:1px solid #f0ebe4; margin-top:12px;">
+    <div style="display:flex; align-items:center; gap:8px; padding:12px 16px 16px 16px; border-top:1px solid #f0ebe4; margin-top:auto;">
         <button class="vcard-edit-btn"
             data-bs-toggle="modal"
             data-bs-target="#editVendorModal"

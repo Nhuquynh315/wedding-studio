@@ -537,40 +537,177 @@
         </div>
     </div>
 
-    {# Lower grid #}
-    <div class="overview-lower">
-        {# Checklist card #}
-        <div class="planner-card">
-            <p class="planner-card-title">Planning Checklist</p>
-            {% for label, done in checklist_items %}
-            <div class="checklist-item {% if done %}done{% endif %}">
-                <i class="bi {% if done %}bi-check-circle-fill{% else %}bi-circle{% endif %}"></i>
-                <span>{{ label }}</span>
+    {# Row 2: RSVP Breakdown | Upcoming Tasks | Budget Snapshot #}
+    <div class="row g-3 mb-3">
+
+        {# RSVP Breakdown #}
+        <div class="col-lg-4">
+            <div class="planner-card">
+                <p class="planner-card-title">RSVP Breakdown</p>
+                {% if guest_stats.total > 0 %}
+                <div class="rsvp-stacked mb-3">
+                    <div class="rsvp-stacked-confirmed"
+                         style="width:{{ (guest_stats.accepted / guest_stats.total * 100) | round | int }}%;"></div>
+                    <div class="rsvp-stacked-pending"
+                         style="width:{{ (guest_stats.pending  / guest_stats.total * 100) | round | int }}%;"></div>
+                    <div class="rsvp-stacked-declined"
+                         style="width:{{ (guest_stats.declined / guest_stats.total * 100) | round | int }}%;"></div>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:.5rem;">
+                    <div class="rsvp-stat-row">
+                        <span class="rsvp-stat-label"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#5fa67a;margin-right:.4rem;"></span>Confirmed</span>
+                        <span class="rsvp-stat-val">{{ guest_stats.accepted }} <span style="font-weight:400; color:#b09a90;">· {{ (guest_stats.accepted / guest_stats.total * 100) | round | int }}%</span></span>
+                    </div>
+                    <div class="rsvp-stat-row">
+                        <span class="rsvp-stat-label"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#d4c4b8;margin-right:.4rem;"></span>Pending</span>
+                        <span class="rsvp-stat-val">{{ guest_stats.pending }} <span style="font-weight:400; color:#b09a90;">· {{ (guest_stats.pending / guest_stats.total * 100) | round | int }}%</span></span>
+                    </div>
+                    <div class="rsvp-stat-row">
+                        <span class="rsvp-stat-label"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#d47a7a;margin-right:.4rem;"></span>Declined</span>
+                        <span class="rsvp-stat-val">{{ guest_stats.declined }} <span style="font-weight:400; color:#b09a90;">· {{ (guest_stats.declined / guest_stats.total * 100) | round | int }}%</span></span>
+                    </div>
+                </div>
+                {% else %}
+                <div style="text-align:center; padding:1.5rem 0;">
+                    <i class="bi bi-people" style="font-size:2rem; color:#ddd0c8;"></i>
+                    <p style="font-size:.82rem; color:#b89a8a; margin:.5rem 0 0;">No guests added yet.</p>
+                </div>
+                {% endif %}
+                <a href="{{ url_for('wedding.wedding_detail', wedding_id=wedding.id) }}#guests"
+                   style="font-size:.78rem; color:var(--ws-rose); text-decoration:none; display:block; margin-top:1rem;">
+                    View all guests <i class="bi bi-arrow-right"></i>
+                </a>
             </div>
-            {% endfor %}
         </div>
 
-        {# Wedding details #}
-        <div class="planner-card">
-            <p class="planner-card-title">Wedding Details</p>
-            <dl class="detail-dl mb-0">
-                <dt>Date</dt>
-                <dd>{{ wedding.wedding_date.strftime('%B %-d, %Y') if wedding.wedding_date else '—' }}</dd>
-                <dt>Venue</dt>
-                <dd>{{ wedding.venue_name }}</dd>
-                <dt>Location</dt>
-                <dd>{{ wedding.location }}</dd>
-                <dt>Style</dt>
-                <dd class="text-capitalize">{{ wedding.style }}</dd>
-                <dt>Colours</dt>
-                <dd>
-                    <span class="color-swatch me-1" style="background:{{ wedding.primary_color }};"></span>{{ wedding.primary_color }}
-                    &nbsp;
-                    <span class="color-swatch me-1" style="background:{{ wedding.secondary_color }};"></span>{{ wedding.secondary_color }}
-                </dd>
-            </dl>
+        {# Upcoming Tasks #}
+        <div class="col-lg-4">
+            <div class="planner-card">
+                <p class="planner-card-title">Upcoming Tasks</p>
+                <div style="height:4px; border-radius:2px; background:#f0e8e4; margin-bottom:.5rem;">
+                    <div style="height:100%; border-radius:2px; background:var(--ws-rose); width:{{ checklist_pct }}%;"></div>
+                </div>
+                <p style="font-size:.72rem; color:var(--ws-rose); font-weight:500; margin-bottom:.75rem;">
+                    {{ checklist_pct }}% complete · {{ checklist_items | selectattr('1') | list | length }}/{{ checklist_items | length }} done
+                </p>
+                {% set ns_tasks = namespace(shown=0) %}
+                {% for label, done in checklist_items %}
+                {% if not done and ns_tasks.shown < 5 %}
+                {% set ns_tasks.shown = ns_tasks.shown + 1 %}
+                <div class="checklist-item">
+                    <i class="bi bi-circle"></i>
+                    <span>{{ label }}</span>
+                </div>
+                {% endif %}
+                {% endfor %}
+                {% if checklist_items | selectattr('1') | list | length == checklist_items | length %}
+                <div style="text-align:center; padding:1rem 0; color:#5fa67a; font-size:.85rem;">
+                    <i class="bi bi-check-circle-fill"></i> All tasks complete!
+                </div>
+                {% endif %}
+            </div>
         </div>
 
+        {# Budget Snapshot #}
+        <div class="col-lg-4">
+            <div class="planner-card">
+                <p class="planner-card-title">Budget Snapshot</p>
+                {% set snap_cats = wedding.budget_categories | selectattr('allocated_amount') | list %}
+                {% if snap_cats %}
+                {% for cat in snap_cats[:5] %}
+                {% set cat_actual = namespace(v=0) %}
+                {% for e in cat.expenses %}{% if e.is_paid %}{% set cat_actual.v = cat_actual.v + (e.actual_cost or 0) %}{% endif %}{% endfor %}
+                <div style="margin-bottom:.85rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.2rem;">
+                        <span style="font-size:.8rem; display:flex; align-items:center; gap:.4rem;">
+                            <span style="width:8px;height:8px;border-radius:50%;background:{{ cat.color or '#c9687a' }};display:inline-block;flex-shrink:0;"></span>
+                            {{ cat.name }}
+                        </span>
+                        <span style="font-size:.75rem; color:#a09080;">
+                            ${{ '{:,.0f}'.format(cat_actual.v) }} / ${{ '{:,.0f}'.format(cat.allocated_amount) }}
+                        </span>
+                    </div>
+                    <div style="height:4px;border-radius:2px;background:#f0e8e4;">
+                        <div style="height:100%;border-radius:2px;background:{{ cat.color or '#c9687a' }};width:{{ [((cat_actual.v / cat.allocated_amount * 100) | round | int), 100] | min }}%;"></div>
+                    </div>
+                </div>
+                {% endfor %}
+                <a href="{{ url_for('budget.budget', wedding_id=wedding.id) }}"
+                   style="font-size:.78rem; color:var(--ws-rose); text-decoration:none; display:block; margin-top:.75rem;">
+                    View full budget <i class="bi bi-arrow-right"></i>
+                </a>
+                {% else %}
+                <div style="text-align:center; padding:1.5rem 0;">
+                    <i class="bi bi-wallet2" style="font-size:2rem; color:#ddd0c8;"></i>
+                    <p style="font-size:.82rem; color:#b89a8a; margin:.5rem 0 0;">No budget set up yet.</p>
+                </div>
+                <a href="{{ url_for('budget.budget', wedding_id=wedding.id) }}"
+                   style="font-size:.78rem; color:var(--ws-rose); text-decoration:none;">
+                    Set up budget <i class="bi bi-arrow-right"></i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {# Row 3: Upcoming Deposits | Recent Activity #}
+    {% set ov_deposits = wedding.vendors | selectattr('deposit_due_date') | rejectattr('deposit_paid') | sort(attribute='deposit_due_date') | list %}
+    <div class="row g-3">
+        {% if ov_deposits %}
+        <div class="col-lg-5">
+            <div class="planner-card">
+                <p class="planner-card-title">Upcoming Deposits</p>
+                {% for v in ov_deposits[:5] %}
+                {% set days_left = (v.deposit_due_date - today).days %}
+                <div style="display:flex; align-items:flex-start; gap:.75rem; padding:.6rem 0; border-bottom:1px solid #f5f0ec;">
+                    <div style="width:8px;height:8px;border-radius:50%;margin-top:.35rem;flex-shrink:0;background:{% if days_left <= 7 %}#d47a7a{% elif days_left <= 30 %}#c8a860{% else %}#5fa67a{% endif %};"></div>
+                    <span style="font-size:.85rem; color:#4a3e38; flex:1; min-width:0;">
+                        <strong>{{ v.business_name }}</strong>
+                        <span style="color:#a09080;">· {{ v.category }}</span><br>
+                        <span style="font-size:.75rem; color:#a09080;">
+                            Deposit: ${{ '{:,.0f}'.format(v.deposit_amount) if v.deposit_amount else 'TBD' }}
+                        </span>
+                    </span>
+                    <span style="font-size:.72rem; white-space:nowrap; color:{% if days_left <= 7 %}#d47a7a{% elif days_left <= 30 %}#c8a860{% else %}#a09080{% endif %}; font-weight:{% if days_left <= 7 %}600{% else %}400{% endif %};">
+                        {% if days_left == 0 %}Today
+                        {% elif days_left == 1 %}Tomorrow
+                        {% elif days_left < 0 %}Overdue
+                        {% else %}{{ v.deposit_due_date.strftime('%b %-d') }}{% endif %}
+                    </span>
+                </div>
+                {% endfor %}
+                <a href="{{ url_for('vendors.vendors', wedding_id=wedding.id) }}"
+                   style="font-size:.78rem; color:var(--ws-rose); text-decoration:none; display:block; margin-top:.75rem;">
+                    Manage vendors <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+        <div class="col-lg-7">
+        {% else %}
+        <div class="col-12">
+        {% endif %}
+            <div class="planner-card">
+                <p class="planner-card-title">Recent Activity</p>
+                {% set recent = wedding.guests | sort(attribute='created_at', reverse=True) | list %}
+                {% if recent %}
+                {% for g in recent[:5] %}
+                <div style="display:flex; align-items:flex-start; gap:.75rem; padding:.65rem 0; border-bottom:1px solid #f5f0ec;">
+                    <div style="width:8px;height:8px;border-radius:50%;background:var(--ws-rose);margin-top:.35rem;flex-shrink:0;"></div>
+                    <span style="font-size:.85rem; color:#4a3e38; flex:1;">
+                        <strong>{{ g.full_name }}</strong> added to guest list
+                        {% if g.group_name %}<span style="color:#a09080;">· {{ g.group_name }}</span>{% endif %}
+                    </span>
+                    <span style="font-size:.72rem; color:#a09080; white-space:nowrap;">{{ g.created_at.strftime('%b %-d') }}</span>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div style="text-align:center; padding:1.5rem 0; color:#b89a8a; font-size:.85rem;">
+                    <i class="bi bi-clock-history" style="font-size:1.5rem; display:block; margin-bottom:.5rem; color:#ddd0c8;"></i>
+                    No activity yet. Start by adding guests.
+                </div>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </section>
 
@@ -1058,11 +1195,6 @@
                     {% for idea in theme.decor_suggestions %}
                     <li>
                         <span>{{ idea }}</span>
-                        <button class="btn-add-checklist"
-                                data-idea="{{ idea | e }}"
-                                data-url="{{ url_for('checklist.add_item', wedding_id=wedding.id) }}"
-                                data-csrf="{{ csrf_token() }}"
-                                onclick="addDecorToChecklist(this)">Add to checklist</button>
                     </li>
                     {% endfor %}
                 </ul>
@@ -1569,35 +1701,6 @@ function applyFont(cardEl, idx) {
             var iframe = document.querySelector('#invCardWrap iframe');
             if (iframe) iframe.src = iframe.src;
         }});
-}
-
-/* ── Add decor idea to checklist ────────────────────────────────── */
-function addDecorToChecklist(btn) {
-    var idea = btn.dataset.idea;
-    var words = idea.split(/\s+/).slice(0, 6).join(' ') + '...';
-    fetch(btn.dataset.url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': btn.dataset.csrf
-        },
-        body: JSON.stringify({ title: words, category: 'Decor', notes: idea, priority: 'medium' })
-    })
-    .then(function (r) { return r.json(); })
-    .then(function (d) {
-        if (d.ok) {
-            btn.textContent = '\u2713 Added';
-            btn.classList.add('added');
-            btn.disabled = true;
-        } else {
-            btn.textContent = 'Failed \u2014 try again';
-            btn.classList.add('failed');
-        }
-    })
-    .catch(function () {
-        btn.textContent = 'Failed \u2014 try again';
-        btn.classList.add('failed');
-    });
 }
 
 /* ── Save invitation wording ────────────────────────────────────── */
