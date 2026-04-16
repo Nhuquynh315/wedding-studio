@@ -369,14 +369,6 @@
                class="sidebar-link" data-nav="guests">
                 <i class="bi bi-people"></i> Guests
             </a>
-            <a href="{{ url_for('checklist.checklist', wedding_id=aw.id) }}"
-               class="sidebar-link {% if request.endpoint == 'checklist.checklist' %}active{% endif %}" data-nav="checklist">
-                <i class="bi bi-check2-square"></i> Checklist
-            </a>
-            <a href="{{ url_for('checklist.checklist', wedding_id=aw.id) }}#timeline"
-               class="sidebar-link" data-nav="timeline">
-                <i class="bi bi-calendar2-week"></i> Timeline
-            </a>
             <a href="{{ url_for('seating.seating', wedding_id=aw.id) }}"
                class="sidebar-link {% if request.endpoint == 'seating.seating' %}active{% endif %}" data-nav="seating">
                 <i class="bi bi-grid-3x3-gap"></i> Seating
@@ -389,6 +381,10 @@
                class="sidebar-link {% if request.endpoint == 'vendors.vendors' %}active{% endif %}" data-nav="vendors">
                 <i class="bi bi-shop"></i> Vendors
             </a>
+            <a href="{{ url_for('checklist.checklist', wedding_id=aw.id) }}"
+               class="sidebar-link {% if request.endpoint == 'checklist.checklist' %}active{% endif %}" data-nav="checklist">
+                <i class="bi bi-calendar2-check"></i> Tasks &amp; Timeline
+            </a>
             <span class="sidebar-section-label" style="margin-top:.5rem;">Design</span>
             <a href="{{ url_for('wedding.wedding_detail', wedding_id=aw.id) }}#invitation"
                class="sidebar-link" data-nav="invitation">
@@ -396,11 +392,10 @@
             </a>
             {% else %}
             <span class="sidebar-link disabled"><i class="bi bi-people"></i> Guests</span>
-            <span class="sidebar-link disabled"><i class="bi bi-check2-square"></i> Checklist</span>
-            <span class="sidebar-link disabled"><i class="bi bi-calendar2-week"></i> Timeline</span>
             <span class="sidebar-link disabled"><i class="bi bi-grid-3x3-gap"></i> Seating</span>
             <span class="sidebar-link disabled"><i class="bi bi-currency-dollar"></i> Budget</span>
             <span class="sidebar-link disabled"><i class="bi bi-shop"></i> Vendors</span>
+            <span class="sidebar-link disabled"><i class="bi bi-calendar2-check"></i> Tasks &amp; Timeline</span>
             <span class="sidebar-link disabled"><i class="bi bi-envelope"></i> Invitation</span>
             {% endif %}
         </nav>
@@ -482,6 +477,10 @@
            class="sidebar-link {% if request.endpoint == 'vendors.vendors' %}active{% endif %}" data-nav="vendors">
             <i class="bi bi-shop"></i> Vendors
         </a>
+        <a href="{{ url_for('checklist.checklist', wedding_id=aw.id) }}"
+           class="sidebar-link {% if request.endpoint == 'checklist.checklist' %}active{% endif %}" data-nav="checklist">
+            <i class="bi bi-calendar2-check"></i> Tasks &amp; Timeline
+        </a>
         <span class="sidebar-section-label" style="margin-top:.5rem;">Design</span>
         <a href="{{ url_for('wedding.wedding_detail', wedding_id=aw.id) }}#invitation"
            class="sidebar-link" data-nav="invitation">
@@ -492,6 +491,7 @@
         <span class="sidebar-link disabled"><i class="bi bi-grid-3x3-gap"></i> Seating</span>
         <span class="sidebar-link disabled"><i class="bi bi-currency-dollar"></i> Budget</span>
         <span class="sidebar-link disabled"><i class="bi bi-shop"></i> Vendors</span>
+        <span class="sidebar-link disabled"><i class="bi bi-calendar2-check"></i> Tasks &amp; Timeline</span>
         <span class="sidebar-link disabled"><i class="bi bi-envelope"></i> Invitation</span>
         {% endif %}
     </nav>

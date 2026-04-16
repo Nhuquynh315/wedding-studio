@@ -275,6 +275,32 @@
     </span>
 </div>
 
+{# ── Warnings: overdue tasks with unbooked/missing vendors ───────── #}
+{% if warnings %}
+<div style="background:#fdf8f0; border:1px solid #f0d8b8; border-radius:12px; padding:16px 20px; margin-bottom:24px;">
+    <div style="font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:#a89890; margin-bottom:12px; font-weight:500;">Needs Attention</div>
+    {% for w in warnings %}
+    <div style="display:flex; align-items:flex-start; gap:12px; padding:8px 0; {% if not loop.last %}border-bottom:1px solid #f5ede0;{% endif %}">
+        <span style="color:#e8a030; font-size:16px; flex-shrink:0;">⚠</span>
+        <div style="flex:1;">
+            <div style="font-size:13px; color:#2d2420; font-weight:500;">"{{ w.task }}" is {{ w.days_overdue }} day{{ 's' if w.days_overdue != 1 else '' }} overdue</div>
+            <div style="font-size:12px; color:#a89890; margin-top:2px;">
+                {% if w.vendor_name %}
+                    {{ w.vendor_name }} is still considering — confirm or replace them
+                {% else %}
+                    No {{ w.vendor_category }} vendor added yet
+                {% endif %}
+            </div>
+        </div>
+        <a href="{{ url_for('vendors.vendors', wedding_id=active_wedding.id) }}"
+           style="font-size:12px; color:#c9687a; white-space:nowrap; text-decoration:none; flex-shrink:0;">
+            → Fix now
+        </a>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
 {# ── Row 1: Metric cards ──────────────────────────────────────────── #}
 <div class="row g-3 mb-4">
     <div class="col-6 col-xl-3">
@@ -377,7 +403,9 @@
         <span class="dash-card-title">Upcoming Tasks</span>
         <div style="text-align:center; padding:2rem 0 1rem;">
             <i class="bi bi-calendar2-check" style="font-size:32px; color:#d4c8c0; display:block; margin-bottom:0.65rem;"></i>
-            <p style="font-family:'Jost',sans-serif; font-size:14px; color:#a89890; margin:0;">No tasks yet</p>
+            <p style="font-family:'Jost',sans-serif; font-size:14px; color:#a89890; margin:0 0 0.65rem;">No tasks yet</p>
+            <a href="{{ url_for('checklist.checklist', wedding_id=active_wedding.id) }}"
+               style="font-size:0.78rem; color:#c9687a; text-decoration:none;">→ Set up checklist</a>
         </div>
 
         {% elif pending_tasks | length == 0 %}
@@ -394,7 +422,9 @@
                 <i class="bi bi-check2"></i>
             </div>
             <p style="font-family:'Cormorant Garamond',serif; font-size:18px; color:#3a2e28; margin:0 0 0.2rem;">All caught up!</p>
-            <p style="font-family:'Jost',sans-serif; font-size:13px; color:#a89890; margin:0;">Every planning task is complete.</p>
+            <p style="font-family:'Jost',sans-serif; font-size:13px; color:#a89890; margin:0 0 0.65rem;">Every planning task is complete.</p>
+            <a href="{{ url_for('checklist.checklist', wedding_id=active_wedding.id) }}"
+               style="font-size:0.78rem; color:#c9687a; text-decoration:none;">→ View checklist</a>
         </div>
 
         {% else %}
@@ -467,6 +497,11 @@
         </div>
         {% endfor %}
         {% endif %}
+
+        <a href="{{ url_for('checklist.checklist', wedding_id=active_wedding.id) }}"
+           style="font-size:0.78rem; color:#c9687a; text-decoration:none; display:block; margin-top:0.85rem;">
+            → View full checklist
+        </a>
 
         {% endif %}{# end state 3 #}
 

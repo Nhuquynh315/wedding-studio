@@ -127,44 +127,46 @@
 .cl-empty-title { font-family: 'Cormorant Garamond', serif; font-size: 1.4rem; font-weight: 400; color: #5a4e48; margin-bottom: .4rem; }
 .cl-empty-text  { font-family: 'Jost', sans-serif; font-size: .875rem; color: #a89890; margin-bottom: 1.25rem; }
 
-/* ── Timeline ─────────────────────────────────────────────────────── */
-.tl-wrap { position: relative; }
-.tl-wrap::before {
-    content: ''; position: absolute;
-    left: 8px; top: 6px; bottom: 6px;
-    width: 1px; background: #e8e0d8; z-index: 0;
+/* ── Vendor chips (list view) ─────────────────────────────────────── */
+.vendor-chip {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    font-family: 'Jost', sans-serif; font-size: 10px; font-weight: 500;
+    padding: .18em .55em; border-radius: 20px; text-decoration: none;
+    white-space: nowrap; transition: opacity .12s;
 }
-.tl-group { margin-bottom: 1.75rem; }
-.tl-group-label {
-    font-family: 'Jost', sans-serif; font-size: .65rem; font-weight: 600;
-    letter-spacing: .12em; text-transform: uppercase; color: #c8b8b0;
-    padding-left: 1.65rem; margin-bottom: .75rem; display: block;
+.vendor-chip:hover { opacity: .8; }
+.vendor-chip.booked      { background: #eef7f2; color: #3a8a5a; }
+.vendor-chip.considering { background: #fdf7ee; color: #a87832; }
+.vendor-chip.backup      { background: #f0ebe7; color: #8a7870; }
+.vendor-chip.rejected    { background: #fbeeee; color: #c95a5a; }
+
+/* ── Timeline v2 (urgency-grouped) ───────────────────────────────── */
+.tl2-row {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 16px; border-radius: 8px;
+    margin-bottom: 4px; position: relative; z-index: 1;
+    transition: opacity .15s;
 }
-.tl-event {
-    display: flex; align-items: flex-start; gap: .85rem;
-    margin-bottom: .9rem; position: relative;
-}
-.tl-event.hidden { display: none !important; }
-.tl-dot {
-    width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0;
+.tl2-dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
     margin-top: 3px; position: relative; z-index: 1;
     display: flex; align-items: center; justify-content: center;
 }
-.tl-dot.pending  { background: #fff; border: 2px solid #c9687a; }
-.tl-dot.overdue  { background: #c9687a; border: 2px solid #c9687a; }
-.tl-dot.complete { background: #5fa67a; border: 2px solid #5fa67a; }
-.tl-pill {
+.tl2-dot-overdue   { background: #c9687a; }
+.tl2-dot-thismonth { background: #e8a030; }
+.tl2-dot-upcoming  { background: #fff; border: 1.5px solid #d4c8c0; }
+.tl2-dot-done      { background: #90b878; }
+.tl2-pill {
     display: inline-block; font-family: 'Jost', sans-serif;
-    font-size: 11px; font-weight: 500; padding: .15em .65em;
-    border-radius: 20px; margin-bottom: .15rem; white-space: nowrap;
+    font-size: 11px; font-weight: 500; padding: 2px 10px;
+    border-radius: 999px; margin-bottom: 4px; white-space: nowrap;
 }
-.tl-pill.overdue  { background: #fdf0f2; color: #c9687a; }
-.tl-pill.soon     { background: #fdf7ee; color: #a87832; }
-.tl-pill.future   { background: #f5f0eb; color: #a89890; }
-.tl-pill.complete { background: #eef7f2; color: #5fa67a; }
-.tl-title { font-family: 'Jost', sans-serif; font-size: .875rem; color: #2d2420; line-height: 1.3; }
-.tl-title.done { text-decoration: line-through; color: #b0a8a0; }
-.tl-meta { font-size: 11px; color: #a89890; margin-top: .1rem; }
+.tl2-pill-overdue   { background: #fdf0f2; color: #c9687a; }
+.tl2-pill-today     { background: #c9687a; color: #fff; }
+.tl2-pill-thismonth { background: #fef8ee; color: #e8a030; }
+.tl2-pill-upcoming  { background: #f5f0eb; color: #a89890; }
+.tl2-pill-nodate    { background: #f0ece8; color: #b8b0a8; }
+.tl2-pill-done      { background: #f0f8ec; color: #90b878; }
 
 /* ── Modal label ──────────────────────────────────────────────────── */
 .cl-modal-label { font-family: 'Jost', sans-serif; font-size: .78rem; font-weight: 500; color: #7a6a60; margin-bottom: .3rem; display: block; }
@@ -228,7 +230,7 @@
         <option value="pending">Pending</option>
         <option value="complete">Complete</option>
     </select>
-    <div class="cl-search-wrap">
+<div class="cl-search-wrap">
         <i class="bi bi-search cl-search-icon"></i>
         <input type="search" class="cl-search" id="fSearch" placeholder="Search tasks…" oninput="applyFilters()">
     </div>
@@ -238,6 +240,8 @@
         </button>
     </div>
 </div>
+
+<p id="viewDesc" style="font-size:12px; color:#a89890; font-family:'Jost',sans-serif; margin:8px 0 16px 0; font-weight:300;">Tasks organised by category — manage and check off your planning to-dos</p>
 
 {# ═══════════════════ LIST VIEW ═══════════════════════════════════ #}
 <div id="listView">
@@ -276,6 +280,14 @@
                     {% if item.notes %}
                     <i class="bi bi-chat-left-dots" style="font-size:10px; color:#c8b8b0;" title="{{ item.notes | e }}"></i>
                     {% endif %}
+                    {% if item.id in item_vendor_map %}
+                    {% set v = item_vendor_map[item.id] %}
+                    <a href="{{ url_for('vendors.vendors', wedding_id=wedding.id) }}"
+                       class="vendor-chip {{ v.status }}" title="{{ v.status | capitalize }}">
+                        <i class="bi bi-{% if v.status == 'booked' %}check2{% else %}shop{% endif %}" style="font-size:9px;"></i>
+                        {{ v.business_name }}
+                    </a>
+                    {% endif %}
                 </div>
             </div>
             <div class="task-actions">
@@ -302,69 +314,57 @@
 
 {# ═══════════════════ TIMELINE VIEW ═══════════════════════════════ #}
 <div id="timelineView" style="display:none;">
-    <div class="tl-wrap">
 
-        {# Items with a due date, sorted asc #}
-        {% set tl_dated = timeline_items | selectattr('due_date') | list %}
-        {% if tl_dated %}
-        <div class="tl-group">
-            {% for item in tl_dated %}
-            {% set dd = (item.due_date - today).days %}
-            {% if item.is_completed %}{% set dot_cls = 'complete' %}{% set pill_cls = 'complete' %}
-            {% elif dd < 0 %}{% set dot_cls = 'overdue' %}{% set pill_cls = 'overdue' %}
-            {% elif dd <= 30 %}{% set dot_cls = 'pending' %}{% set pill_cls = 'soon' %}
-            {% else %}{% set dot_cls = 'pending' %}{% set pill_cls = 'future' %}
-            {% endif %}
-            <div class="tl-event {% if item.is_completed %}completed{% endif %}"
-                 id="tl-{{ item.id }}"
-                 data-category="{{ item.category }}"
-                 data-priority="{{ item.priority }}"
-                 data-status="{{ 'complete' if item.is_completed else 'pending' }}"
-                 data-title="{{ item.title | lower | e }}">
-                <div class="tl-dot {{ dot_cls }}">
-                    {% if item.is_completed %}
-                    <svg width="7" height="5" viewBox="0 0 7 5" fill="none"><path d="M1 2.5l1.5 1.5 3.5-3.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    {% endif %}
-                </div>
-                <div>
-                    <span class="tl-pill {{ pill_cls }}">
-                        {% if dd < 0 and not item.is_completed %}Overdue · {% endif %}{{ item.due_date.strftime('%b %-d, %Y') }}
-                    </span>
-                    <div class="tl-title {% if item.is_completed %}done{% endif %}">{{ item.title }}</div>
-                    <div class="tl-meta">{{ item.category }}{% if item.priority != 'medium' %} &nbsp;<span class="pri-badge pri-{{ item.priority }}">{{ item.priority }}</span>{% endif %}</div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
+    {# ── Data layer: hidden elements carry server-rendered item data ── #}
+    {# JS reads these to build the urgency-grouped visual timeline.     #}
+    <div id="tlDataLayer" style="display:none;">
+        {% for entry in tl_combined_dated %}
+        {% if entry.kind == 'task' %}{% set item = entry.item %}
+        <div id="tl-{{ item.id }}"
+             data-kind="task"
+             data-id="{{ item.id }}"
+             data-completed="{{ 'true' if item.is_completed else 'false' }}"
+             data-due="{{ item.due_date.isoformat() if item.due_date else '' }}"
+             data-title="{{ item.title | e }}"
+             data-category="{{ item.category }}"
+             data-priority="{{ item.priority }}"
+             data-completed-at="{{ item.completed_at.strftime('%b %-d') if item.completed_at else '' }}"
+             data-vendor-name="{{ item_vendor_map[item.id].business_name | e if item.id in item_vendor_map else '' }}"
+             data-vendor-status="{{ item_vendor_map[item.id].status if item.id in item_vendor_map else '' }}"
+             data-vendor-url="{{ url_for('vendors.vendors', wedding_id=wedding.id) if item.id in item_vendor_map else '' }}"
+        ></div>
+        {% elif entry.kind == 'deposit' %}{% set v = entry.vendor %}
+        <div id="tl-deposit-{{ v.id }}"
+             data-kind="deposit"
+             data-due="{{ v.deposit_due_date.isoformat() }}"
+             data-paid="{{ 'true' if v.deposit_paid else 'false' }}"
+             data-business-name="{{ v.business_name | e }}"
+             data-category="{{ v.category }}"
+             data-amount="{{ v.deposit_amount | int if v.deposit_amount else '' }}"
+             data-vendor-url="{{ url_for('vendors.vendors', wedding_id=wedding.id) }}"
+        ></div>
         {% endif %}
-
-        {# Items without a due date #}
-        {% set tl_undated = timeline_items | rejectattr('due_date') | list %}
-        {% if tl_undated %}
-        <div class="tl-group">
-            <span class="tl-group-label">No due date</span>
-            {% for item in tl_undated %}
-            <div class="tl-event {% if item.is_completed %}completed{% endif %}"
-                 id="tl-{{ item.id }}"
-                 data-category="{{ item.category }}"
-                 data-priority="{{ item.priority }}"
-                 data-status="{{ 'complete' if item.is_completed else 'pending' }}"
-                 data-title="{{ item.title | lower | e }}">
-                <div class="tl-dot {% if item.is_completed %}complete{% else %}pending{% endif %}">
-                    {% if item.is_completed %}
-                    <svg width="7" height="5" viewBox="0 0 7 5" fill="none"><path d="M1 2.5l1.5 1.5 3.5-3.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    {% endif %}
-                </div>
-                <div>
-                    <div class="tl-title {% if item.is_completed %}done{% endif %}">{{ item.title }}</div>
-                    <div class="tl-meta">{{ item.category }}{% if item.priority != 'medium' %} &nbsp;<span class="pri-badge pri-{{ item.priority }}">{{ item.priority }}</span>{% endif %}</div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
-
+        {% endfor %}
+        {% for item in tl_undated %}
+        <div id="tl-{{ item.id }}"
+             data-kind="task"
+             data-id="{{ item.id }}"
+             data-completed="{{ 'true' if item.is_completed else 'false' }}"
+             data-due=""
+             data-title="{{ item.title | e }}"
+             data-category="{{ item.category }}"
+             data-priority="{{ item.priority }}"
+             data-completed-at="{{ item.completed_at.strftime('%b %-d') if item.completed_at else '' }}"
+             data-vendor-name="{{ item_vendor_map[item.id].business_name | e if item.id in item_vendor_map else '' }}"
+             data-vendor-status="{{ item_vendor_map[item.id].status if item.id in item_vendor_map else '' }}"
+             data-vendor-url="{{ url_for('vendors.vendors', wedding_id=wedding.id) if item.id in item_vendor_map else '' }}"
+        ></div>
+        {% endfor %}
     </div>
+
+    {# ── Visual output — built entirely by rebuildTimeline() ──────── #}
+    <div id="tlSections"></div>
+
 </div>
 
 {% else %}
@@ -504,27 +504,226 @@
 <script>
 (function () {
     var CSRF  = document.getElementById('cl-csrf').textContent;
-    var done  = {{ completed }};
-    var total = {{ total }};
 
-    /* ── View toggle ────────────────────────────────────────────── */
+    /* ── HTML escape helper ─────────────────────────────────────────── */
+    function _esc(s) {
+        return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    /* ── Date boundaries ────────────────────────────────────────────── */
+    var _today = new Date(); _today.setHours(0,0,0,0);
+    var _eom   = new Date(_today.getFullYear(), _today.getMonth() + 1, 0);
+
+    /* ── Urgency group classifier ───────────────────────────────────── */
+    function _getGroup(d) {
+        if (d.completed === 'true' || d.paid === 'true') return 'done';
+        if (!d.due) return 'upcoming';
+        var due = new Date(d.due + 'T00:00:00');
+        if (due < _today) return 'overdue';
+        if (due <= _eom)  return 'thismonth';
+        return 'upcoming';
+    }
+
+    /* ── Filter check (deposits always pass) ────────────────────────── */
+    function _matchesFilters(d, cat, pri, status, q) {
+        if (d.kind === 'deposit') return true;
+        return (!cat    || d.category === cat)
+            && (!pri    || d.priority === pri)
+            && (!status || (status === 'complete' ? d.completed === 'true' : d.completed !== 'true'))
+            && (!q      || (d.title || '').toLowerCase().includes(q));
+    }
+
+    /* ── Date pill HTML ─────────────────────────────────────────────── */
+    function _pillHTML(d, group) {
+        if (d.kind === 'deposit') {
+            if (d.paid === 'true') return '<span class="tl2-pill tl2-pill-done">Paid</span>';
+            var due = new Date(d.due + 'T00:00:00');
+            var isToday = due.getTime() === _today.getTime();
+            var cls = isToday ? 'tl2-pill-today'
+                    : group === 'overdue' ? 'tl2-pill-overdue'
+                    : group === 'thismonth' ? 'tl2-pill-thismonth'
+                    : 'tl2-pill-upcoming';
+            var label = due.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+            return '<span class="tl2-pill ' + cls + '">Deposit · ' + label + '</span>';
+        }
+        if (d.completed === 'true') {
+            return '<span class="tl2-pill tl2-pill-done">' + _esc(d.completedAt || 'Done') + '</span>';
+        }
+        if (!d.due) return '<span class="tl2-pill tl2-pill-nodate">No date</span>';
+        var due = new Date(d.due + 'T00:00:00');
+        var isToday = due.getTime() === _today.getTime();
+        var cls = isToday ? 'tl2-pill-today'
+                : group === 'overdue' ? 'tl2-pill-overdue'
+                : group === 'thismonth' ? 'tl2-pill-thismonth'
+                : 'tl2-pill-upcoming';
+        var label = due.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+        return '<span class="tl2-pill ' + cls + '">' + label + '</span>';
+    }
+
+    /* ── Build a single timeline row HTML ───────────────────────────── */
+    function _buildItemHTML(d, group) {
+        var dotCls = 'tl2-dot tl2-dot-' + group;
+        var pill   = _pillHTML(d, group);
+
+        if (d.kind === 'deposit') {
+            var amtStr = d.amount ? ' · $' + d.amount : '';
+            var isDone = d.paid === 'true';
+            return [
+                '<div class="tl2-row" style="' + (isDone ? 'opacity:.55;' : '') + '">',
+                  '<div class="' + dotCls + '"></div>',
+                  '<div style="flex:1;min-width:0;">',
+                    pill,
+                    '<div style="font-size:.875rem;line-height:1.35;' + (isDone ? 'text-decoration:line-through;color:#b0a8a0;' : 'color:#2d2420;') + '">',
+                      '<a href="' + _esc(d.vendorUrl) + '" style="color:inherit;text-decoration:none;">',
+                        _esc(d.businessName), ' deposit', _esc(amtStr),
+                      '</a>',
+                    '</div>',
+                    '<div style="font-size:11px;color:#a89890;margin-top:2px;">' + _esc(d.category) + '</div>',
+                  '</div>',
+                '</div>',
+            ].join('');
+        }
+
+        // task
+        var isDone = d.completed === 'true';
+        var checkSVG = isDone ? '<svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5l2.5 2.5 4.5-5" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '';
+        var highBadge = (!isDone && d.priority === 'high')
+            ? '<span style="font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#c9687a;background:#fdf0f2;padding:.15em .55em;border-radius:3px;margin-left:6px;">HIGH</span>'
+            : '';
+        var vendorChip = '';
+        if (d.vendorName) {
+            var vIcon = d.vendorStatus === 'booked' ? 'check2' : 'shop';
+            vendorChip = '<a href="' + _esc(d.vendorUrl) + '" class="vendor-chip ' + _esc(d.vendorStatus || 'considering') + '" style="margin-left:6px;">'
+                + '<i class="bi bi-' + vIcon + '" style="font-size:9px;"></i> ' + _esc(d.vendorName) + '</a>';
+        }
+        return [
+            '<div class="tl2-row" style="' + (isDone ? 'opacity:.55;' : '') + '">',
+              '<button class="task-check ' + (isDone ? 'done' : '') + '" style="flex-shrink:0;margin-top:2px;"',
+              ' onclick="doToggle(' + d.id + ')" title="' + (isDone ? 'Mark incomplete' : 'Mark complete') + '">',
+              checkSVG,
+              '</button>',
+              '<div style="flex:1;min-width:0;">',
+                pill,
+                '<div style="font-size:.875rem;line-height:1.35;' + (isDone ? 'text-decoration:line-through;color:#b0a8a0;' : 'color:#2d2420;') + '">',
+                  _esc(d.title), highBadge, vendorChip,
+                '</div>',
+                '<div style="font-size:11px;color:#a89890;margin-top:2px;">' + _esc(d.category) + '</div>',
+              '</div>',
+            '</div>',
+        ].join('');
+    }
+
+    /* ── Section header HTML ────────────────────────────────────────── */
+    function _sectionHeaderHTML(label, count, groupKey, isCollapsed) {
+        var meta = {
+            overdue:   { dot:'#c9687a', text:'#c9687a', bg:'rgba(201,104,122,.06)', border:'rgba(201,104,122,.2)' },
+            thismonth: { dot:'#e8a030', text:'#e8a030', bg:'rgba(232,160,48,.05)',  border:'rgba(232,160,48,.2)'  },
+            upcoming:  { dot:'#b8b0a8', text:'#8a7a70', bg:'transparent',           border:'#e8e0d8'               },
+            done:      { dot:'#90b878', text:'#90b878', bg:'transparent',           border:'#e8e0d8'               },
+        };
+        var c = meta[groupKey] || meta.upcoming;
+        var arrow = isCollapsed ? '▶' : '▼';
+        return [
+            '<div style="display:flex;align-items:center;gap:8px;padding:10px 16px;',
+              'border-radius:8px;background:' + c.bg + ';border:1px solid ' + c.border + ';',
+              'margin-bottom:8px;cursor:pointer;" onclick="_tlToggleDone(this)" data-group="' + groupKey + '">',
+              '<span style="width:8px;height:8px;border-radius:50%;background:' + c.dot + ';flex-shrink:0;display:inline-block;"></span>',
+              '<span style="font-family:\'Jost\',sans-serif;font-size:.7rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:' + c.text + ';flex:1;">' + label + '</span>',
+              '<span style="font-size:12px;color:#a89890;">' + count + ' items</span>',
+              '<span style="font-size:.65rem;color:#b8b0a8;margin-left:6px;">' + arrow + '</span>',
+            '</div>',
+        ].join('');
+    }
+
+    /* ── Rebuild timeline from data layer ───────────────────────────── */
+    function rebuildTimeline() {
+        var cat    = document.getElementById('fCat').value;
+        var pri    = document.getElementById('fPri').value;
+        var status = document.getElementById('fStatus').value;
+        var q      = document.getElementById('fSearch').value.toLowerCase().trim();
+
+        var groups = { overdue: [], thismonth: [], upcoming: [], done: [] };
+
+        document.querySelectorAll('#tlDataLayer > div').forEach(function (el) {
+            var d = el.dataset;
+            if (!_matchesFilters(d, cat, pri, status, q)) return;
+            groups[_getGroup(d)].push(d);
+        });
+
+        // Sort each group by due date ascending, undated last
+        ['overdue','thismonth','upcoming','done'].forEach(function (g) {
+            groups[g].sort(function (a, b) {
+                if (!a.due && !b.due) return 0;
+                if (!a.due) return 1;
+                if (!b.due) return -1;
+                return a.due < b.due ? -1 : a.due > b.due ? 1 : 0;
+            });
+        });
+
+        var isDoneCollapsed = localStorage.getItem('checklist_done_expanded') !== 'true';
+        var SECTIONS = [
+            { key:'overdue',   label:'Overdue'    },
+            { key:'thismonth', label:'This Month'  },
+            { key:'upcoming',  label:'Upcoming'    },
+            { key:'done',      label:'Done'        },
+        ];
+
+        var html = '';
+        SECTIONS.forEach(function (s) {
+            var items = groups[s.key];
+            if (!items.length) return;
+            var collapsed = (s.key === 'done') && isDoneCollapsed;
+            html += '<div class="tl2-section" data-group="' + s.key + '" style="margin-bottom:20px;">';
+            html += _sectionHeaderHTML(s.label, items.length, s.key, collapsed);
+            html += '<div class="tl2-items" style="' + (collapsed ? 'display:none;' : '') + 'padding-left:8px;position:relative;">';
+            html += '<div style="position:absolute;left:23px;top:0;bottom:0;width:1px;background:#f0ebe4;z-index:0;"></div>';
+            items.forEach(function (d) { html += _buildItemHTML(d, s.key); });
+            html += '</div></div>';
+        });
+
+        if (!html) {
+            html = '<div style="text-align:center;padding:2.5rem 0;font-size:.875rem;color:#a89890;">No tasks match your filters.</div>';
+        }
+        document.getElementById('tlSections').innerHTML = html;
+    }
+
+    /* ── Toggle Done section collapse ───────────────────────────────── */
+    window._tlToggleDone = function (headerEl) {
+        var section  = headerEl.closest('.tl2-section');
+        var itemsEl  = section.querySelector('.tl2-items');
+        var arrowEl  = headerEl.querySelector('span:last-child');
+        var nowHidden = itemsEl.style.display === 'none';
+        itemsEl.style.display = nowHidden ? '' : 'none';
+        if (arrowEl) arrowEl.textContent = nowHidden ? '▼' : '▶';
+        if (headerEl.dataset.group === 'done') {
+            localStorage.setItem('checklist_done_expanded', nowHidden ? 'true' : 'false');
+        }
+    };
+
+    /* ── View toggle ────────────────────────────────────────────────── */
+    var VIEW_DESC = {
+        list:     'Tasks organised by category \u2014 manage and check off your planning to-dos',
+        timeline: 'All events by urgency \u2014 deposits, deadlines, and tasks in chronological order',
+    };
     function setView(view) {
         var isList = view === 'list';
         document.getElementById('listView').style.display     = isList ? '' : 'none';
         document.getElementById('timelineView').style.display = isList ? 'none' : '';
         document.getElementById('btnList').classList.toggle('active', isList);
         document.getElementById('btnTimeline').classList.toggle('active', !isList);
+        document.getElementById('viewDesc').textContent = VIEW_DESC[view] || VIEW_DESC.list;
         localStorage.setItem('checklistView', view);
+        history.replaceState(null, '', isList ? window.location.pathname : '?view=timeline');
+        if (!isList) rebuildTimeline();
     }
     window.setView = setView;
 
-    if (location.hash === '#timeline') {
-        setView('timeline');
-    } else if (localStorage.getItem('checklistView') === 'timeline') {
+    var _initParam = new URLSearchParams(window.location.search).get('view');
+    if (_initParam === 'timeline' || location.hash === '#timeline' || localStorage.getItem('checklistView') === 'timeline') {
         setView('timeline');
     }
 
-    /* ── Filters ────────────────────────────────────────────────── */
+    /* ── Filters ────────────────────────────────────────────────────── */
     function applyFilters() {
         var cat    = document.getElementById('fCat').value;
         var pri    = document.getElementById('fPri').value;
@@ -545,20 +744,16 @@
             g.style.display = g.querySelectorAll('.task-row:not(.hidden)').length ? '' : 'none';
         });
 
-        document.querySelectorAll('.tl-event').forEach(function (ev) {
-            var ok = (!cat    || ev.dataset.category === cat)
-                  && (!pri    || ev.dataset.priority === pri)
-                  && (!status || ev.dataset.status   === status)
-                  && (!q      || ev.dataset.title.includes(q));
-            ev.classList.toggle('hidden', !ok);
-        });
-
         var nr = document.getElementById('noResults');
         if (nr) nr.style.display = anyVisible ? 'none' : 'block';
+
+        if (document.getElementById('timelineView').style.display !== 'none') {
+            rebuildTimeline();
+        }
     }
     window.applyFilters = applyFilters;
 
-    /* ── Update header stat + progress bar ──────────────────────── */
+    /* ── Update header stat + progress bar ──────────────────────────── */
     function updateStats(newDone, newTotal, newPct) {
         var stat = document.getElementById('clStatNum');
         if (stat) stat.textContent = newDone + '/' + newTotal;
@@ -566,9 +761,10 @@
         if (fill) fill.style.width = newPct + '%';
     }
 
-    /* ── Toggle task completion ─────────────────────────────────── */
+    /* ── Toggle task completion ─────────────────────────────────────── */
     function doToggle(itemId) {
-        var circle = document.querySelector('.task-check[data-item-id="' + itemId + '"]');
+        // Disable list-view circle (if present)
+        var circle = document.querySelector('#tr-' + itemId + ' .task-check');
         if (circle) circle.disabled = true;
 
         fetch('/checklist/' + itemId + '/toggle', {
@@ -579,8 +775,8 @@
             if (!d.ok) { if (circle) circle.disabled = false; return; }
             var isDone   = d.is_completed;
             var checkSVG = '<svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5l2.5 2.5 4.5-5" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-            var dotSVG   = '<svg width="7" height="5" viewBox="0 0 7 5" fill="none"><path d="M1 2.5l1.5 1.5 3.5-3.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
+            // Update list view row
             var row = document.getElementById('tr-' + itemId);
             if (row) {
                 row.classList.toggle('completed', isDone);
@@ -593,13 +789,15 @@
                 }
             }
 
-            var tlRow = document.getElementById('tl-' + itemId);
-            if (tlRow) {
-                tlRow.dataset.status = isDone ? 'complete' : 'pending';
-                var dot   = tlRow.querySelector('.tl-dot');
-                var title = tlRow.querySelector('.tl-title');
-                if (dot) { dot.className = 'tl-dot ' + (isDone ? 'complete' : 'pending'); dot.innerHTML = isDone ? dotSVG : ''; }
-                if (title) title.classList.toggle('done', isDone);
+            // Update data layer for timeline rebuild
+            var tlEl = document.getElementById('tl-' + itemId);
+            if (tlEl) {
+                tlEl.dataset.completed = isDone ? 'true' : 'false';
+                if (d.completed_at) tlEl.dataset.completedAt = d.completed_at;
+            }
+
+            if (document.getElementById('timelineView').style.display !== 'none') {
+                rebuildTimeline();
             }
 
             updateStats(d.done, d.total, d.pct);
@@ -608,7 +806,7 @@
     }
     window.doToggle = doToggle;
 
-    /* ── Delete task ────────────────────────────────────────────── */
+    /* ── Delete task ────────────────────────────────────────────────── */
     function doDelete(itemId) {
         if (!confirm('Delete this task? This cannot be undone.')) return;
         fetch('/checklist/' + itemId + '/delete', {
@@ -617,19 +815,24 @@
         .then(function (r) { return r.json(); })
         .then(function (d) {
             if (!d.ok) return;
-            function fadeOut(el) {
-                if (!el) return;
-                el.style.transition = 'opacity .28s';
-                el.style.opacity    = '0';
-                setTimeout(function () { el.remove(); }, 300);
+            // Fade out list view row
+            var listRow = document.getElementById('tr-' + itemId);
+            if (listRow) {
+                listRow.style.transition = 'opacity .28s';
+                listRow.style.opacity = '0';
+                setTimeout(function () { listRow.remove(); }, 300);
             }
-            fadeOut(document.getElementById('tr-' + itemId));
-            fadeOut(document.getElementById('tl-' + itemId));
+            // Remove from data layer, then rebuild timeline
+            var tlEl = document.getElementById('tl-' + itemId);
+            if (tlEl) tlEl.remove();
+            if (document.getElementById('timelineView').style.display !== 'none') {
+                rebuildTimeline();
+            }
         });
     }
     window.doDelete = doDelete;
 
-    /* ── Edit modal ─────────────────────────────────────────────── */
+    /* ── Edit modal ─────────────────────────────────────────────────── */
     function openEdit(btn) {
         var d = btn.dataset;
         document.getElementById('editForm').action = '/checklist/' + d.itemId + '/edit';

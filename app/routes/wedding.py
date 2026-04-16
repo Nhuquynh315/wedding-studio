@@ -119,6 +119,45 @@ def dashboard():
         all_guests.extend(w.guests)
     recent_guests = sorted(all_guests, key=lambda g: g.created_at, reverse=True)[:5]
 
+    # Connection 3: cross-reference overdue tasks with vendor booking status
+    from app.models import Vendor as VendorModel
+    from app.utils.connections import VENDOR_TO_TASK
+    warnings = []
+    if has_any_tasks:
+        overdue_items = ChecklistItem.query.filter(
+            ChecklistItem.wedding_id == active.id,
+            ChecklistItem.is_completed == False,
+            ChecklistItem.due_date < today,
+        ).all()
+        for item in overdue_items:
+            title_lower = item.title.lower()
+            for category, keywords in VENDOR_TO_TASK.items():
+                if any(kw in title_lower for kw in keywords):
+                    unbooked = VendorModel.query.filter_by(
+                        wedding_id=active.id,
+                        category=category,
+                    ).filter(
+                        VendorModel.status.in_(['considering', 'backup'])
+                    ).first()
+                    if unbooked:
+                        warnings.append({
+                            'task': item.title,
+                            'vendor_category': category,
+                            'vendor_name': unbooked.business_name,
+                            'days_overdue': (today - item.due_date).days,
+                        })
+                    elif not VendorModel.query.filter_by(
+                        wedding_id=active.id,
+                        category=category,
+                    ).first():
+                        warnings.append({
+                            'task': item.title,
+                            'vendor_category': category,
+                            'vendor_name': None,
+                            'days_overdue': (today - item.due_date).days,
+                        })
+                    break  # only match first keyword set per task
+
     return render_template(
         'dashboard.html',
         active_wedding=active,
@@ -141,6 +180,7 @@ def dashboard():
         budget_snapshot=budget_snapshot,
         upcoming_deposits=upcoming_deposits,
         today=today,
+        warnings=warnings,
     )
 
 

@@ -340,6 +340,9 @@ def add_expense(wedding_id):
     db.session.add(expense)
     try:
         db.session.commit()
+        # Connection 4: check budget completion after adding expense
+        from app.utils.connections import check_budget_completion
+        check_budget_completion(wedding_id)
     except Exception:
         db.session.rollback()
         flash('Could not add expense.', 'danger')
@@ -387,6 +390,9 @@ def edit_expense(expense_id):
 
     try:
         db.session.commit()
+        # Connection 4: check budget completion after editing expense
+        from app.utils.connections import check_budget_completion
+        check_budget_completion(expense.wedding_id)
         flash('Expense updated.', 'success')
     except Exception:
         db.session.rollback()
@@ -418,6 +424,25 @@ def toggle_paid(expense_id):
     expense.paid_date = date_type.today() if expense.is_paid else None
     try:
         db.session.commit()
+
+        # Connection 2: if all booked vendor deposits are now paid, complete
+        # any 'deposits' checklist task
+        from app.utils.connections import auto_complete_task_by_keyword
+        from app.models import Vendor
+        booked_vendors = Vendor.query.filter_by(
+            wedding_id=expense.wedding_id,
+            status='booked',
+        ).all()
+        if booked_vendors and all(v.deposit_paid for v in booked_vendors):
+            auto_complete_task_by_keyword(
+                expense.wedding_id,
+                ['deposit', 'pay deposit', 'deposits'],
+            )
+
+        # Connection 4: check if budget spend has reached total budget
+        from app.utils.connections import check_budget_completion
+        check_budget_completion(expense.wedding_id)
+
         _, total_actual_paid, total_actual_all, _ = _budget_totals(expense.wedding)
         total_budget = expense.wedding.total_budget or 0
         return jsonify({

@@ -5,8 +5,9 @@ from flask import Blueprint, jsonify, redirect, render_template, request, url_fo
 from flask_login import login_required
 
 from app import db
-from app.models import CHECKLIST_CATEGORIES, CHECKLIST_PRIORITIES, ChecklistItem
+from app.models import CHECKLIST_CATEGORIES, CHECKLIST_PRIORITIES, ChecklistItem, Vendor
 from app.routes.utils import get_checklist_item_or_403, get_wedding_or_403
+from app.utils.connections import VENDOR_TO_TASK
 
 checklist_bp = Blueprint('checklist', __name__)
 
@@ -50,16 +51,52 @@ def checklist(wedding_id):
         if cat not in known:
             items_by_category.append((cat, cat_items))
 
-    # Pre-sorted items for timeline view: dated asc then undated
-    items_dated   = sorted([i for i in items if i.due_date], key=lambda x: x.due_date)
-    items_undated = [i for i in items if not i.due_date]
-    timeline_items = items_dated + items_undated
+    # ── Vendor context ────────────────────────────────────────────────
+    all_vendors = Vendor.query.filter_by(wedding_id=wedding_id).all()
+
+    # Best vendor per category: booked > considering > backup > rejected
+    _STATUS_ORDER = ('booked', 'considering', 'backup', 'rejected')
+    vendors_by_cat = {}
+    for v in all_vendors:
+        vendors_by_cat.setdefault(v.category, []).append(v)
+
+    def _best_vendor(cat):
+        vlist = vendors_by_cat.get(cat, [])
+        for status in _STATUS_ORDER:
+            for v in vlist:
+                if v.status == status:
+                    return v
+        return vlist[0] if vlist else None
+
+    # Map each checklist item to its best matched vendor (or None)
+    item_vendor_map = {}
+    for item in items:
+        for cat, keywords in VENDOR_TO_TASK.items():
+            if any(kw in item.title.lower() for kw in keywords):
+                v = _best_vendor(cat)
+                if v:
+                    item_vendor_map[item.id] = v
+                break
+
+    # ── Combined timeline list (tasks + vendor deposit events) ────────
+    tl_entries = []
+    for item in items:
+        if item.due_date:
+            tl_entries.append({'kind': 'task', 'date': item.due_date, 'item': item})
+    for v in all_vendors:
+        if v.deposit_due_date:
+            tl_entries.append({'kind': 'deposit', 'date': v.deposit_due_date, 'vendor': v})
+
+    tl_combined_dated = sorted(tl_entries, key=lambda x: x['date'])
+    tl_undated = [i for i in items if not i.due_date]
 
     return render_template(
         'wedding/checklist.html',
         wedding=wedding,
         items_by_category=items_by_category,
-        timeline_items=timeline_items,
+        tl_combined_dated=tl_combined_dated,
+        tl_undated=tl_undated,
+        item_vendor_map=item_vendor_map,
         total=total,
         completed=completed,
         pct=pct,

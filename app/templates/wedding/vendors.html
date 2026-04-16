@@ -750,6 +750,49 @@
     <span id="budgetToastText"></span>
 </div>
 
+{# ── Checklist task-completed toast (Connection 1) ─────────────────── #}
+<div id="taskToast" style="display:none; position:fixed; bottom:1.5rem; right:1.5rem;
+     background:#eef7f2; border:1px solid #a8d8b8; border-radius:12px; padding:0.9rem 1.1rem;
+     box-shadow:0 4px 20px rgba(0,0,0,0.10); z-index:1081; font-family:'Jost',sans-serif;
+     font-size:0.84rem; color:#2d6a4a; max-width:320px; line-height:1.4;">
+    <i class="bi bi-check2-square" style="margin-right:6px;"></i>
+    <span id="taskToastText"></span>
+</div>
+
+{# ── Task suggestion toast (Connection 5) ──────────────────────────── #}
+<div id="suggestionToast" style="display:none; position:fixed; bottom:1.5rem; right:1.5rem;
+     background:#fff; border:1px solid #e8e0d8; border-radius:12px; padding:1rem 1.2rem;
+     box-shadow:0 4px 20px rgba(0,0,0,0.12); z-index:1082; font-family:'Jost',sans-serif;
+     font-size:0.84rem; color:#4a3e38; max-width:320px; line-height:1.5;">
+    <div style="margin-bottom:0.65rem;">
+        <i class="bi bi-lightbulb" style="color:#e8a030; margin-right:6px;"></i>
+        <span id="suggestionToastText"></span>
+    </div>
+    <div style="display:flex; gap:0.5rem;">
+        <button id="suggestionAddBtn"
+                style="flex:1; background:#c9687a; color:#fff; border:none; border-radius:7px;
+                       padding:0.35rem 0.75rem; font-family:'Jost',sans-serif; font-size:0.8rem;
+                       cursor:pointer; transition:background .12s;"
+                onmouseover="this.style.background='#a8566a'"
+                onmouseout="this.style.background='#c9687a'">
+            Add task
+        </button>
+        <button onclick="hideSuggestionToast()"
+                style="flex:1; background:#f5f0eb; color:#6a5a52; border:none; border-radius:7px;
+                       padding:0.35rem 0.75rem; font-family:'Jost',sans-serif; font-size:0.8rem;
+                       cursor:pointer;">
+            Dismiss
+        </button>
+    </div>
+</div>
+
+{# Pass task suggestion data from server to JS ────────────────────────── #}
+{% if task_suggestion %}
+<script>
+window._taskSuggestion = {{ task_suggestion | tojson }};
+</script>
+{% endif %}
+
 {# ── ADD VENDOR MODAL ──────────────────────────────────────────────── #}
 <div class="modal fade" id="addVendorModal" tabindex="-1">
 <div class="modal-dialog modal-lg modal-dialog-scrollable">
@@ -983,7 +1026,7 @@ function updateStatus(vid, newStatus) {
         if (card) card.classList.toggle('is-booked', d.status === 'booked');
         // Update summary
         updateSummary(d.summary);
-        // Show toast if budget expense was auto-created
+        // Show budget toast if expense was auto-created
         if (d.budget_updated) {
             const msg = d.category_name
                 ? `Added to budget under ${d.category_name}`
@@ -997,6 +1040,10 @@ function updateStatus(vid, newStatus) {
                     `<i class="bi bi-receipt"></i> In budget: ${catText}</a>`;
             }
         }
+        // Connection 1: show checklist task toast if a task was auto-completed
+        if (d.task_completed) {
+            showTaskToast(`Checklist task "${d.task_completed}" marked as done`);
+        }
     });
 }
 
@@ -1007,6 +1054,18 @@ function showBudgetToast(msg) {
     toast.style.display = 'block';
     clearTimeout(_toastTimer);
     _toastTimer = setTimeout(() => { toast.style.display = 'none'; }, 4000);
+}
+
+let _taskToastTimer = null;
+function showTaskToast(msg) {
+    // Offset below budget toast if both might show
+    const toast = document.getElementById('taskToast');
+    document.getElementById('taskToastText').textContent = msg;
+    toast.style.bottom = document.getElementById('budgetToast').style.display === 'block'
+        ? '5.5rem' : '1.5rem';
+    toast.style.display = 'block';
+    clearTimeout(_taskToastTimer);
+    _taskToastTimer = setTimeout(() => { toast.style.display = 'none'; }, 3000);
 }
 
 /* ── Toggle deposit ───────────────────────────────────────────────── */
@@ -1102,5 +1161,39 @@ function updateSummary(s) {
     if (el('sumQuoted'))   el('sumQuoted').textContent   = '$' + s.total_quoted.toLocaleString('en-US', {maximumFractionDigits:0});
     if (el('sumDeposits')) el('sumDeposits').textContent = s.deposits_paid;
 }
+
+/* ── Connection 5: task suggestion toast ─────────────────────────── */
+let _suggestionToastTimer = null;
+function hideSuggestionToast() {
+    document.getElementById('suggestionToast').style.display = 'none';
+    clearTimeout(_suggestionToastTimer);
+}
+
+(function () {
+    if (!window._taskSuggestion) return;
+    const sug = window._taskSuggestion;
+    const addUrl = '/wedding/' + sug.wedding_id + '/checklist/add';
+
+    document.getElementById('suggestionToastText').textContent =
+        `No checklist task for ${sug.category}. Add "${sug.title}" to your checklist?`;
+
+    document.getElementById('suggestionAddBtn').addEventListener('click', function () {
+        fetch(addUrl, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+            body: JSON.stringify({title: sug.title, category: sug.category}),
+        })
+        .then(r => r.json())
+        .then(d => {
+            hideSuggestionToast();
+            if (d.ok) showTaskToast(`"${sug.title}" added to checklist`);
+        })
+        .catch(() => hideSuggestionToast());
+    });
+
+    const toast = document.getElementById('suggestionToast');
+    toast.style.display = 'block';
+    _suggestionToastTimer = setTimeout(hideSuggestionToast, 12000);
+})();
 </script>
 {% endblock %}

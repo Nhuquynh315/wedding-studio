@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from datetime import date as date_type
 
 from flask import (Blueprint, Response, flash, jsonify, redirect,
-                   render_template, request, url_for)
+                   render_template, request, session as flask_session, url_for)
 from flask_login import login_required
 
 from app import db
@@ -136,6 +136,9 @@ def vendors(wedding_id):
         [bc.name for bc in budget_categories] if budget_categories else list(VENDOR_CATEGORIES)
     )
 
+    # Connection 5: pick up any pending task suggestion from add_vendor
+    task_suggestion = flask_session.pop('task_suggestion', None)
+
     return render_template(
         'wedding/vendors.html',
         wedding=wedding,
@@ -148,6 +151,7 @@ def vendors(wedding_id):
         linked_expenses=linked_expenses,
         has_budget=len(budget_categories) > 0,
         date_today=date_type.today(),
+        task_suggestion=task_suggestion,
     )
 
 
@@ -182,6 +186,22 @@ def add_vendor(wedding_id):
     try:
         db.session.commit()
         flash(f'"{business_name}" added.', 'success')
+        # Connection 5: suggest a checklist task if none exists for this vendor category
+        from app.utils.connections import VENDOR_TO_TASK
+        from app.models import ChecklistItem
+        keywords = VENDOR_TO_TASK.get(vendor.category, [])
+        if keywords:
+            existing_items = ChecklistItem.query.filter_by(wedding_id=wedding_id).all()
+            has_task = any(
+                any(kw in item.title.lower() for kw in keywords)
+                for item in existing_items
+            )
+            if not has_task:
+                flask_session['task_suggestion'] = {
+                    'title': f'Book {vendor.category.lower()}',
+                    'wedding_id': wedding_id,
+                    'category': vendor.category,
+                }
     except Exception:
         db.session.rollback()
         flash('Could not add vendor.', 'danger')
@@ -278,6 +298,12 @@ def update_status(vendor_id):
         db.session.rollback()
         return jsonify({'ok': False, 'error': 'DB error'}), 500
 
+    # Connection 1: auto-complete matching checklist task when vendor is booked
+    task_completed = None
+    if new_status == 'booked' and old_status != 'booked':
+        from app.utils.connections import auto_complete_vendor_task
+        task_completed = auto_complete_vendor_task(vendor.wedding_id, vendor.category)
+
     summary = _vendor_summary(vendor.wedding)
     return jsonify({
         'ok': True,
@@ -286,6 +312,7 @@ def update_status(vendor_id):
         'category_name': category_name,
         'vendor_id': vendor.id,
         'summary': summary,
+        'task_completed': task_completed,
     })
 
 
