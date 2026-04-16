@@ -356,6 +356,11 @@
         <input type="date" name="deposit_due_date" class="form-control form-control-sm"
                {% if edit %}id="edit_deposit_due_date"{% endif %}>
     </div>
+    <div class="col-md-4">
+        <label class="form-label" style="font-size:.8rem;">Balance Due Date</label>
+        <input type="date" name="final_payment_due_date" class="form-control form-control-sm"
+               {% if edit %}id="edit_final_payment_due_date"{% endif %}>
+    </div>
     <div class="col-12">
         <label class="form-label" style="font-size:.8rem;">Status</label>
         <div class="d-flex gap-2 flex-wrap">
@@ -545,37 +550,77 @@
     </div>
     {% endif %}
 
-    {# Price row #}
+    {# Financial section #}
     {% if v.quoted_price or v.deposit_amount %}
-    <div class="vendor-price-row">
+    {% set balance_amt = (v.quoted_price - v.deposit_amount) if (v.quoted_price and v.deposit_amount and v.quoted_price > v.deposit_amount) else none %}
+    <div style="background:#fafaf8; border-radius:8px; padding:10px 12px; font-size:0.82rem;">
+
+        {# Quoted row #}
         {% if v.quoted_price %}
-        <div>
-            <span class="price-label">Quoted</span><br>
-            <strong>${{ '{:,.0f}'.format(v.quoted_price) }}</strong>
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid #f0ebe4;">
+            <span style="color:#a89890; font-size:0.75rem;">Quoted</span>
+            <strong style="color:#2d2420;">${{ '{:,.0f}'.format(v.quoted_price) }}</strong>
         </div>
         {% endif %}
+
+        {# Deposit row #}
         {% if v.deposit_amount %}
-        <div>
-            <span class="price-label">Deposit</span><br>
-            <strong>${{ '{:,.0f}'.format(v.deposit_amount) }}</strong>
+        <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+            <span style="flex:1; color:#5a4e48; font-size:0.78rem;">Deposit</span>
+            <span style="font-weight:500;">${{ '{:,.0f}'.format(v.deposit_amount) }}</span>
             {% if v.deposit_paid %}
-            <i class="bi bi-check-circle-fill deposit-paid-icon ms-1" title="Deposit paid"></i>
+            <i class="bi bi-check-circle-fill" style="color:#3a8a5a; font-size:0.85rem;" title="Deposit paid"></i>
             {% else %}
-            <button class="deposit-unpaid-icon ms-1 border-0 bg-transparent p-0"
-                    title="Mark deposit paid" onclick="toggleDeposit({{ v.id }}, this)">
+            <button onclick="toggleDeposit({{ v.id }}, this)" title="Mark deposit paid"
+                    style="background:none;border:none;padding:0;cursor:pointer;color:#d8cec8;font-size:0.85rem;">
                 <i class="bi bi-circle"></i>
             </button>
             {% endif %}
-        </div>
-        {% if v.deposit_due_date %}
-        <div>
-            <span class="price-label">Due</span><br>
-            <span {% if v.deposit_due_date < date_today and not v.deposit_paid %}style="color:#c95a5a;"{% endif %}>
-                {{ v.deposit_due_date.strftime('%b %-d') }}
+            {% if v.deposit_due_date %}
+            <span style="font-size:11px; color:{% if v.deposit_due_date < date_today and not v.deposit_paid %}#c95a5a{% else %}#a89890{% endif %}; white-space:nowrap;">
+                Due {{ v.deposit_due_date.strftime('%b %-d') }}
             </span>
+            {% endif %}
         </div>
         {% endif %}
+
+        {# Balance row — only if quoted > deposit #}
+        {% if balance_amt %}
+        <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px;">
+            <span style="flex:1; color:#5a4e48; font-size:0.78rem;">Balance</span>
+            <span style="font-weight:500;">${{ '{:,.0f}'.format(balance_amt) }}</span>
+            {% if v.final_payment_paid %}
+            <i class="bi bi-check-circle-fill" style="color:#3a8a5a; font-size:0.85rem;" title="Balance paid"></i>
+            {% else %}
+            <button type="button" onclick="toggleFinalPayment({{ v.id }}, this)"
+                    title="Mark balance paid"
+                    style="background:none;border:none;padding:0;cursor:pointer;color:#d8cec8;font-size:0.85rem;">
+                <i class="bi bi-circle"></i>
+            </button>
+            {% endif %}
+            {% if v.final_payment_due_date %}
+            <span style="font-size:11px; color:{% if v.final_payment_due_date < date_today and not v.final_payment_paid %}#c95a5a{% else %}#a89890{% endif %}; white-space:nowrap;">
+                Due {{ v.final_payment_due_date.strftime('%b %-d') }}
+            </span>
+            {% else %}
+            <span style="font-size:11px; color:#c0b8b0; white-space:nowrap;">Not set</span>
+            {% endif %}
+        </div>
         {% endif %}
+
+        {# Payment status label #}
+        {% if v.deposit_amount %}
+        <div id="payStatusLabel-{{ v.id }}" style="font-size:11px; font-weight:500; margin-top:2px;">
+            {% if v.final_payment_paid and v.deposit_paid %}
+            <span style="color:#3a8a5a;">Fully paid ✓</span>
+            {% elif v.deposit_paid %}
+            <span style="color:#a89890;">Deposit paid · <span style="color:#e8a030;">Balance due</span></span>
+            {% else %}
+            <span style="color:#e8a030;">⚠ Deposit due</span>
+            {% endif %}
+        </div>
+        {% endif %}
+
     </div>
     {% endif %}
 
@@ -603,7 +648,7 @@
     <div class="star-row" id="stars-{{ v.id }}"
          onmouseleave="resetStarHover({{ v.id }}, {{ v.rating or 0 }})">
         {% for i in range(1, 6) %}
-        <button class="star {% if v.rating and i <= v.rating %}filled{% endif %}"
+        <button type="button" class="star {% if v.rating and i <= v.rating %}filled{% endif %}"
                 data-val="{{ i }}"
                 onmouseover="hoverStars({{ v.id }}, {{ i }})"
                 onclick="rateVendor({{ v.id }}, {{ i }})">★</button>
@@ -633,7 +678,7 @@
         </select>
 
         {% if v.status == 'booked' %}
-        <button class="btn-vendor" onclick="toggleContracted({{ v.id }}, this)"
+        <button type="button" class="btn-vendor" onclick="toggleContracted({{ v.id }}, this)"
                 id="contractBtn-{{ v.id }}" title="{{ 'Unmark contract' if v.contracted else 'Mark contract signed' }}">
             <i class="bi bi-file-earmark-{% if v.contracted %}check-fill{% else %}plus{% endif %}"></i>
             {{ 'Contract ✓' if v.contracted else 'Add Contract' }}
@@ -979,6 +1024,7 @@ function rateVendor(vid, val) {
     fetch(`/vendor/${vid}/rating`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+        credentials: 'same-origin',
         body: JSON.stringify({rating: val}),
     }).then(r => r.json()).then(d => {
         if (!d.ok) return;
@@ -1082,11 +1128,35 @@ function toggleDeposit(vid, btn) {
     });
 }
 
+/* ── Toggle final payment ─────────────────────────────────────────── */
+function toggleFinalPayment(vid, btn) {
+    fetch(`/vendor/${vid}/toggle-final-payment`, {
+        method: 'POST',
+        headers: {'X-CSRFToken': CSRF},
+        credentials: 'same-origin',
+    }).then(r => r.json()).then(d => {
+        if (!d.ok) return;
+        // Update payment status label
+        const label = document.getElementById(`payStatusLabel-${vid}`);
+        if (label) {
+            label.innerHTML = d.final_payment_paid
+                ? '<span style="color:#3a8a5a;">Fully paid ✓</span>'
+                : '<span style="color:#a89890;">Deposit paid · <span style="color:#e8a030;">Balance due</span></span>';
+        }
+        // Replace the circle button with a filled check icon
+        if (d.final_payment_paid && btn) {
+            btn.outerHTML = '<i class="bi bi-check-circle-fill" style="color:#3a8a5a; font-size:0.85rem;" title="Balance paid"></i>';
+        }
+        updateSummary(d.summary);
+    });
+}
+
 /* ── Toggle contracted ────────────────────────────────────────────── */
 function toggleContracted(vid, btn) {
     fetch(`/vendor/${vid}/toggle-contracted`, {
         method: 'POST',
         headers: {'X-CSRFToken': CSRF},
+        credentials: 'same-origin',
     }).then(r => r.json()).then(d => {
         if (!d.ok) return;
         btn.innerHTML = d.contracted
@@ -1128,8 +1198,9 @@ function populateEdit(v) {
     document.getElementById('edit_website').value        = v.website || '';
     document.getElementById('edit_quoted_price').value   = v.quoted_price || '';
     document.getElementById('edit_deposit_amount').value = v.deposit_amount || '';
-    document.getElementById('edit_deposit_due_date').value = v.deposit_due_date || '';
-    document.getElementById('edit_notes').value          = v.notes || '';
+    document.getElementById('edit_deposit_due_date').value       = v.deposit_due_date || '';
+    document.getElementById('edit_final_payment_due_date').value = v.final_payment_due_date || '';
+    document.getElementById('edit_notes').value                  = v.notes || '';
     document.getElementById('edit_rating').value         = v.rating || 0;
 
     // Category

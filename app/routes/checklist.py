@@ -78,7 +78,7 @@ def checklist(wedding_id):
                     item_vendor_map[item.id] = v
                 break
 
-    # ── Combined timeline list (tasks + vendor deposit events) ────────
+    # ── Combined timeline list (tasks + vendor deposit + balance events) ─
     tl_entries = []
     for item in items:
         if item.due_date:
@@ -86,6 +86,8 @@ def checklist(wedding_id):
     for v in all_vendors:
         if v.deposit_due_date:
             tl_entries.append({'kind': 'deposit', 'date': v.deposit_due_date, 'vendor': v})
+        if v.final_payment_due_date and not v.final_payment_paid:
+            tl_entries.append({'kind': 'balance', 'date': v.final_payment_due_date, 'vendor': v})
 
     tl_combined_dated = sorted(tl_entries, key=lambda x: x['date'])
     tl_undated = [i for i in items if not i.due_date]

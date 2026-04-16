@@ -343,6 +343,16 @@
              data-amount="{{ v.deposit_amount | int if v.deposit_amount else '' }}"
              data-vendor-url="{{ url_for('vendors.vendors', wedding_id=wedding.id) }}"
         ></div>
+        {% elif entry.kind == 'balance' %}{% set v = entry.vendor %}
+        <div id="tl-balance-{{ v.id }}"
+             data-kind="balance"
+             data-due="{{ v.final_payment_due_date.isoformat() }}"
+             data-paid="{{ 'true' if v.final_payment_paid else 'false' }}"
+             data-business-name="{{ v.business_name | e }}"
+             data-category="{{ v.category }}"
+             data-amount="{{ v.final_payment_amount | int if v.final_payment_amount else '' }}"
+             data-vendor-url="{{ url_for('vendors.vendors', wedding_id=wedding.id) }}"
+        ></div>
         {% endif %}
         {% endfor %}
         {% for item in tl_undated %}
@@ -524,9 +534,9 @@
         return 'upcoming';
     }
 
-    /* ── Filter check (deposits always pass) ────────────────────────── */
+    /* ── Filter check (deposits and balance payments always pass) ──────── */
     function _matchesFilters(d, cat, pri, status, q) {
-        if (d.kind === 'deposit') return true;
+        if (d.kind === 'deposit' || d.kind === 'balance') return true;
         return (!cat    || d.category === cat)
             && (!pri    || d.priority === pri)
             && (!status || (status === 'complete' ? d.completed === 'true' : d.completed !== 'true'))
@@ -545,6 +555,17 @@
                     : 'tl2-pill-upcoming';
             var label = due.toLocaleDateString('en-US',{month:'short',day:'numeric'});
             return '<span class="tl2-pill ' + cls + '">Deposit · ' + label + '</span>';
+        }
+        if (d.kind === 'balance') {
+            if (d.paid === 'true') return '<span class="tl2-pill tl2-pill-done">Balance Paid</span>';
+            var due = new Date(d.due + 'T00:00:00');
+            var isToday = due.getTime() === _today.getTime();
+            var cls = isToday ? 'tl2-pill-today'
+                    : group === 'overdue' ? 'tl2-pill-overdue'
+                    : group === 'thismonth' ? 'tl2-pill-thismonth'
+                    : 'tl2-pill-upcoming';
+            var label = due.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+            return '<span class="tl2-pill ' + cls + '">Balance · ' + label + '</span>';
         }
         if (d.completed === 'true') {
             return '<span class="tl2-pill tl2-pill-done">' + _esc(d.completedAt || 'Done') + '</span>';
@@ -576,6 +597,25 @@
                     '<div style="font-size:.875rem;line-height:1.35;' + (isDone ? 'text-decoration:line-through;color:#b0a8a0;' : 'color:#2d2420;') + '">',
                       '<a href="' + _esc(d.vendorUrl) + '" style="color:inherit;text-decoration:none;">',
                         _esc(d.businessName), ' deposit', _esc(amtStr),
+                      '</a>',
+                    '</div>',
+                    '<div style="font-size:11px;color:#a89890;margin-top:2px;">' + _esc(d.category) + '</div>',
+                  '</div>',
+                '</div>',
+            ].join('');
+        }
+
+        if (d.kind === 'balance') {
+            var amtStr = d.amount ? ' · $' + d.amount : '';
+            var isDone = d.paid === 'true';
+            return [
+                '<div class="tl2-row" style="' + (isDone ? 'opacity:.55;' : '') + '">',
+                  '<div class="' + dotCls + '"></div>',
+                  '<div style="flex:1;min-width:0;">',
+                    pill,
+                    '<div style="font-size:.875rem;line-height:1.35;' + (isDone ? 'text-decoration:line-through;color:#b0a8a0;' : 'color:#2d2420;') + '">',
+                      '<a href="' + _esc(d.vendorUrl) + '" style="color:inherit;text-decoration:none;">',
+                        _esc(d.businessName), ' balance', _esc(amtStr),
                       '</a>',
                     '</div>',
                     '<div style="font-size:11px;color:#a89890;margin-top:2px;">' + _esc(d.category) + '</div>',

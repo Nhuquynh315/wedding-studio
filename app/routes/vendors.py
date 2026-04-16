@@ -167,20 +167,26 @@ def add_vendor(wedding_id):
 
     category = request.form.get('category', 'Other').strip() or 'Other'
 
+    quoted   = _parse_float(request.form.get('quoted_price'))
+    deposit  = _parse_float(request.form.get('deposit_amount'))
+    balance  = (quoted - deposit) if (quoted and deposit and quoted > deposit) else None
+
     vendor = Vendor(
-        wedding_id           = wedding_id,
-        category             = category,
-        business_name        = business_name,
-        contact_name         = request.form.get('contact_name', '').strip() or None,
-        email                = request.form.get('email', '').strip() or None,
-        phone                = request.form.get('phone', '').strip() or None,
-        website              = request.form.get('website', '').strip() or None,
-        quoted_price         = _parse_float(request.form.get('quoted_price')),
-        deposit_amount       = _parse_float(request.form.get('deposit_amount')),
-        deposit_due_date     = _parse_date(request.form.get('deposit_due_date')),
-        rating               = int(request.form.get('rating') or 0) or None,
-        notes                = request.form.get('notes', '').strip() or None,
-        status               = request.form.get('status', 'considering'),
+        wedding_id             = wedding_id,
+        category               = category,
+        business_name          = business_name,
+        contact_name           = request.form.get('contact_name', '').strip() or None,
+        email                  = request.form.get('email', '').strip() or None,
+        phone                  = request.form.get('phone', '').strip() or None,
+        website                = request.form.get('website', '').strip() or None,
+        quoted_price           = quoted,
+        deposit_amount         = deposit,
+        deposit_due_date       = _parse_date(request.form.get('deposit_due_date')),
+        final_payment_amount   = balance,
+        final_payment_due_date = _parse_date(request.form.get('final_payment_due_date')),
+        rating                 = int(request.form.get('rating') or 0) or None,
+        notes                  = request.form.get('notes', '').strip() or None,
+        status                 = request.form.get('status', 'considering'),
     )
     db.session.add(vendor)
     try:
@@ -222,18 +228,24 @@ def edit_vendor(vendor_id):
 
     category = request.form.get('category', vendor.category).strip() or vendor.category
 
-    vendor.business_name    = business_name
-    vendor.category         = category
-    vendor.contact_name     = request.form.get('contact_name', '').strip() or None
-    vendor.email            = request.form.get('email', '').strip() or None
-    vendor.phone            = request.form.get('phone', '').strip() or None
-    vendor.website          = request.form.get('website', '').strip() or None
-    vendor.quoted_price     = _parse_float(request.form.get('quoted_price'))
-    vendor.deposit_amount   = _parse_float(request.form.get('deposit_amount'))
-    vendor.deposit_due_date = _parse_date(request.form.get('deposit_due_date'))
-    vendor.rating           = int(request.form.get('rating') or 0) or None
-    vendor.notes            = request.form.get('notes', '').strip() or None
-    vendor.status           = request.form.get('status', vendor.status)
+    quoted  = _parse_float(request.form.get('quoted_price'))
+    deposit = _parse_float(request.form.get('deposit_amount'))
+    balance = (quoted - deposit) if (quoted and deposit and quoted > deposit) else None
+
+    vendor.business_name           = business_name
+    vendor.category                = category
+    vendor.contact_name            = request.form.get('contact_name', '').strip() or None
+    vendor.email                   = request.form.get('email', '').strip() or None
+    vendor.phone                   = request.form.get('phone', '').strip() or None
+    vendor.website                 = request.form.get('website', '').strip() or None
+    vendor.quoted_price            = quoted
+    vendor.deposit_amount          = deposit
+    vendor.deposit_due_date        = _parse_date(request.form.get('deposit_due_date'))
+    vendor.final_payment_amount    = balance
+    vendor.final_payment_due_date  = _parse_date(request.form.get('final_payment_due_date'))
+    vendor.rating                  = int(request.form.get('rating') or 0) or None
+    vendor.notes                   = request.form.get('notes', '').strip() or None
+    vendor.status                  = request.form.get('status', vendor.status)
 
     try:
         db.session.commit()
@@ -339,6 +351,35 @@ def toggle_deposit(vendor_id):
         db.session.commit()
         summary = _vendor_summary(vendor.wedding)
         return jsonify({'ok': True, 'deposit_paid': vendor.deposit_paid, 'summary': summary})
+    except Exception:
+        db.session.rollback()
+        return jsonify({'ok': False}), 500
+
+
+# ── Toggle final payment (AJAX) ───────────────────────────────────────
+@vendors_bp.route('/vendor/<int:vendor_id>/toggle-final-payment', methods=['POST'])
+@login_required
+def toggle_final_payment(vendor_id):
+    vendor = get_vendor_or_403(vendor_id)
+    vendor.final_payment_paid = not vendor.final_payment_paid
+
+    # Sync the linked budget expense
+    linked = Expense.query.filter_by(vendor_id=vendor.id).first()
+    if linked:
+        if vendor.final_payment_paid:
+            linked.is_paid     = True
+            linked.actual_cost = vendor.quoted_price
+            linked.paid_date   = date_type.today()
+        else:
+            # Revert to deposit-only paid state
+            linked.is_paid     = vendor.deposit_paid
+            linked.actual_cost = vendor.deposit_amount if vendor.deposit_paid else None
+            linked.paid_date   = date_type.today() if vendor.deposit_paid else None
+
+    try:
+        db.session.commit()
+        summary = _vendor_summary(vendor.wedding)
+        return jsonify({'ok': True, 'final_payment_paid': vendor.final_payment_paid, 'summary': summary})
     except Exception:
         db.session.rollback()
         return jsonify({'ok': False}), 500

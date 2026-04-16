@@ -634,7 +634,17 @@
     {% for cat in categories %}
     {% set cat_estimated = cat.expenses | sum(attribute='estimated_cost') %}
     {% set cat_paid      = namespace(v=0) %}
-    {% for e in cat.expenses %}{% if e.is_paid %}{% set cat_paid.v = cat_paid.v + (e.actual_cost or 0) %}{% endif %}{% endfor %}
+    {% set cat_vs        = namespace(has_balance=false, balance_due=0, all_vendor_paid=true) %}
+    {% for e in cat.expenses %}
+        {% if e.is_paid %}{% set cat_paid.v = cat_paid.v + (e.actual_cost or 0) %}{% endif %}
+        {% if e.vendor_id and e.vendor %}
+            {% if e.vendor.deposit_paid and not e.vendor.final_payment_paid %}
+                {% set cat_vs.has_balance = true %}
+                {% set cat_vs.balance_due = cat_vs.balance_due + (e.vendor.final_payment_amount or 0) %}
+            {% endif %}
+            {% if not e.vendor.final_payment_paid %}{% set cat_vs.all_vendor_paid = false %}{% endif %}
+        {% endif %}
+    {% endfor %}
     {% set spent_pct = [((cat_paid.v / cat.allocated_amount * 100) | round | int), 100] | min if cat.allocated_amount else 0 %}
 
     <div class="accordion-item" id="cat-{{ cat.id }}">
@@ -647,7 +657,13 @@
                 <span class="cat-header-stats">
                     <span>Allocated: <strong>${{ '{:,.0f}'.format(cat.allocated_amount) }}</strong></span>
                     <span>Estimated: <strong>${{ '{:,.0f}'.format(cat_estimated) }}</strong></span>
+                    {% if cat_vs.has_balance %}
+                    <span>Paid: <strong style="color:#3a8a5a;">${{ '{:,.0f}'.format(cat_paid.v) }} deposit</strong> · <strong style="color:#e8a030;">${{ '{:,.0f}'.format(cat_vs.balance_due) }} remaining</strong></span>
+                    {% elif cat_paid.v > 0 and cat_paid.v >= cat_estimated and cat_estimated > 0 %}
+                    <span>Paid: <strong style="color:#3a8a5a;">${{ '{:,.0f}'.format(cat_paid.v) }} ✓</strong></span>
+                    {% else %}
                     <span>Paid: <strong>${{ '{:,.0f}'.format(cat_paid.v) }}</strong></span>
+                    {% endif %}
                     <span class="cat-progress">
                         <span class="cat-progress-fill"
                               style="width:{{ spent_pct }}%; background:{{ cat.color }};"></span>
@@ -721,6 +737,31 @@
                             {% else %}—{% endif %}
                         </td>
                         <td>
+                            {% if exp.vendor_id and exp.vendor %}
+                            {% set bv = exp.vendor %}
+                            {% if bv.deposit_paid and bv.final_payment_paid %}
+                                <span style="font-size:0.78rem; color:#3a8a5a; font-weight:500;">Fully paid ✓</span>
+                            {% elif bv.deposit_paid %}
+                                <div>
+                                    <div style="font-size:0.72rem; color:#3a8a5a; line-height:1.5;">Deposit paid</div>
+                                    {% if bv.final_payment_amount %}
+                                    <div style="font-size:0.72rem; color:#e8a030;">${{ '{:,.0f}'.format(bv.final_payment_amount) }} balance due</div>
+                                    {% endif %}
+                                    <button class="btn-paid unpaid btn-vendor-final" style="font-size:0.68rem; padding:2px 8px; margin-top:3px;"
+                                            data-vendor-id="{{ bv.id }}" data-expense-id="{{ exp.id }}">
+                                        Mark fully paid
+                                    </button>
+                                </div>
+                            {% else %}
+                                <div>
+                                    <div style="font-size:0.72rem; color:#a09080; margin-bottom:3px;">Unpaid</div>
+                                    <button class="btn-paid unpaid btn-vendor-deposit" style="font-size:0.68rem; padding:2px 8px;"
+                                            data-vendor-id="{{ bv.id }}" data-expense-id="{{ exp.id }}">
+                                        Mark deposit paid
+                                    </button>
+                                </div>
+                            {% endif %}
+                            {% else %}
                             <button class="btn-paid {% if exp.is_paid %}paid{% else %}unpaid{% endif %}"
                                     data-expense-id="{{ exp.id }}">
                                 {% if exp.is_paid %}
@@ -729,6 +770,7 @@
                                 Mark Paid
                                 {% endif %}
                             </button>
+                            {% endif %}
                         </td>
                         <td style="white-space:nowrap;">
                             <button class="btn-icon"
@@ -1093,6 +1135,34 @@
                         remTextEl.classList.toggle('over-budget', data.remaining < 0);
                     }
                 }
+            });
+        });
+    });
+
+    /* ── Vendor deposit button (budget page) ───────────────────── */
+    document.querySelectorAll('.btn-vendor-deposit').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const vid = this.dataset.vendorId;
+            fetch('/vendor/' + vid + '/toggle-deposit', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrf },
+            }).then(r => r.json()).then(function (data) {
+                if (!data.ok) return;
+                location.reload();
+            });
+        });
+    });
+
+    /* ── Vendor final payment button (budget page) ──────────────── */
+    document.querySelectorAll('.btn-vendor-final').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const vid = this.dataset.vendorId;
+            fetch('/vendor/' + vid + '/toggle-final-payment', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrf },
+            }).then(r => r.json()).then(function (data) {
+                if (!data.ok) return;
+                location.reload();
             });
         });
     });

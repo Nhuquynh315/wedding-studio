@@ -215,27 +215,31 @@ class Vendor(db.Model):
     contract_signed_date = db.Column(db.Date, nullable=True)
     rating               = db.Column(db.Integer, nullable=True)
     notes                = db.Column(db.Text, nullable=True)
-    status               = db.Column(db.String(20), default='considering', nullable=False)
-    created_at           = db.Column(db.DateTime, default=utcnow, nullable=False)
+    status                 = db.Column(db.String(20), default='considering', nullable=False)
+    final_payment_amount   = db.Column(db.Float,   nullable=True)
+    final_payment_paid     = db.Column(db.Boolean, default=False, nullable=False)
+    final_payment_due_date = db.Column(db.Date,    nullable=True)
+    created_at             = db.Column(db.DateTime, default=utcnow, nullable=False)
 
     wedding  = db.relationship('Wedding', back_populates='vendors')
     expenses = db.relationship('Expense', back_populates='vendor')
 
     def to_dict(self):
         return {
-            'id':               self.id,
-            'business_name':    self.business_name,
-            'category':         self.category,
-            'contact_name':     self.contact_name or '',
-            'email':            self.email or '',
-            'phone':            self.phone or '',
-            'website':          self.website or '',
-            'quoted_price':     self.quoted_price or '',
-            'deposit_amount':   self.deposit_amount or '',
-            'deposit_due_date': self.deposit_due_date.strftime('%Y-%m-%d') if self.deposit_due_date else '',
-            'status':           self.status or 'considering',
-            'rating':           self.rating or 0,
-            'notes':            self.notes or '',
+            'id':                      self.id,
+            'business_name':           self.business_name,
+            'category':                self.category,
+            'contact_name':            self.contact_name or '',
+            'email':                   self.email or '',
+            'phone':                   self.phone or '',
+            'website':                 self.website or '',
+            'quoted_price':            self.quoted_price or '',
+            'deposit_amount':          self.deposit_amount or '',
+            'deposit_due_date':        self.deposit_due_date.strftime('%Y-%m-%d') if self.deposit_due_date else '',
+            'final_payment_due_date':  self.final_payment_due_date.strftime('%Y-%m-%d') if self.final_payment_due_date else '',
+            'status':                  self.status or 'considering',
+            'rating':                  self.rating or 0,
+            'notes':                   self.notes or '',
         }
 
     def __repr__(self):
