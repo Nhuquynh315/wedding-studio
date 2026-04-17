@@ -86,10 +86,18 @@ def checklist(wedding_id):
     for v in all_vendors:
         if v.deposit_due_date:
             tl_entries.append({'kind': 'deposit', 'date': v.deposit_due_date, 'vendor': v})
-        if v.final_payment_due_date and not v.final_payment_paid:
-            tl_entries.append({'kind': 'balance', 'date': v.final_payment_due_date, 'vendor': v})
+        # Balance: compute from fields or from quoted-deposit for pre-feature vendors
+        balance_amt = v.final_payment_amount or (
+            (v.quoted_price - v.deposit_amount)
+            if v.quoted_price and v.deposit_amount and v.quoted_price > v.deposit_amount
+            else None
+        )
+        if balance_amt and not v.final_payment_paid:
+            tl_entries.append({'kind': 'balance', 'date': v.final_payment_due_date, 'vendor': v,
+                                'balance_amt': balance_amt})
 
-    tl_combined_dated = sorted(tl_entries, key=lambda x: x['date'])
+    # Sort: dated entries first (ascending), undated entries last
+    tl_combined_dated = sorted(tl_entries, key=lambda x: (x['date'] is None, x['date'] or date.max))
     tl_undated = [i for i in items if not i.due_date]
 
     return render_template(

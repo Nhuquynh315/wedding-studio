@@ -3,11 +3,15 @@
 {% block title %}{{ wedding.partner1_name }} & {{ wedding.partner2_name }} – AI Wedding Studio{% endblock %}
 
 {% block extra_css %}
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <style>
+/* ── Overview stat numbers: use Jost to match Vendors style ──────── */
+.stat-card .stat-number {
+    font-family: 'Jost', sans-serif;
+    font-weight: 300;
+    font-variant-numeric: normal;
+}
+
 /* ── Detail page action buttons ──────────────────────────────────── */
 .sidebar-action-btn {
     display: flex;
@@ -59,7 +63,7 @@
 .kpi-row {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 1rem;
+    gap: 1.5rem;
     margin-bottom: 1.5rem;
 }
 .kpi-card {
@@ -538,11 +542,11 @@
     </div>
 
     {# Row 2: RSVP Breakdown | Upcoming Tasks | Budget Snapshot #}
-    <div class="row g-3 mb-3">
+    <div class="row g-4 mb-4">
 
         {# RSVP Breakdown #}
-        <div class="col-lg-4">
-            <div class="planner-card">
+        <div class="col-4 d-flex">
+            <div class="planner-card w-100">
                 <p class="planner-card-title">RSVP Breakdown</p>
                 {% if guest_stats.total > 0 %}
                 <div class="rsvp-stacked mb-3">
@@ -581,8 +585,8 @@
         </div>
 
         {# Upcoming Tasks #}
-        <div class="col-lg-4">
-            <div class="planner-card">
+        <div class="col-4 d-flex">
+            <div class="planner-card w-100">
                 <p class="planner-card-title">Upcoming Tasks</p>
                 <div style="height:4px; border-radius:2px; background:#f0e8e4; margin-bottom:.5rem;">
                     <div style="height:100%; border-radius:2px; background:var(--ws-rose); width:{{ checklist_pct }}%;"></div>
@@ -609,26 +613,33 @@
         </div>
 
         {# Budget Snapshot #}
-        <div class="col-lg-4">
-            <div class="planner-card">
+        <div class="col-4 d-flex">
+            <div class="planner-card w-100">
                 <p class="planner-card-title">Budget Snapshot</p>
                 {% set snap_cats = wedding.budget_categories | selectattr('allocated_amount') | list %}
                 {% if snap_cats %}
                 {% for cat in snap_cats[:5] %}
                 {% set cat_actual = namespace(v=0) %}
                 {% for e in cat.expenses %}{% if e.is_paid %}{% set cat_actual.v = cat_actual.v + (e.actual_cost or 0) %}{% endif %}{% endfor %}
+                {% set over_budget = cat_actual.v > cat.allocated_amount %}
                 <div style="margin-bottom:.85rem;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.2rem;">
                         <span style="font-size:.8rem; display:flex; align-items:center; gap:.4rem;">
                             <span style="width:8px;height:8px;border-radius:50%;background:{{ cat.color or '#c9687a' }};display:inline-block;flex-shrink:0;"></span>
                             {{ cat.name }}
                         </span>
+                        {% if over_budget %}
+                        <span style="font-size:.75rem; color:#c9687a; font-weight:500;">
+                            ⚠ ${{ '{:,.0f}'.format(cat_actual.v) }} / ${{ '{:,.0f}'.format(cat.allocated_amount) }}
+                        </span>
+                        {% else %}
                         <span style="font-size:.75rem; color:#a09080;">
                             ${{ '{:,.0f}'.format(cat_actual.v) }} / ${{ '{:,.0f}'.format(cat.allocated_amount) }}
                         </span>
+                        {% endif %}
                     </div>
                     <div style="height:4px;border-radius:2px;background:#f0e8e4;">
-                        <div style="height:100%;border-radius:2px;background:{{ cat.color or '#c9687a' }};width:{{ [((cat_actual.v / cat.allocated_amount * 100) | round | int), 100] | min }}%;"></div>
+                        <div style="height:100%;border-radius:2px;background:{% if over_budget %}#c9687a{% else %}{{ cat.color or '#c9687a' }}{% endif %};width:{{ [((cat_actual.v / cat.allocated_amount * 100) | round | int), 100] | min }}%;"></div>
                     </div>
                 </div>
                 {% endfor %}
@@ -652,11 +663,11 @@
 
     {# Row 3: Upcoming Deposits | Recent Activity #}
     {% set ov_deposits = wedding.vendors | selectattr('deposit_due_date') | rejectattr('deposit_paid') | sort(attribute='deposit_due_date') | list %}
-    <div class="row g-3">
-        {% if ov_deposits %}
-        <div class="col-lg-5">
-            <div class="planner-card">
+    <div class="row g-4">
+        <div class="col-6 d-flex">
+            <div class="planner-card w-100">
                 <p class="planner-card-title">Upcoming Deposits</p>
+                {% if ov_deposits %}
                 {% for v in ov_deposits[:5] %}
                 {% set days_left = (v.deposit_due_date - today).days %}
                 <div style="display:flex; align-items:flex-start; gap:.75rem; padding:.6rem 0; border-bottom:1px solid #f5f0ec;">
@@ -665,7 +676,7 @@
                         <strong>{{ v.business_name }}</strong>
                         <span style="color:#a09080;">· {{ v.category }}</span><br>
                         <span style="font-size:.75rem; color:#a09080;">
-                            Deposit: ${{ '{:,.0f}'.format(v.deposit_amount) if v.deposit_amount else 'TBD' }}
+                            Deposit: {% if v.deposit_amount %}${{ '{:,.0f}'.format(v.deposit_amount) }}{% else %}<em style="color:#b8b0a8;">not set</em>{% endif %}
                         </span>
                     </span>
                     <span style="font-size:.72rem; white-space:nowrap; color:{% if days_left <= 7 %}#d47a7a{% elif days_left <= 30 %}#c8a860{% else %}#a09080{% endif %}; font-weight:{% if days_left <= 7 %}600{% else %}400{% endif %};">
@@ -680,14 +691,18 @@
                    style="font-size:.78rem; color:var(--ws-rose); text-decoration:none; display:block; margin-top:.75rem;">
                     Manage vendors <i class="bi bi-arrow-right"></i>
                 </a>
+                {% else %}
+                <div style="text-align:center; padding:1.5rem 0; color:#b89a8a; font-size:.85rem;">
+                    <i class="bi bi-calendar-check" style="font-size:1.5rem; display:block; margin-bottom:.5rem; color:#ddd0c8;"></i>
+                    No upcoming deposits.
+                </div>
+                {% endif %}
             </div>
         </div>
-        <div class="col-lg-7">
-        {% else %}
-        <div class="col-12">
-        {% endif %}
-            <div class="planner-card">
+        <div class="col-6 d-flex">
+            <div class="planner-card w-100">
                 <p class="planner-card-title">Recent Activity</p>
+                <p style="font-size:11px; color:#b8b0a8; font-style:italic; margin-top:-.75rem; margin-bottom:.75rem;">Showing recent guest activity</p>
                 {% set recent = wedding.guests | sort(attribute='created_at', reverse=True) | list %}
                 {% if recent %}
                 {% for g in recent[:5] %}

@@ -357,6 +357,16 @@
                {% if edit %}id="edit_deposit_due_date"{% endif %}>
     </div>
     <div class="col-md-4">
+        <label class="form-label" style="font-size:.8rem;">Balance Amount ($)</label>
+        <input type="number" name="balance_amount" class="form-control form-control-sm"
+               {% if edit %}id="edit_balance_amount"{% endif %} min="0" step="0.01"
+               placeholder="Auto-calculated if empty">
+        <small {% if edit %}id="balanceHint"{% endif %}
+               style="font-size:11px; color:#a89890; display:block; margin-top:3px;">
+            Leave blank to auto-calculate
+        </small>
+    </div>
+    <div class="col-md-4">
         <label class="form-label" style="font-size:.8rem;">Balance Due Date</label>
         <input type="date" name="final_payment_due_date" class="form-control form-control-sm"
                {% if edit %}id="edit_final_payment_due_date"{% endif %}>
@@ -508,18 +518,13 @@
 {% for v in all_vendors %}
 {% set slug = v.category.lower().replace(' ', '-').replace('&', '').replace('--', '-') %}
 {% set cat_class = v.category.split()[0] %}
-<div class="col-md-6 col-xl-4 vendor-col d-flex flex-column" data-cat="{{ slug }}">
+<div class="col-md-6 col-xl-4 vendor-col" data-cat="{{ slug }}">
 <div class="vendor-card {% if v.status == 'booked' %}is-booked{% endif %}" id="card-{{ v.id }}">
 
     {# Top: badges #}
     <div class="d-flex align-items-center gap-2 flex-wrap">
         <span class="cat-badge cat-{{ cat_class }}">{{ v.category }}</span>
         <span class="status-badge status-{{ v.status }}" id="statusBadge-{{ v.id }}">{{ v.status }}</span>
-        {% if v.status == 'booked' %}
-        <span class="ms-auto" style="font-size:0.75rem; color:#3a8a5a;">
-            {% if v.contracted %}<i class="bi bi-file-earmark-check-fill"></i> Signed{% else %}<i class="bi bi-file-earmark"></i> No contract{% endif %}
-        </span>
-        {% endif %}
     </div>
 
     {% if v.status == 'booked' %}
@@ -552,7 +557,7 @@
 
     {# Financial section #}
     {% if v.quoted_price or v.deposit_amount %}
-    {% set balance_amt = (v.quoted_price - v.deposit_amount) if (v.quoted_price and v.deposit_amount and v.quoted_price > v.deposit_amount) else none %}
+    {% set balance_amt = v.final_payment_amount if v.final_payment_amount is not none else ((v.quoted_price - v.deposit_amount) if (v.quoted_price and v.deposit_amount and v.quoted_price > v.deposit_amount) else none) %}
     <div style="background:#fafaf8; border-radius:8px; padding:10px 12px; font-size:0.82rem;">
 
         {# Quoted row #}
@@ -646,7 +651,8 @@
 
     {# Star rating #}
     <div class="star-row" id="stars-{{ v.id }}"
-         onmouseleave="resetStarHover({{ v.id }}, {{ v.rating or 0 }})">
+         data-current-rating="{{ v.rating or 0 }}"
+         onmouseleave="resetStarHover({{ v.id }})">
         {% for i in range(1, 6) %}
         <button type="button" class="star {% if v.rating and i <= v.rating %}filled{% endif %}"
                 data-val="{{ i }}"
@@ -678,11 +684,39 @@
         </select>
 
         {% if v.status == 'booked' %}
-        <button type="button" class="btn-vendor" onclick="toggleContracted({{ v.id }}, this)"
-                id="contractBtn-{{ v.id }}" title="{{ 'Unmark contract' if v.contracted else 'Mark contract signed' }}">
-            <i class="bi bi-file-earmark-{% if v.contracted %}check-fill{% else %}plus{% endif %}"></i>
-            {{ 'Contract ✓' if v.contracted else 'Add Contract' }}
-        </button>
+        <div id="contractSection-{{ v.id }}"
+             data-contracted="{{ 'true' if v.contracted else 'false' }}"
+             data-signed-date="{{ v.contract_signed_date.strftime('%Y-%m-%d') if v.contract_signed_date else '' }}"
+             data-contract-url="{{ v.contract_url or '' | e }}">
+            {% if not v.contracted %}
+            <button type="button" class="btn-vendor"
+                    onclick="openContractModal({{ v.id }})" title="Mark contract signed">
+                <i class="bi bi-file-earmark-plus"></i> Add Contract
+            </button>
+            {% elif v.contract_url %}
+            <div style="display:flex;flex-direction:column;gap:2px;">
+                <button type="button" onclick="openContractModal({{ v.id }})"
+                        style="background:none;border:none;padding:0;cursor:pointer;font-size:0.75rem;color:#3a8a5a;font-weight:500;text-align:left;">
+                    <i class="bi bi-file-earmark-check-fill"></i> Contracted {{ v.contract_signed_date.strftime('%b %-d') if v.contract_signed_date else '' }}
+                </button>
+                <a href="{{ v.contract_url | e }}" target="_blank" rel="noopener"
+                   style="font-size:0.72rem;color:#c9687a;text-decoration:none;display:inline-flex;align-items:center;gap:3px;">
+                    <i class="bi bi-paperclip"></i> View contract →
+                </a>
+            </div>
+            {% else %}
+            <div style="display:flex;flex-direction:column;gap:2px;">
+                <button type="button" onclick="openContractModal({{ v.id }})"
+                        style="background:none;border:none;padding:0;cursor:pointer;font-size:0.75rem;color:#3a8a5a;font-weight:500;text-align:left;">
+                    <i class="bi bi-file-earmark-check-fill"></i> Contracted {{ v.contract_signed_date.strftime('%b %-d') if v.contract_signed_date else '' }}
+                </button>
+                <button type="button" onclick="openContractModal({{ v.id }})"
+                        style="background:none;border:none;padding:0;cursor:pointer;font-size:0.72rem;color:#a89890;text-align:left;display:inline-flex;align-items:center;gap:3px;">
+                    <i class="bi bi-paperclip"></i> Add link
+                </button>
+            </div>
+            {% endif %}
+        </div>
         {% endif %}
 
     </div>
@@ -848,7 +882,8 @@ window._taskSuggestion = {{ task_suggestion | tojson }};
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
     </div>
-    <form method="POST" action="{{ url_for('vendors.add_vendor', wedding_id=wedding.id) }}">
+    <form method="POST" action="{{ url_for('vendors.add_vendor', wedding_id=wedding.id) }}"
+          style="display:flex; flex-direction:column; flex:1; overflow:hidden; min-height:0;">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="modal-body">
         {{ _vendor_form_fields() }}
@@ -872,7 +907,8 @@ window._taskSuggestion = {{ task_suggestion | tojson }};
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
     </div>
-    <form method="POST" id="editVendorForm" action="">
+    <form method="POST" id="editVendorForm" action=""
+          style="display:flex; flex-direction:column; flex:1; overflow:hidden; min-height:0;">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="modal-body">
         {{ _vendor_form_fields(edit=true) }}
@@ -882,6 +918,49 @@ window._taskSuggestion = {{ task_suggestion | tojson }};
         <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
     </div>
     </form>
+</div>
+</div>
+</div>
+
+{# ── CONTRACT MODAL ────────────────────────────────────────────────── #}
+<div class="modal fade" id="contractModal" tabindex="-1">
+<div class="modal-dialog modal-sm modal-dialog-centered">
+<div class="modal-content" style="border-radius:12px; border:none; box-shadow:0 8px 32px rgba(0,0,0,.12);">
+    <div class="modal-header" style="border-bottom:1px solid #f0ebe4; padding:1rem 1.25rem;">
+        <h6 class="modal-title" style="font-family:'Cormorant Garamond',serif; font-size:1.15rem; font-weight:400; margin:0; color:#2d2420;">
+            Contract Details
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body" style="padding:1.25rem; display:flex; flex-direction:column; gap:1rem;">
+        <input type="hidden" id="contractModalVid">
+        <div>
+            <label style="font-family:'Jost',sans-serif; font-size:.8rem; font-weight:500; color:#7a6a60; display:block; margin-bottom:.35rem;">
+                Signed Date <span style="color:#c9687a;">*</span>
+            </label>
+            <input type="date" id="contractSignedDate" class="form-control form-control-sm"
+                   style="border-radius:8px;">
+        </div>
+        <div>
+            <label style="font-family:'Jost',sans-serif; font-size:.8rem; font-weight:500; color:#7a6a60; display:block; margin-bottom:.35rem;">
+                Contract Link <span style="color:#a89890; font-weight:400;">(optional)</span>
+            </label>
+            <input type="url" id="contractUrl" class="form-control form-control-sm"
+                   style="border-radius:8px;" placeholder="https://drive.google.com/...">
+            <div style="font-size:.73rem; color:#a89890; margin-top:.3rem;">
+                Link to your contract file (Google Drive, Dropbox, etc.)
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer" style="border-top:1px solid #f0ebe4; padding:.85rem 1.25rem; gap:.5rem;">
+        <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal"
+                style="border-radius:7px;">Cancel</button>
+        <button type="button" class="btn btn-sm"
+                style="background:#c9687a; color:#fff; border:none; border-radius:7px; padding:.35rem .9rem;"
+                onclick="confirmContract()">
+            Save
+        </button>
+    </div>
 </div>
 </div>
 </div>
@@ -1015,22 +1094,34 @@ function hoverStars(vid, val) {
         s.classList.toggle('filled', parseInt(s.dataset.val) <= val);
     });
 }
-function resetStarHover(vid, current) {
+function resetStarHover(vid) {
+    const row = document.getElementById(`stars-${vid}`);
+    const current = parseInt(row ? row.dataset.currentRating : 0) || 0;
     document.querySelectorAll(`#stars-${vid} .star`).forEach(s => {
         s.classList.toggle('filled', parseInt(s.dataset.val) <= current);
     });
 }
 function rateVendor(vid, val) {
+    // Optimistic update — apply immediately so mouseleave doesn't wipe it
+    const row = document.getElementById(`stars-${vid}`);
+    const prev = row ? parseInt(row.dataset.currentRating) || 0 : 0;
+    if (row) row.dataset.currentRating = val;
+    document.querySelectorAll(`#stars-${vid} .star`).forEach(s => {
+        s.classList.toggle('filled', parseInt(s.dataset.val) <= val);
+    });
     fetch(`/vendor/${vid}/rating`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
         credentials: 'same-origin',
         body: JSON.stringify({rating: val}),
     }).then(r => r.json()).then(d => {
-        if (!d.ok) return;
-        document.querySelectorAll(`#stars-${vid} .star`).forEach(s => {
-            s.classList.toggle('filled', parseInt(s.dataset.val) <= val);
-        });
+        if (!d.ok) {
+            // Revert on failure
+            if (row) row.dataset.currentRating = prev;
+            document.querySelectorAll(`#stars-${vid} .star`).forEach(s => {
+                s.classList.toggle('filled', parseInt(s.dataset.val) <= prev);
+            });
+        }
     });
 }
 
@@ -1151,21 +1242,82 @@ function toggleFinalPayment(vid, btn) {
     });
 }
 
-/* ── Toggle contracted ────────────────────────────────────────────── */
-function toggleContracted(vid, btn) {
+/* ── Contract helpers ─────────────────────────────────────────────── */
+function _escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function _escAttr(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+}
+
+function _updateContractDisplay(vid, contracted, signedDate, contractUrl) {
+    const sec = document.getElementById(`contractSection-${vid}`);
+    if (!sec) return;
+    sec.dataset.contracted  = contracted ? 'true' : 'false';
+    sec.dataset.signedDate  = signedDate  || '';
+    sec.dataset.contractUrl = contractUrl || '';
+
+    let dateLabel = '';
+    if (signedDate) {
+        const d = new Date(signedDate + 'T00:00:00');
+        dateLabel = d.toLocaleDateString('en-US', {month:'short', day:'numeric'});
+    }
+
+    if (!contracted) {
+        sec.innerHTML =
+            `<button type="button" class="btn-vendor" onclick="openContractModal(${vid})" title="Mark contract signed">` +
+            `<i class="bi bi-file-earmark-plus"></i> Add Contract</button>`;
+    } else if (contractUrl) {
+        sec.innerHTML =
+            `<div style="display:flex;flex-direction:column;gap:2px;">` +
+            `<button type="button" onclick="openContractModal(${vid})" style="background:none;border:none;padding:0;cursor:pointer;font-size:0.75rem;color:#3a8a5a;font-weight:500;text-align:left;">` +
+            `<i class="bi bi-file-earmark-check-fill"></i> Contracted ${_escHtml(dateLabel)}</button>` +
+            `<a href="${_escAttr(contractUrl)}" target="_blank" rel="noopener" style="font-size:0.72rem;color:#c9687a;text-decoration:none;display:inline-flex;align-items:center;gap:3px;">` +
+            `<i class="bi bi-paperclip"></i> View contract →</a></div>`;
+    } else {
+        sec.innerHTML =
+            `<div style="display:flex;flex-direction:column;gap:2px;">` +
+            `<button type="button" onclick="openContractModal(${vid})" style="background:none;border:none;padding:0;cursor:pointer;font-size:0.75rem;color:#3a8a5a;font-weight:500;text-align:left;">` +
+            `<i class="bi bi-file-earmark-check-fill"></i> Contracted ${_escHtml(dateLabel)}</button>` +
+            `<button type="button" onclick="openContractModal(${vid})" style="background:none;border:none;padding:0;cursor:pointer;font-size:0.72rem;color:#a89890;text-align:left;display:inline-flex;align-items:center;gap:3px;">` +
+            `<i class="bi bi-paperclip"></i> Add link</button></div>`;
+    }
+}
+
+/* ── Contract: open modal ─────────────────────────────────────────── */
+function openContractModal(vid) {
+    document.getElementById('contractModalVid').value = vid;
+    const sec = document.getElementById(`contractSection-${vid}`);
+    const signedDate  = sec ? sec.dataset.signedDate  : '';
+    const contractUrl = sec ? sec.dataset.contractUrl : '';
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('contractSignedDate').value = signedDate || today;
+    document.getElementById('contractUrl').value        = contractUrl || '';
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('contractModal')).show();
+}
+
+/* ── Contract: confirm from modal ────────────────────────────────── */
+function confirmContract() {
+    const vid         = document.getElementById('contractModalVid').value;
+    const signedDate  = document.getElementById('contractSignedDate').value;
+    const contractUrl = (document.getElementById('contractUrl').value || '').trim();
+    if (!signedDate) { alert('Please enter the signed date.'); return; }
+    if (contractUrl && !contractUrl.startsWith('http')) {
+        alert('Contract link must start with http'); return;
+    }
     fetch(`/vendor/${vid}/toggle-contracted`, {
         method: 'POST',
-        headers: {'X-CSRFToken': CSRF},
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
         credentials: 'same-origin',
+        body: JSON.stringify({signed_date: signedDate, contract_url: contractUrl}),
     }).then(r => r.json()).then(d => {
-        if (!d.ok) return;
-        btn.innerHTML = d.contracted
-            ? '<i class="bi bi-file-earmark-check-fill"></i> Contract ✓'
-            : '<i class="bi bi-file-earmark-plus"></i> Add Contract';
+        if (!d.ok) { alert(d.error || 'Could not save.'); return; }
+        bootstrap.Modal.getInstance(document.getElementById('contractModal')).hide();
+        _updateContractDisplay(vid, d.contracted, d.signed_date, d.contract_url);
     });
 }
 
-/* ── Notes expand ─────────────────────────────────────────────────── */
+/* ── Notes expand ──────────────────────────────────────────────────── */
 function toggleNotes(vid) {
     const s = document.querySelector(`.notes-short-${vid}`);
     const f = document.querySelector(`.notes-full-${vid}`);
@@ -1180,6 +1332,36 @@ function toggleNotes(vid) {
         btn.textContent = 'Show more';
     }
 }
+
+/* ── Balance amount hint (edit modal) ────────────────────────────── */
+function updateBalanceHint() {
+    const quoted   = parseFloat(document.getElementById('edit_quoted_price').value)   || 0;
+    const deposit  = parseFloat(document.getElementById('edit_deposit_amount').value) || 0;
+    const hint     = document.getElementById('balanceHint');
+    const balInput = document.getElementById('edit_balance_amount');
+    if (!hint) return;
+    if (balInput && balInput.value.trim() !== '') {
+        hint.textContent = '';
+        return;
+    }
+    if (quoted > 0 && deposit > 0) {
+        const bal = quoted - deposit;
+        hint.textContent = bal >= 0 ? `= $${bal.toLocaleString()}` : '⚠ Deposit exceeds quoted price';
+        hint.style.color = bal >= 0 ? '#90b878' : '#c9687a';
+    } else {
+        hint.textContent = 'Leave blank to auto-calculate';
+        hint.style.color = '#a89890';
+    }
+}
+/* Attach hint listeners once the inputs exist in the DOM */
+(function () {
+    const q = document.getElementById('edit_quoted_price');
+    const d = document.getElementById('edit_deposit_amount');
+    const b = document.getElementById('edit_balance_amount');
+    if (q) q.addEventListener('input', updateBalanceHint);
+    if (d) d.addEventListener('input', updateBalanceHint);
+    if (b) b.addEventListener('input', updateBalanceHint);
+})();
 
 /* ── Populate edit modal ──────────────────────────────────────────── */
 document.getElementById('editVendorModal').addEventListener('show.bs.modal', function(event) {
@@ -1201,6 +1383,15 @@ function populateEdit(v) {
     document.getElementById('edit_deposit_due_date').value       = v.deposit_due_date || '';
     document.getElementById('edit_final_payment_due_date').value = v.final_payment_due_date || '';
     document.getElementById('edit_notes').value                  = v.notes || '';
+
+    // Balance amount: pre-fill only if manually set (differs from auto-calc)
+    const autoCalc = (parseFloat(v.quoted_price) || 0) - (parseFloat(v.deposit_amount) || 0);
+    const stored   = v.final_payment_amount !== '' ? parseFloat(v.final_payment_amount) : null;
+    const balInput = document.getElementById('edit_balance_amount');
+    if (balInput) {
+        balInput.value = (stored !== null && stored !== autoCalc) ? stored : '';
+    }
+    updateBalanceHint();
     document.getElementById('edit_rating').value         = v.rating || 0;
 
     // Category

@@ -346,11 +346,11 @@
         {% elif entry.kind == 'balance' %}{% set v = entry.vendor %}
         <div id="tl-balance-{{ v.id }}"
              data-kind="balance"
-             data-due="{{ v.final_payment_due_date.isoformat() }}"
+             data-due="{{ v.final_payment_due_date.isoformat() if v.final_payment_due_date else '' }}"
              data-paid="{{ 'true' if v.final_payment_paid else 'false' }}"
              data-business-name="{{ v.business_name | e }}"
              data-category="{{ v.category }}"
-             data-amount="{{ v.final_payment_amount | int if v.final_payment_amount else '' }}"
+             data-amount="{{ entry.balance_amt | int if entry.balance_amt else '' }}"
              data-vendor-url="{{ url_for('vendors.vendors', wedding_id=wedding.id) }}"
         ></div>
         {% endif %}
@@ -558,6 +558,7 @@
         }
         if (d.kind === 'balance') {
             if (d.paid === 'true') return '<span class="tl2-pill tl2-pill-done">Balance Paid</span>';
+            if (!d.due) return '<span class="tl2-pill tl2-pill-upcoming">Balance due</span>';
             var due = new Date(d.due + 'T00:00:00');
             var isToday = due.getTime() === _today.getTime();
             var cls = isToday ? 'tl2-pill-today'

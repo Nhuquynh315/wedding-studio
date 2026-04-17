@@ -213,6 +213,7 @@ class Vendor(db.Model):
     deposit_due_date     = db.Column(db.Date, nullable=True)
     contracted           = db.Column(db.Boolean, default=False, nullable=False)
     contract_signed_date = db.Column(db.Date, nullable=True)
+    contract_url         = db.Column(db.String(500), nullable=True)
     rating               = db.Column(db.Integer, nullable=True)
     notes                = db.Column(db.Text, nullable=True)
     status                 = db.Column(db.String(20), default='considering', nullable=False)
@@ -236,7 +237,11 @@ class Vendor(db.Model):
             'quoted_price':            self.quoted_price or '',
             'deposit_amount':          self.deposit_amount or '',
             'deposit_due_date':        self.deposit_due_date.strftime('%Y-%m-%d') if self.deposit_due_date else '',
+            'final_payment_amount':    self.final_payment_amount if self.final_payment_amount is not None else '',
             'final_payment_due_date':  self.final_payment_due_date.strftime('%Y-%m-%d') if self.final_payment_due_date else '',
+            'contracted':              self.contracted,
+            'contract_signed_date':    self.contract_signed_date.strftime('%Y-%m-%d') if self.contract_signed_date else '',
+            'contract_url':            self.contract_url or '',
             'status':                  self.status or 'considering',
             'rating':                  self.rating or 0,
             'notes':                   self.notes or '',

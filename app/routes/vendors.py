@@ -167,9 +167,15 @@ def add_vendor(wedding_id):
 
     category = request.form.get('category', 'Other').strip() or 'Other'
 
-    quoted   = _parse_float(request.form.get('quoted_price'))
-    deposit  = _parse_float(request.form.get('deposit_amount'))
-    balance  = (quoted - deposit) if (quoted and deposit and quoted > deposit) else None
+    quoted      = _parse_float(request.form.get('quoted_price'))
+    deposit     = _parse_float(request.form.get('deposit_amount'))
+    balance_raw = _parse_float(request.form.get('balance_amount'))
+    if balance_raw is not None:
+        balance = balance_raw
+    elif quoted and deposit:
+        balance = (quoted - deposit) if quoted > deposit else None
+    else:
+        balance = None
 
     vendor = Vendor(
         wedding_id             = wedding_id,
@@ -228,9 +234,15 @@ def edit_vendor(vendor_id):
 
     category = request.form.get('category', vendor.category).strip() or vendor.category
 
-    quoted  = _parse_float(request.form.get('quoted_price'))
-    deposit = _parse_float(request.form.get('deposit_amount'))
-    balance = (quoted - deposit) if (quoted and deposit and quoted > deposit) else None
+    quoted      = _parse_float(request.form.get('quoted_price'))
+    deposit     = _parse_float(request.form.get('deposit_amount'))
+    balance_raw = _parse_float(request.form.get('balance_amount'))
+    if balance_raw is not None:
+        balance = balance_raw
+    elif quoted and deposit:
+        balance = (quoted - deposit) if quoted > deposit else None
+    else:
+        balance = None
 
     vendor.business_name           = business_name
     vendor.category                = category
@@ -246,6 +258,12 @@ def edit_vendor(vendor_id):
     vendor.rating                  = int(request.form.get('rating') or 0) or None
     vendor.notes                   = request.form.get('notes', '').strip() or None
     vendor.status                  = request.form.get('status', vendor.status)
+
+    # Sync linked budget expense estimated cost when quoted price changes
+    if quoted:
+        linked = Expense.query.filter_by(vendor_id=vendor_id).first()
+        if linked:
+            linked.estimated_cost = quoted
 
     try:
         db.session.commit()
@@ -368,7 +386,7 @@ def toggle_final_payment(vendor_id):
     if linked:
         if vendor.final_payment_paid:
             linked.is_paid     = True
-            linked.actual_cost = vendor.quoted_price
+            linked.actual_cost = vendor.final_payment_amount or vendor.quoted_price
             linked.paid_date   = date_type.today()
         else:
             # Revert to deposit-only paid state
@@ -390,12 +408,34 @@ def toggle_final_payment(vendor_id):
 @login_required
 def toggle_contracted(vendor_id):
     vendor = get_vendor_or_403(vendor_id)
-    vendor.contracted = not vendor.contracted
-    vendor.contract_signed_date = date_type.today() if vendor.contracted else None
+    data = request.get_json(silent=True) or {}
+
+    if 'signed_date' in data:
+        # Mark or update — always set contracted=True and save both fields
+        raw_date = (data.get('signed_date') or '').strip()
+        raw_url  = (data.get('contract_url') or '').strip()
+        if raw_url and not raw_url.startswith('http'):
+            return jsonify({'ok': False, 'error': 'URL must start with http'}), 400
+        vendor.contracted = True
+        try:
+            vendor.contract_signed_date = date_type.fromisoformat(raw_date) if raw_date else date_type.today()
+        except ValueError:
+            vendor.contract_signed_date = date_type.today()
+        vendor.contract_url = raw_url or None
+    else:
+        # Unmark — clear everything
+        vendor.contracted = False
+        vendor.contract_signed_date = None
+        vendor.contract_url = None
+
     try:
         db.session.commit()
-        return jsonify({'ok': True, 'contracted': vendor.contracted,
-                        'signed_date': vendor.contract_signed_date.isoformat() if vendor.contract_signed_date else None})
+        return jsonify({
+            'ok':           True,
+            'contracted':   vendor.contracted,
+            'signed_date':  vendor.contract_signed_date.isoformat() if vendor.contract_signed_date else '',
+            'contract_url': vendor.contract_url or '',
+        })
     except Exception:
         db.session.rollback()
         return jsonify({'ok': False}), 500
