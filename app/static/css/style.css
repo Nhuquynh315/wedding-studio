@@ -1,3 +1,11 @@
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('/static/fonts/PlayfairDisplay-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* ============================================================
    AI Wedding Studio — Global Styles
    ============================================================ */
@@ -144,14 +152,14 @@ footer {
     margin-bottom: 8px;
     display: block;
 }
-.stat-card .stat-number {
-    font-family: 'Cormorant Garamond', serif;
+.stat-card .stat-number,
+.stat-number {
+    font-family: 'Playfair Display', Georgia, serif !important;
     font-size: 40px;
     font-weight: 400;
     color: #2d2420;
     line-height: 1;
     margin-bottom: 4px;
-    font-variant-numeric: lining-nums;
     display: block;
 }
 .stat-card .stat-sub {

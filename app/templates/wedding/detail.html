@@ -5,13 +5,6 @@
 {% block extra_css %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <style>
-/* ── Overview stat numbers: use Jost to match Vendors style ──────── */
-.stat-card .stat-number {
-    font-family: 'Jost', sans-serif;
-    font-weight: 300;
-    font-variant-numeric: normal;
-}
-
 /* ── Detail page action buttons ──────────────────────────────────── */
 .sidebar-action-btn {
     display: flex;
@@ -515,28 +508,28 @@
         {# Total guests #}
         <div class="stat-card">
             <span class="stat-label">Total Guests</span>
-            <span class="stat-number">{{ guest_stats.total }}</span>
+            <span style="font-family:'Playfair Display',Arial,sans-serif; font-variant-numeric:lining-nums; font-feature-settings:'lnum' 1; font-size:40px; font-weight:400; color:#2d2420; line-height:1; display:block;">{{ guest_stats.total }}</span>
             <span class="stat-sub">across all groups</span>
         </div>
 
         {# RSVPs confirmed #}
         <div class="stat-card">
             <span class="stat-label">RSVPs Confirmed</span>
-            <span class="stat-number">{{ guest_stats.accepted }}</span>
+            <span style="font-family:'Playfair Display',Arial,sans-serif; font-variant-numeric:lining-nums; font-feature-settings:'lnum' 1; font-size:40px; font-weight:400; color:#2d2420; line-height:1; display:block;">{{ guest_stats.accepted }}</span>
             <span class="stat-sub">{{ guest_stats.response_rate }}% response rate</span>
         </div>
 
         {# Budget used #}
         <div class="stat-card">
             <span class="stat-label">Budget Used</span>
-            <span class="stat-number">{{ ov_budget_pct }}%</span>
+            <span style="font-family:'Playfair Display',Arial,sans-serif; font-variant-numeric:lining-nums; font-feature-settings:'lnum' 1; font-size:40px; font-weight:400; color:#2d2420; line-height:1; display:block;">{{ ov_budget_pct }}<span style="font-family:'Playfair Display',Arial,sans-serif; font-variant-numeric:lining-nums; font-feature-settings:'lnum' 1; font-size:20px;">%</span></span>
             <span class="stat-sub">${{ '{:,.0f}'.format(ov_paid_ns.v) }} of ${{ '{:,.0f}'.format(ov_total_budget) }}</span>
         </div>
 
         {# Tasks completed #}
         <div class="stat-card">
             <span class="stat-label">Tasks Completed</span>
-            <span class="stat-number">{{ checklist_pct }}%</span>
+            <span style="font-family:'Playfair Display',Arial,sans-serif; font-variant-numeric:lining-nums; font-feature-settings:'lnum' 1; font-size:40px; font-weight:400; color:#2d2420; line-height:1; display:block;">{{ checklist_pct }}<span style="font-family:'Playfair Display',Arial,sans-serif; font-variant-numeric:lining-nums; font-feature-settings:'lnum' 1; font-size:20px;">%</span></span>
             <span class="stat-sub">{{ checklist_done_count }} of {{ checklist_items | length }} done</span>
         </div>
     </div>
