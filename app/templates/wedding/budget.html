@@ -7,7 +7,7 @@
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital@0;1&family=DM+Sans:wght@300;400&family=Cormorant+Garamond:wght@300;400&family=Nunito:wght@400&family=Libre+Baskerville:ital@0;1&family=Jost:wght@300;400&display=swap');
+/* fonts loaded via base.html */
 
 /* ── Summary bar ──────────────────────────────────────────────────── */
 .budget-summary {
@@ -23,7 +23,7 @@
 .stat-number.editable:hover { color: var(--rose, #c9687a); }
 .stat-sub.over-budget { color: #c9687a; }
 .summary-edit-input {
-    font-family: 'Cormorant Garamond', serif;
+    font-family: 'DM Sans', sans-serif;
     font-size: 40px;
     font-weight: 400;
     border: none;
@@ -67,7 +67,7 @@
 .budget-accordion .accordion-button {
     background: #faf8f5;
     padding: 0.9rem 1.1rem;
-    font-family: 'Jost', sans-serif;
+    font-family: 'DM Sans', sans-serif;
     font-size: 0.875rem;
     font-weight: 500;
     color: #2d2420;
@@ -229,7 +229,7 @@
 .add-expense-form .field.sm   { width: 110px; }
 .add-expense-form .field.xs   { width: 90px; }
 .btn-add-expense {
-    font-family: 'Jost', sans-serif;
+    font-family: 'DM Sans', sans-serif;
     font-size: 0.8rem;
     font-weight: 500;
     background: var(--rose, #c9687a);
@@ -322,7 +322,7 @@
     padding: 1.5rem 1.5rem 1.75rem;
 }
 .tmpl-heading {
-    font-family: 'Cormorant Garamond', serif;
+    font-family: 'Lora', serif;
     font-size: 1.65rem;
     font-weight: 400;
     color: #2d2420;
@@ -365,15 +365,15 @@
 /* Style name — base */
 .tmpl-name { font-size: 17px; color: #2d2420; margin-bottom: 4px; line-height: 1.2; }
 /* Per-style name fonts */
-.tmpl-name--rustic     { font-family: 'Playfair Display', serif; font-style: italic; font-weight: 400; }
+.tmpl-name--rustic     { font-family: 'DM Sans', serif; font-style: italic; font-weight: 400; }
 .tmpl-name--modern     { font-family: 'DM Sans', sans-serif; font-weight: 300; letter-spacing: .08em; }
-.tmpl-name--luxury     { font-family: 'Cormorant Garamond', serif; font-weight: 300; letter-spacing: .06em; font-size: 20px; }
+.tmpl-name--luxury     { font-family: 'Lora', serif; font-weight: 300; letter-spacing: .06em; font-size: 20px; }
 .tmpl-name--beach      { font-family: 'Nunito', sans-serif; font-weight: 400; }
 .tmpl-name--vintage    { font-family: 'Libre Baskerville', serif; font-weight: 400; font-style: italic; }
-.tmpl-name--minimalist { font-family: 'Jost', sans-serif; font-weight: 300; letter-spacing: .15em; text-transform: uppercase; font-size: 13px; }
-.tmpl-name--custom     { font-family: 'Jost', sans-serif; font-weight: 400; color: #8a7f7a; }
+.tmpl-name--minimalist { font-family: 'DM Sans', sans-serif; font-weight: 300; letter-spacing: .15em; text-transform: uppercase; font-size: 13px; }
+.tmpl-name--custom     { font-family: 'DM Sans', sans-serif; font-weight: 400; color: #8a7f7a; }
 /* Description */
-.tmpl-desc { font-family: 'Jost', sans-serif; font-size: 12px; color: #8a7f7a; font-weight: 300; line-height: 1.35; }
+.tmpl-desc { font-family: 'DM Sans', sans-serif; font-size: 12px; color: #8a7f7a; font-weight: 300; line-height: 1.35; }
 .tmpl-rec-badge {
     display: inline-block;
     font-size: .58rem;
@@ -382,13 +382,13 @@
     border-radius: 4px;
     padding: .08rem .32rem;
     margin-top: .22rem;
-    font-family: 'Jost', sans-serif;
+    font-family: 'DM Sans', sans-serif;
     font-weight: 600;
     letter-spacing: .04em;
     text-transform: uppercase;
 }
 .tmpl-apply-btn {
-    font-family: 'Jost', sans-serif;
+    font-family: 'DM Sans', sans-serif;
     font-size: .84rem;
     font-weight: 500;
     padding: .52rem 1.5rem;
@@ -403,7 +403,7 @@
 .tmpl-apply-btn:disabled { background: #e0cfd2; color: #b0909a; cursor: default; }
 /* Preview table */
 .tmpl-preview-intro {
-    font-family: 'Jost', sans-serif;
+    font-family: 'DM Sans', sans-serif;
     font-size: .84rem;
     color: #5a4a40;
     margin-bottom: .85rem;
@@ -420,7 +420,7 @@
 .tmpl-table {
     width: 100%;
     border-collapse: collapse;
-    font-family: 'Jost', sans-serif;
+    font-family: 'DM Sans', sans-serif;
     font-size: .82rem;
     margin-bottom: .75rem;
 }
@@ -470,7 +470,7 @@
     border: 1px solid #e8e0d8;
     border-radius: 7px;
     background: #fff;
-    font-family: 'Jost', sans-serif;
+    font-family: 'DM Sans', sans-serif;
     font-size: .74rem;
     color: #8a7f7a;
     cursor: pointer;
@@ -497,7 +497,7 @@
     justify-content: space-between;
     align-items: center;
     padding: .38rem .75rem;
-    font-family: 'Jost', sans-serif;
+    font-family: 'DM Sans', sans-serif;
     font-size: .78rem;
     color: #2d2420;
     cursor: pointer;
@@ -509,7 +509,7 @@
 
 /* ── Reset link ────────────────────────────────────────────────────── */
 .budget-reset-link {
-    font-family: 'Jost', sans-serif;
+    font-family: 'DM Sans', sans-serif;
     font-size: .7rem;
     color: #c8bdb8;
     cursor: pointer;
@@ -926,7 +926,7 @@
     <div class="modal-dialog modal-sm">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" style="font-family:'Cormorant Garamond',serif; font-weight:400; font-size:1.35rem;">Reset Budget</h5>
+                <h5 class="modal-title" style="font-family:'Lora',serif; font-weight:400; font-size:1.35rem;">Reset Budget</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -952,7 +952,7 @@
         <form class="modal-content" method="POST" id="editCatForm" action="#">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="modal-header">
-                <h5 class="modal-title" style="font-family:'Cormorant Garamond',serif; font-weight:400; font-size:1.35rem;">Edit Category</h5>
+                <h5 class="modal-title" style="font-family:'Lora',serif; font-weight:400; font-size:1.35rem;">Edit Category</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -984,7 +984,7 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="category_id" id="editExpCatId" value="">
             <div class="modal-header">
-                <h5 class="modal-title" style="font-family:'Cormorant Garamond',serif; font-weight:400; font-size:1.35rem;">Edit Expense</h5>
+                <h5 class="modal-title" style="font-family:'Lora',serif; font-weight:400; font-size:1.35rem;">Edit Expense</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -1234,7 +1234,7 @@
                     legend: {
                         position: 'bottom',
                         labels: {
-                            font: { family: 'Jost', size: 11 },
+                            font: { family: 'DM Sans', size: 11 },
                             boxWidth: 10,
                             padding: 10,
                         }
@@ -1288,7 +1288,7 @@
                 plugins: {
                     legend: {
                         position: 'top',
-                        labels: { font: { family: 'Jost', size: 11 }, boxWidth: 10 }
+                        labels: { font: { family: 'DM Sans', size: 11 }, boxWidth: 10 }
                     },
                     tooltip: {
                         callbacks: {
@@ -1299,8 +1299,8 @@
                     }
                 },
                 scales: {
-                    x: { ticks: { callback: v => '$' + v.toLocaleString(), font: { family: 'Jost', size: 11 } } },
-                    y: { ticks: { font: { family: 'Jost', size: 11 } } }
+                    x: { ticks: { callback: v => '$' + v.toLocaleString(), font: { family: 'DM Sans', size: 11 } } },
+                    y: { ticks: { font: { family: 'DM Sans', size: 11 } } }
                 }
             }
         });

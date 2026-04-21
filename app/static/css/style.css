@@ -1,11 +1,3 @@
-@font-face {
-  font-family: 'Playfair Display';
-  src: url('/static/fonts/PlayfairDisplay-Regular.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
 /* ============================================================
    AI Wedding Studio — Global Styles
    ============================================================ */
@@ -34,7 +26,7 @@
 /* ---------- Global ---------- */
 body {
     color: var(--ws-charcoal);
-    font-family: 'Jost', 'Segoe UI', system-ui, sans-serif;
+    font-family: 'DM Sans', sans-serif;
 }
 
 /* ---------- Bootstrap primary overrides ---------- */
@@ -73,14 +65,14 @@ body {
 .badge.bg-info     { background-color: #4fa8c7 !important; color: #fff !important; }
 
 /* ---------- Tables ---------- */
-.table { font-family: 'Jost', sans-serif; font-size: 0.875rem; }
+.table { font-family: 'DM Sans', sans-serif; font-size: 0.875rem; }
 .table thead th { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
 
 /* ---------- Forms ---------- */
 .form-control, .form-select {
     border-color: var(--border);
     border-radius: 8px;
-    font-family: 'Jost', sans-serif;
+    font-family: 'DM Sans', sans-serif;
     font-size: 0.9rem;
 }
 .form-control:focus, .form-select:focus {
@@ -88,7 +80,7 @@ body {
     box-shadow: 0 0 0 0.2rem rgba(201,104,122,.2);
 }
 .form-label {
-    font-family: 'Jost', sans-serif;
+    font-family: 'DM Sans', sans-serif;
     font-size: 0.82rem;
     font-weight: 500;
     color: var(--text-dark);
@@ -109,7 +101,7 @@ body {
     margin: 0 auto;
 }
 .auth-title {
-    font-family: 'Cormorant Garamond', serif;
+    font-family: 'Lora', serif;
     font-size: 2rem;
     font-weight: 400;
     color: var(--text-dark);
@@ -124,7 +116,7 @@ body {
 footer {
     color: var(--ws-muted);
     font-size: 0.875rem;
-    font-family: 'Jost', sans-serif;
+    font-family: 'DM Sans', sans-serif;
 }
 
 /* ── Vendor card button reset (override Bootstrap) ─────────────────── */
@@ -143,7 +135,7 @@ footer {
     padding: 20px 24px;
 }
 .stat-card .stat-label {
-    font-family: 'Jost', sans-serif;
+    font-family: 'DM Sans', sans-serif;
     font-size: 11px;
     font-weight: 500;
     letter-spacing: 0.12em;
@@ -154,7 +146,7 @@ footer {
 }
 .stat-card .stat-number,
 .stat-number {
-    font-family: 'Playfair Display', Georgia, serif !important;
+    font-family: 'DM Sans', sans-serif !important;
     font-size: 40px;
     font-weight: 400;
     color: #2d2420;
@@ -163,7 +155,7 @@ footer {
     display: block;
 }
 .stat-card .stat-sub {
-    font-family: 'Jost', sans-serif;
+    font-family: 'DM Sans', sans-serif;
     font-size: 12px;
     font-weight: 300;
     color: #a89890;

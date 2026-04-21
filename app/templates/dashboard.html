@@ -7,7 +7,7 @@
 <style>
 /* ── Dashboard layout ─────────────────────────────────────────────── */
 .dash-section-label {
-    font-family: 'Jost', sans-serif;
+    font-family: 'DM Sans', sans-serif;
     font-size: 0.65rem;
     font-weight: 600;
     letter-spacing: 0.14em;
@@ -40,7 +40,7 @@
 .metric-icon.blue  { background: #eff4fb; color: #3a68a8; }
 .metric-icon.amber { background: #fdf7ee; color: #a87832; }
 .metric-number {
-    font-family: 'Cormorant Garamond', serif;
+    font-family: 'Lora', serif;
     font-size: 2.2rem;
     font-weight: 300;
     line-height: 1;
@@ -67,7 +67,7 @@
     height: 100%;
 }
 .dash-card-title {
-    font-family: 'Jost', sans-serif;
+    font-family: 'DM Sans', sans-serif;
     font-size: 0.78rem;
     font-weight: 600;
     letter-spacing: 0.08em;
@@ -174,7 +174,7 @@
     margin-bottom: 1.5rem;
 }
 .empty-state h2 {
-    font-family: 'Cormorant Garamond', serif;
+    font-family: 'Lora', serif;
     font-size: 2rem;
     font-weight: 400;
     color: var(--text-dark);
@@ -188,7 +188,7 @@
     line-height: 1.65;
 }
 .btn-create-wedding {
-    font-family: 'Jost', sans-serif;
+    font-family: 'DM Sans', sans-serif;
     font-size: 0.9rem;
     font-weight: 500;
     background: var(--rose, #c9687a);
@@ -255,7 +255,7 @@
 
 {# ── Row 1: Wedding heading ───────────────────────────────────────── #}
 <div class="mb-4">
-    <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.8rem; font-weight:400; color:var(--text-dark); margin:0 0 0.2rem;">
+    <h2 style="font-family:'Lora',serif; font-size:1.8rem; font-weight:400; color:var(--text-dark); margin:0 0 0.2rem;">
         {{ active_wedding.partner1_name }} &amp; {{ active_wedding.partner2_name }}
     </h2>
     <span style="font-size:0.82rem; color:var(--text-muted);">
@@ -403,7 +403,7 @@
         <span class="dash-card-title">Upcoming Tasks</span>
         <div style="text-align:center; padding:2rem 0 1rem;">
             <i class="bi bi-calendar2-check" style="font-size:32px; color:#d4c8c0; display:block; margin-bottom:0.65rem;"></i>
-            <p style="font-family:'Jost',sans-serif; font-size:14px; color:#a89890; margin:0 0 0.65rem;">No tasks yet</p>
+            <p style="font-family:'DM Sans',sans-serif; font-size:14px; color:#a89890; margin:0 0 0.65rem;">No tasks yet</p>
             <a href="{{ url_for('checklist.checklist', wedding_id=active_wedding.id) }}"
                style="font-size:0.78rem; color:#c9687a; text-decoration:none;">→ Set up checklist</a>
         </div>
@@ -421,8 +421,8 @@
             <div style="width:40px; height:40px; border-radius:50%; background:#fdf0f2; color:#c9687a; display:inline-flex; align-items:center; justify-content:center; margin-bottom:0.65rem; font-size:1.1rem;">
                 <i class="bi bi-check2"></i>
             </div>
-            <p style="font-family:'Cormorant Garamond',serif; font-size:18px; color:#3a2e28; margin:0 0 0.2rem;">All caught up!</p>
-            <p style="font-family:'Jost',sans-serif; font-size:13px; color:#a89890; margin:0 0 0.65rem;">Every planning task is complete.</p>
+            <p style="font-family:'Lora',serif; font-size:18px; color:#3a2e28; margin:0 0 0.2rem;">All caught up!</p>
+            <p style="font-family:'DM Sans',sans-serif; font-size:13px; color:#a89890; margin:0 0 0.65rem;">Every planning task is complete.</p>
             <a href="{{ url_for('checklist.checklist', wedding_id=active_wedding.id) }}"
                style="font-size:0.78rem; color:#c9687a; text-decoration:none;">→ View checklist</a>
         </div>
