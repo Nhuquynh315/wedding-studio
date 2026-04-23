@@ -97,18 +97,19 @@ Relationships all use `cascade='all, delete-orphan'`. `WEDDING_STYLES`, `VENDOR_
 
 **Authorization-check-and-discard pattern (Phase 3):** Six routes call `get_wedding_or_403(wedding_id)` purely for its 403-raising side effect without using the returned `Wedding` object (`budget.py`, `checklist.py`, `seating.py` ×3, `vendors.py`). These should be consolidated into a decorator (e.g. `@require_wedding_ownership`) in Phase 3 when the route layer is refactored.
 
-## Active refactor — Phase 1
+## Refactor status
 
-The following structural changes are in progress or planned:
+### Phase 1 — Repo hygiene & tooling ✅ COMPLETE
 
-**(a) Move Flask app into `backend/`**
-Reorganise the repo so the Flask application lives under `backend/` with its own `config.py`, `run.py`, and `app/` package. The repo root will hold only top-level config files and the future frontend workspace.
+Completed across 13 commits (`d4e7b00` → `739ebc4`):
+- Moved Flask app into `backend/` for future monorepo layout
+- Replaced `requirements.txt` with `pyproject.toml` managed by uv; Python pinned to 3.12 via `backend/.python-version`
+- Added `.pre-commit-config.yaml` running Ruff (lint + import sort) and Black (format) on every commit
+- Cleaned up repo: comprehensive `.gitignore`, removed committed `venv/`/`instance/`/`uploads/` artifacts
+- Fixed B023 stale-closure bug in `csv_service.py`; removed unused `wedding =` assignments from 6 routes
+- Fixed WeasyPrint system library path for uv-managed Python on macOS via `DYLD_FALLBACK_LIBRARY_PATH` in `.env`
+- Added `warnings.warn` when `SECRET_KEY` falls back to the dev default
 
-**(b) Migrate from `requirements.txt` to `pyproject.toml` with uv**
-Replace the current `requirements.txt`-based dependency management with a `pyproject.toml` managed by [uv](https://github.com/astral-sh/uv). The existing `venv/` will be replaced by a uv-managed virtual environment.
+### Phase 2 — Extract inline JS/CSS from Jinja templates
 
-**(c) Add pre-commit with Ruff and Black**
-Introduce a `.pre-commit-config.yaml` running Ruff (lint + import sort) and Black (format) on every commit. CI will enforce the same checks.
-
-**(d) Future FastAPI + React/TypeScript split**
-The longer-term goal is to replace the Jinja2 frontend with a React/TypeScript SPA and migrate the backend from Flask to FastAPI. Phase 1 lays the groundwork (monorepo structure, tooling) without breaking the current Flask app.
+The large Jinja2 templates (`seating.html`, `budget.html`, `vendors.html`, `detail.html`) contain substantial blocks of inline `<script>` and `<style>` tags — some templates run to several hundred lines of JavaScript. Phase 2 will extract these into separate files under `backend/app/static/js/` and `backend/app/static/css/`, loaded via `{% block extra_js %}` and `{% block extra_css %}`. This reduces template size, enables browser caching of static assets, and makes the JS/CSS lintable as standalone files — a prerequisite before migrating to a proper frontend build pipeline in Phase 4.
