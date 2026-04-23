@@ -1,14 +1,23 @@
 import os
+import warnings
 
 from dotenv import load_dotenv
 
 load_dotenv()
 
+_SECRET_KEY_FALLBACK = "dev-only-secret-do-not-use-in-production"
+
 
 class Config:
     """Base configuration"""
 
-    SECRET_KEY = os.getenv("SECRET_KEY") or "dev-only-secret-do-not-use-in-production"
+    if not os.getenv("SECRET_KEY"):
+        warnings.warn(
+            "SECRET_KEY is not set — falling back to an insecure dev default. "
+            "Set SECRET_KEY in your environment before deploying.",
+            stacklevel=2,
+        )
+    SECRET_KEY = os.getenv("SECRET_KEY") or _SECRET_KEY_FALLBACK
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # Database configuration
