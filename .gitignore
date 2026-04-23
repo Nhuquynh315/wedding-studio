@@ -1,40 +1,81 @@
-# Byte-compiled / optimized / DLL files
+# ── Python ────────────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
-*$py.class
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+pip-log.txt
 
-# Virtual environments
+# ── Virtual environments ───────────────────────────────────────────────
 venv/
+.venv/
 env/
 ENV/
+# uv (Phase 1b)
+.python-version
 
-# IDE
+# ── Environment & secrets ──────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── Database ───────────────────────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+instance/
+
+# ── Uploads & generated files ─────────────────────────────────────────
+uploads/
+
+# ── Testing & coverage ─────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+
+# ── Type checking ──────────────────────────────────────────────────────
+.mypy_cache/
+.dmypy.json
+.pyright/
+
+# ── Ruff / Black / pre-commit (Phase 1c) ──────────────────────────────
+.ruff_cache/
+
+# ── Node / frontend (Phase 4) ─────────────────────────────────────────
+node_modules/
+.npm/
+.yarn/
+.pnp.*
+dist/
+.next/
+.nuxt/
+.svelte-kit/
+out/
+.turbo/
+*.tsbuildinfo
+
+# ── IDE ────────────────────────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# Environment variables
-.env
-.env.local
-
-# Database
-*.db
-*.sqlite
-*.sqlite3
-
-# Logs
-*.log
-
-# OS
+# ── OS ─────────────────────────────────────────────────────────────────
 .DS_Store
+._*
+.Spotlight-V100
+.Trashes
 Thumbs.db
+desktop.ini
 
-# Project specific
-dist/
-build/
-*.egg-info/
-
-# Uploaded/generated files
-uploads/*
-!uploads/.gitkeep
+# ── Logs ───────────────────────────────────────────────────────────────
+*.log
