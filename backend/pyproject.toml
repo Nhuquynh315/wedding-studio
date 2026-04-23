@@ -1,0 +1,48 @@
+[project]
+name = "wedding-studio-backend"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "flask>=3.1",
+    "flask-limiter>=4.1",
+    "flask-login>=0.6",
+    "flask-migrate>=4.1",
+    "flask-sqlalchemy>=3.1",
+    "flask-wtf>=1.2",
+    "werkzeug>=3.1",
+    "python-dotenv>=1.0",
+    "google-genai>=1.0",
+    "openpyxl>=3.1",
+    "weasyprint>=68.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "httpx",
+    "ruff",
+    "black",
+    "pre-commit",
+]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = ["migrations"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP", "SIM"]
+ignore = ["E501"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+extend-exclude = "migrations"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
