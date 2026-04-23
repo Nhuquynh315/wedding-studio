@@ -83,6 +83,10 @@ Relationships all use `cascade='all, delete-orphan'`. `WEDDING_STYLES`, `VENDOR_
 
 **Database**: SQLite in development (`instance/wedding_studio.db`). Schema is managed exclusively by Flask-Migrate — `db.create_all()` has been removed. Run `flask db upgrade` on first setup and after every model change.
 
+## Known refactor opportunities
+
+**Authorization-check-and-discard pattern (Phase 3):** Six routes call `get_wedding_or_403(wedding_id)` purely for its 403-raising side effect without using the returned `Wedding` object (`budget.py`, `checklist.py`, `seating.py` ×3, `vendors.py`). These should be consolidated into a decorator (e.g. `@require_wedding_ownership`) in Phase 3 when the route layer is refactored.
+
 ## Active refactor — Phase 1
 
 The following structural changes are in progress or planned:
