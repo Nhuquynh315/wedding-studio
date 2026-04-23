@@ -13,8 +13,10 @@ flask db migrate -m "description"   # generate migration after model changes
 flask db upgrade                     # apply pending migrations
 flask db downgrade                   # roll back one migration
 
-# Install dependencies
-pip install -r requirements.txt
+# Install dependencies (Python version pinned via backend/.python-version — Python 3.12)
+cd backend
+uv venv                      # creates .venv using the pinned 3.12 interpreter
+uv pip install -e ".[dev]"   # installs all deps including dev extras
 ```
 
 Environment variables are loaded from `.env`. Minimum required:

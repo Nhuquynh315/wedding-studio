@@ -16,8 +16,6 @@ venv/
 .venv/
 env/
 ENV/
-# uv (Phase 1b)
-.python-version
 
 # ── Environment & secrets ──────────────────────────────────────────────
 .env
