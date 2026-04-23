@@ -55,6 +55,7 @@ def get_vendor_or_403(vendor_id):
 def get_table_or_403(table_id):
     """Fetch a WeddingTable and abort 403 if its wedding doesn't belong to the current user."""
     from app.models import WeddingTable
+
     table = WeddingTable.query.get_or_404(table_id)
     if table.wedding.user_id != current_user.id:
         abort(403)

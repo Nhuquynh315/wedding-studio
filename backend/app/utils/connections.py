@@ -4,26 +4,27 @@ Cross-feature connection utilities.
 All functions use late imports to avoid circular import issues — safe to call
 from any route file.
 """
-from datetime import datetime, timezone
+
+from datetime import UTC, datetime
 
 # Maps vendor category → task title keywords to match against
 VENDOR_TO_TASK = {
-    'Venue':         ['venue', 'book venue', 'choose venue'],
-    'Catering':      ['cater', 'food', 'catering'],
-    'Photography':   ['photo', 'photographer'],
-    'Videography':   ['video', 'videograph'],
-    'Flowers':       ['florist', 'flower', 'floral'],
-    'Music':         ['music', 'band', 'dj', 'entertainment'],
-    'Hair & Makeup': ['hair', 'makeup', 'beauty'],
-    'Transport':     ['transport', 'car', 'limo'],
-    'Cake':          ['cake', 'dessert'],
-    'Stationery':    ['stationery', 'invitation', 'invite'],
-    'Officiant':     ['officiant', 'celebrant', 'ceremony'],
+    "Venue": ["venue", "book venue", "choose venue"],
+    "Catering": ["cater", "food", "catering"],
+    "Photography": ["photo", "photographer"],
+    "Videography": ["video", "videograph"],
+    "Flowers": ["florist", "flower", "floral"],
+    "Music": ["music", "band", "dj", "entertainment"],
+    "Hair & Makeup": ["hair", "makeup", "beauty"],
+    "Transport": ["transport", "car", "limo"],
+    "Cake": ["cake", "dessert"],
+    "Stationery": ["stationery", "invitation", "invite"],
+    "Officiant": ["officiant", "celebrant", "ceremony"],
 }
 
 
 def _utcnow():
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def auto_complete_vendor_task(wedding_id, vendor_category):
@@ -87,7 +88,7 @@ def check_budget_completion(wedding_id):
     """If total actual spend has reached or exceeded the wedding's total budget,
     auto-complete any 'finalise/confirm/set budget' checklist tasks."""
     from app import db
-    from app.models import Wedding, Expense
+    from app.models import Expense, Wedding
 
     wedding = Wedding.query.get(wedding_id)
     if not wedding or not wedding.total_budget:
@@ -99,11 +100,12 @@ def check_budget_completion(wedding_id):
             Expense.wedding_id == wedding_id,
             Expense.actual_cost.isnot(None),
         )
-        .scalar() or 0
+        .scalar()
+        or 0
     )
 
     if total_spent >= wedding.total_budget:
         auto_complete_task_by_keyword(
             wedding_id,
-            ['finalise budget', 'finalize budget', 'confirm budget', 'set budget'],
+            ["finalise budget", "finalize budget", "confirm budget", "set budget"],
         )

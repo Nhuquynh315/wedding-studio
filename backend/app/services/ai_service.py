@@ -22,19 +22,20 @@ def _repair_json(text):
         if escape_next:
             result.append(ch)
             escape_next = False
-        elif ch == '\\':
+        elif ch == "\\":
             result.append(ch)
             escape_next = True
         elif ch == '"':
             in_string = not in_string
             result.append(ch)
-        elif in_string and ch == '\n':
-            result.append('\\n')
-        elif in_string and ch == '\r':
-            result.append('\\r')
+        elif in_string and ch == "\n":
+            result.append("\\n")
+        elif in_string and ch == "\r":
+            result.append("\\r")
         else:
             result.append(ch)
-    return ''.join(result)
+    return "".join(result)
+
 
 SYSTEM_PROMPT = (
     "You are an expert luxury wedding theme designer. "
@@ -43,19 +44,19 @@ SYSTEM_PROMPT = (
 )
 
 _TONE_DESCRIPTIONS = {
-    'Romantic':  'romantic and heartfelt',
-    'Formal':    'formal and sophisticated',
-    'Playful':   'playful and lighthearted',
-    'Poetic':    'poetic and lyrical',
-    'Simple':    'simple, clean, and understated',
+    "Romantic": "romantic and heartfelt",
+    "Formal": "formal and sophisticated",
+    "Playful": "playful and lighthearted",
+    "Poetic": "poetic and lyrical",
+    "Simple": "simple, clean, and understated",
 }
 
 _WORDING_GUIDANCE = {
-    'Romantic':  'Warm and tender — classic structure but with a loving, heartfelt feel. Example: "joyfully invite you to share in their love\\nas they begin their journey together"',
-    'Formal':    'Traditional and dignified — classic printed-invitation phrasing. Example: "request the honour of your presence\\nat the celebration of their marriage"',
-    'Playful':   'Warm and fun — still invitation-appropriate but friendly and upbeat. Example: "can\'t wait to celebrate with you\\nas they tie the knot!"',
-    'Poetic':    'Lyrical and evocative — may use imagery or gentle metaphor, 2-3 lines. Example: "where two rivers meet the sea\\nthey ask you to witness their becoming one"',
-    'Simple':    'Clear and minimal — short, direct, no embellishment. Example: "invite you to their wedding ceremony"',
+    "Romantic": 'Warm and tender — classic structure but with a loving, heartfelt feel. Example: "joyfully invite you to share in their love\\nas they begin their journey together"',
+    "Formal": 'Traditional and dignified — classic printed-invitation phrasing. Example: "request the honour of your presence\\nat the celebration of their marriage"',
+    "Playful": 'Warm and fun — still invitation-appropriate but friendly and upbeat. Example: "can\'t wait to celebrate with you\\nas they tie the knot!"',
+    "Poetic": 'Lyrical and evocative — may use imagery or gentle metaphor, 2-3 lines. Example: "where two rivers meet the sea\\nthey ask you to witness their becoming one"',
+    "Simple": 'Clear and minimal — short, direct, no embellishment. Example: "invite you to their wedding ceremony"',
 }
 
 
@@ -68,7 +69,7 @@ def generate_wedding_theme(
     style,
     primary_color,
     secondary_color,
-    tone='Romantic',
+    tone="Romantic",
 ):
     """Call Gemini to generate a wedding theme and return a parsed dict, or None on failure."""
     api_key = os.getenv("GEMINI_API_KEY")
@@ -76,8 +77,8 @@ def generate_wedding_theme(
         print("[ai_service] GEMINI_API_KEY is not set")
         return None
 
-    tone_desc = _TONE_DESCRIPTIONS.get(tone, 'romantic and heartfelt')
-    wording_guidance = _WORDING_GUIDANCE.get(tone, _WORDING_GUIDANCE['Formal'])
+    tone_desc = _TONE_DESCRIPTIONS.get(tone, "romantic and heartfelt")
+    wording_guidance = _WORDING_GUIDANCE.get(tone, _WORDING_GUIDANCE["Formal"])
     user_prompt = f"""Wedding theme for {partner1_name} & {partner2_name}.
 Venue: {venue_name}, {location}. Date: {wedding_date}. Style: {style}. Colours: {primary_color}, {secondary_color}.
 Tone: Use a {tone_desc} tone throughout ALL text fields — tagline, invitation_text, decor_suggestions, style_keywords.
@@ -112,7 +113,7 @@ JSON fields required:
             print(f"[ai_service] JSON parse error (attempt {attempt + 1}): {e}")
             print(f"[ai_service] Raw response: {response.text[:300]!r}")
         except Exception as e:
-            status = getattr(e, 'status_code', None) or getattr(e, 'code', None)
+            status = getattr(e, "status_code", None) or getattr(e, "code", None)
             if status in (401, 403):
                 print(f"[ai_service] invalid or unauthorised API key: {e}")
                 return None
