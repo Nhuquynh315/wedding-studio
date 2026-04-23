@@ -1,3 +1,6 @@
+import os
+import subprocess
+
 from flask import Flask, render_template, session
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -7,6 +10,18 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFError, CSRFProtect
 
 from config import config
+
+try:
+    ASSET_VERSION = (
+        subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        )
+        .decode()
+        .strip()
+    )
+except Exception:
+    ASSET_VERSION = "dev"
 
 # Initialize extensions at module level
 db = SQLAlchemy()
@@ -81,6 +96,10 @@ def create_app(config_name="default"):
     @app.errorhandler(CSRFError)
     def handle_csrf_error(e):
         return render_template("errors/csrf.html"), 400
+
+    @app.context_processor
+    def inject_asset_version():
+        return {"asset_version": ASSET_VERSION}
 
     @app.context_processor
     def inject_sidebar():

@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{% block title %}AI Wedding Studio{% endblock %}</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -653,5 +654,6 @@ document.querySelectorAll('.toast').forEach(function (el) {
 })();
 </script>
 {% block extra_js %}{% endblock %}
+<script src="{{ url_for('static', filename='js/csrf.js') }}?v={{ asset_version }}"></script>
 </body>
 </html>
