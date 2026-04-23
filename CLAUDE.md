@@ -2,6 +2,16 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## System dependencies (macOS)
+
+WeasyPrint (PDF generation) requires Pango, Cairo, and GLib system libraries. Install once via Homebrew:
+
+```bash
+brew install pango cairo glib
+```
+
+uv-managed Python (standalone distribution) does not inherit Homebrew's dyld search paths the way framework Pythons do. `DYLD_FALLBACK_LIBRARY_PATH` must be set so cffi can find `libgobject`, `libpango`, etc. This is already set in `backend/.env` (which Flask CLI auto-loads before importing the app). If you're on Intel Mac, change the path from `/opt/homebrew/lib` to `/usr/local/lib`.
+
 ## Commands
 
 ```bash
