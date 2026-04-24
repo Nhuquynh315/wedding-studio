@@ -241,6 +241,15 @@ def create_wedding():
         style = request.form.get("style", "").strip()
         primary_color = request.form.get("primary_color", "").strip()
         secondary_color = request.form.get("secondary_color", "").strip()
+        total_budget_raw = request.form.get("total_budget", "").strip()
+        total_budget = None
+        if total_budget_raw:
+            try:
+                total_budget = float(total_budget_raw)
+                if total_budget < 0:
+                    total_budget = None
+            except ValueError:
+                total_budget = None
 
         errors = []
         if not partner1_name:
@@ -282,6 +291,7 @@ def create_wedding():
             style=style,
             primary_color=primary_color,
             secondary_color=secondary_color,
+            total_budget=total_budget,
         )
         db.session.add(wedding)
         try:
@@ -304,7 +314,7 @@ def create_wedding():
         try:
             from app.services.budget_service import create_default_budget
 
-            create_default_budget(wedding.id)
+            create_default_budget(wedding.id, total_budget=total_budget)
             db.session.commit()
         except Exception:
             db.session.rollback()  # non-fatal — wedding still created

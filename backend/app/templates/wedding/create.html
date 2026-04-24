@@ -64,6 +64,36 @@
                 </div>
             </div>
 
+            <!-- Budget -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-3 fw-semibold">Budget</h5>
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <label for="total_budget" class="form-label">
+                                Total budget <span class="text-muted fw-normal">(optional)</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input
+                                    type="number"
+                                    class="form-control"
+                                    id="total_budget"
+                                    name="total_budget"
+                                    min="0"
+                                    step="100"
+                                    placeholder="20,000"
+                                    value="{{ request.form.total_budget or '' }}"
+                                >
+                            </div>
+                            <small class="form-text text-muted">
+                                If left blank, we'll start you with a $20,000 default budget. You can change this anytime.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Style & Colors -->
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-body p-4">
