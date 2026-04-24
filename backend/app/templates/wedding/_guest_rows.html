@@ -1,4 +1,3 @@
-{% set rsvp_colors = {'pending':'warning','confirmed':'success','declined':'danger'} %}
 {% set rsvp_labels = {'pending':'Pending','confirmed':'Accepted','declined':'Declined'} %}
 {% for guest in guests_page.items %}
 <tr>
@@ -10,19 +9,18 @@
     <td>{{ guest.meal_preference or '—' }}</td>
     <td>
         <div class="dropdown">
-            <button class="badge bg-{{ rsvp_colors.get(guest.rsvp_status,'secondary') }} border-0 dropdown-toggle py-2 px-2"
+            <button class="rsvp-pill {{ guest.rsvp_status }} dropdown-toggle"
                     type="button" data-bs-toggle="dropdown"
-                    id="rsvpBtn{{ guest.id }}"
-                    style="cursor:pointer; font-size:0.75rem;">
+                    id="rsvpBtn{{ guest.id }}">
                 {{ rsvp_labels.get(guest.rsvp_status, guest.rsvp_status) }}
             </button>
             <ul class="dropdown-menu dropdown-menu-end" style="min-width:130px;">
                 <li><button class="dropdown-item small" type="button"
-                        onclick="updateRsvp({{ guest.id }}, 'accepted')">&#10003; Accepted</button></li>
+                        onclick="updateRsvp({{ guest.id }}, 'accepted')">Accepted</button></li>
                 <li><button class="dropdown-item small" type="button"
-                        onclick="updateRsvp({{ guest.id }}, 'pending')">&#8987; Pending</button></li>
+                        onclick="updateRsvp({{ guest.id }}, 'pending')">Pending</button></li>
                 <li><button class="dropdown-item small" type="button"
-                        onclick="updateRsvp({{ guest.id }}, 'declined')">&#10007; Declined</button></li>
+                        onclick="updateRsvp({{ guest.id }}, 'declined')">Declined</button></li>
             </ul>
         </div>
     </td>
