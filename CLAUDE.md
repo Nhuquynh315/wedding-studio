@@ -50,6 +50,26 @@ DATABASE_URL=sqlite:///wedding_studio.db   # optional, this is the default
 GEMINI_API_KEY=<key>                       # required for AI theme generation
 ```
 
+## Development — test account
+
+Seeded in `backend/instance/wedding_studio.db` (dev database, not committed):
+
+- **Email:** `doe@gmail.com`
+- **Password:** `12345678` — dev only, do not reuse anywhere real
+- **Full name:** Doe
+
+Test data attached to this account (one wedding, partners SHELL & SEA, date 2026-06-19):
+
+| Data | Count |
+|---|---|
+| Guests | 101 |
+| Checklist items | 36 |
+| Budget categories | 8 |
+| Wedding tables | 0 |
+| Vendors | 0 |
+
+If the database was deleted and recreated from migrations, re-register at `/register` — the schema is empty after a fresh `flask db upgrade`.
+
 ## Architecture
 
 **Application factory** in `app/__init__.py` — `create_app(config_name)` accepts `'development'`, `'testing'`, or `'production'`. Config classes live in `config.py`. Extensions initialised at module level: `db`, `login_manager`, `migrate`, `csrf`, `limiter`.
