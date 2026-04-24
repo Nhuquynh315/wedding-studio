@@ -29,6 +29,19 @@ uv venv                      # creates .venv using the pinned 3.12 interpreter
 uv pip install -e ".[dev]"   # installs all deps including dev extras
 ```
 
+### Running Flask — directory matters
+
+All `flask` commands must be run from `backend/`, not the repo root. `run.py` lives in `backend/` and is what Flask resolves as the app entry point — running from the repo root produces `Could not import 'run'`.
+
+Canonical smoke-test sequence:
+
+```bash
+cd backend && source .venv/bin/activate && \
+  flask --app run run --port 5001 --no-debugger
+```
+
+`FLASK_APP=run flask run --port 5001` is an equivalent alternative but `--app run` is the more explicit form and matches all migration commands (`flask --app run db upgrade`, etc.).
+
 Environment variables are loaded from `.env`. Minimum required:
 ```
 FLASK_ENV=development
