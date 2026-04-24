@@ -197,7 +197,13 @@ def set_total(wedding_id):
     except (ValueError, TypeError):
         return jsonify({"ok": False, "error": "Invalid amount"}), 400
 
+    old_total = wedding.total_budget or 0
     wedding.total_budget = amount
+
+    from app.services.budget_service import scale_existing_categories
+
+    scale_existing_categories(wedding_id, old_total, amount)
+
     try:
         db.session.commit()
         _, total_actual_paid, _, _ = _budget_totals(wedding)
