@@ -43,13 +43,14 @@ def dashboard():
     accepted = sum(1 for g in guests if g.rsvp_status == "confirmed")
     declined = sum(1 for g in guests if g.rsvp_status == "declined")
     pending = sum(1 for g in guests if g.rsvp_status == "pending")
+    responded = accepted + declined
 
     guest_stats = {
         "total": total,
         "accepted": accepted,
         "declined": declined,
         "pending": pending,
-        "response_rate": round(accepted / total * 100) if total else 0,
+        "response_rate": round(responded / total * 100) if total else 0,
     }
 
     # Checklist — use real DB items if they exist, else fallback to setup prompts
