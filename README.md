@@ -90,7 +90,7 @@ pytest
 ## Roadmap
 
 - [x] **Phase 1** — Repo hygiene & tooling (monorepo layout, uv, pyproject.toml, pre-commit + Ruff + Black, Python 3.12 pin)
-- [ ] **Phase 2** — Extract inline JS/CSS from Jinja templates into `static/js/` and `static/css/`
+- [x] **Phase 2** — Extract inline CSS from `base.html` and `dashboard.html` (minimum viable scope; remaining template extractions deferred to Phase 4 React rewrite)
 - [ ] **Phase 3** — Port backend to FastAPI with a JSON API
 - [ ] **Phase 4** — Build React + TypeScript frontend
 - [ ] **Phase 5** — Test coverage (pytest, Vitest, Playwright)
