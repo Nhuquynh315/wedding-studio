@@ -177,6 +177,17 @@ Migrate Flask routes to FastAPI with Pydantic schemas for request/response valid
 - `JWT_SECRET_KEY` generated and written to `.env` (not `.env.example`)
 - Commit: `f6d6359`
 
-#### Tomorrow — Prompt 2
+Prompts 2, 3, 4 of 15 complete:
 
-Wire FastAPI to the SQLAlchemy models in `backend/app/models.py` and add the `get_db` dependency.
+- FastAPI now reads same DB as Flask via shared `SessionLocal` (matched user counts: 1 = 1)
+- Discovered Flask-SQLAlchemy / raw SQLAlchemy URL incompatibility; fixed via separate `SQLALCHEMY_DATABASE_URL` env var
+- pytest infrastructure landed: 8 tests passing in <2s
+- Auth schemas defined (`UserCreate`, `UserLogin`, `UserPublic`, `Token`, `TokenPayload`) in `api/schemas/auth.py`
+- Password hashing implemented: bcrypt for new hashes, werkzeug for legacy Flask scrypt hashes
+- Removed `passlib` dependency (unmaintained, broken with modern bcrypt)
+- `needs_rehash()` helper added for transparent legacy user migration on login
+- Commits: `0ee3ce8`, `9d42259`, `8ad0a52`, `0d5053b`
+
+#### Tomorrow — Prompt 5
+
+JWT helpers (`create_access_token`, `create_refresh_token`, `verify_token`) in `api/core/security.py`.
