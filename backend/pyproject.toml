@@ -41,7 +41,7 @@ exclude = ["migrations"]
 
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "B", "UP", "SIM"]
-ignore = ["E501"]
+ignore = ["E501", "B008"]  # B008: FastAPI Depends() in default args is intentional
 
 [tool.black]
 line-length = 100
