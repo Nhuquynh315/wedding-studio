@@ -169,3 +169,14 @@ Completed across 13 commits (`d4e7b00` → `739ebc4`):
 ### Phase 3 — Port backend to FastAPI
 
 Migrate Flask routes to FastAPI with Pydantic schemas for request/response validation. SQLAlchemy models and Alembic migrations are reused as-is — only the route layer changes. The Jinja templates will be temporarily kept (served by a thin FastAPI/Starlette static mount) until Phase 4 replaces them with React. The output of Phase 3 is a JSON API at `/api/*` with auto-generated OpenAPI docs at `/api/docs`.
+
+#### Session log — 2026-05-03
+
+- Started Phase 3 (prompt 1 of 15 complete): FastAPI scaffold with `/api/v1/health` endpoint
+- Added deps: `fastapi`, `uvicorn`, `python-jose`, `passlib`, `pydantic-settings`
+- `JWT_SECRET_KEY` generated and written to `.env` (not `.env.example`)
+- Commit: `f6d6359`
+
+#### Tomorrow — Prompt 2
+
+Wire FastAPI to the SQLAlchemy models in `backend/app/models.py` and add the `get_db` dependency.
