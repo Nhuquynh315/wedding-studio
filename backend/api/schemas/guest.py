@@ -67,3 +67,23 @@ class BulkRSVPResult(BaseModel):
     """Response from bulk RSVP update."""
 
     updated_count: int
+
+
+class CSVImportResult(BaseModel):
+    """Successful CSV import response."""
+
+    imported: int
+
+
+class CSVRowError(BaseModel):
+    """One row's validation errors."""
+
+    row: int
+    errors: dict[str, list[str]]
+
+
+class CSVImportErrorResponse(BaseModel):
+    """Error response when row validation fails (400)."""
+
+    detail: str
+    row_errors: list[CSVRowError]

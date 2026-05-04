@@ -482,3 +482,224 @@ def test_bulk_rsvp_invalid_status_returns_422(
         headers=_auth_headers(token),
     )
     assert resp.status_code == 422
+
+
+# ── CSV import ────────────────────────────────────────────────────────────────
+
+
+def _import_url(wedding_id: int) -> str:
+    return f"/api/v1/weddings/{wedding_id}/guests/import"
+
+
+def _csv_bytes(content: str) -> bytes:
+    return content.encode("utf-8")
+
+
+def test_csv_import_creates_guests(
+    client, register_and_login, db_session, create_wedding, user_id_from_email
+):
+    token = register_and_login(client)
+    user_id = user_id_from_email(db_session, "alice@example.com")
+    wedding = create_wedding(db_session, user_id)
+
+    csv = "full_name,email,rsvp_status\nAlice,alice@example.com,confirmed\nBob,bob@example.com,pending\n"
+    resp = client.post(
+        _import_url(wedding.id),
+        files={"file": ("guests.csv", _csv_bytes(csv), "text/csv")},
+        headers=_auth_headers(token),
+    )
+    assert resp.status_code == 200
+    assert resp.json() == {"imported": 2}
+
+    resp = client.get(_guests_url(wedding.id), headers=_auth_headers(token))
+    items = resp.json()["items"]
+    assert len(items) == 2
+    assert {g["full_name"] for g in items} == {"Alice", "Bob"}
+
+
+def test_csv_import_minimal_only_full_name(
+    client, register_and_login, db_session, create_wedding, user_id_from_email
+):
+    """CSV with only the required column works."""
+    token = register_and_login(client)
+    user_id = user_id_from_email(db_session, "alice@example.com")
+    wedding = create_wedding(db_session, user_id)
+
+    csv = "full_name\nAlice\nBob\nCharlie\n"
+    resp = client.post(
+        _import_url(wedding.id),
+        files={"file": ("guests.csv", _csv_bytes(csv), "text/csv")},
+        headers=_auth_headers(token),
+    )
+    assert resp.status_code == 200
+    assert resp.json() == {"imported": 3}
+
+
+def test_csv_import_empty_rsvp_defaults_to_pending(
+    client, register_and_login, db_session, create_wedding, user_id_from_email
+):
+    token = register_and_login(client)
+    user_id = user_id_from_email(db_session, "alice@example.com")
+    wedding = create_wedding(db_session, user_id)
+
+    csv = "full_name,rsvp_status\nAlice,\nBob,confirmed\n"
+    resp = client.post(
+        _import_url(wedding.id),
+        files={"file": ("guests.csv", _csv_bytes(csv), "text/csv")},
+        headers=_auth_headers(token),
+    )
+    assert resp.status_code == 200
+
+    resp = client.get(_guests_url(wedding.id), headers=_auth_headers(token))
+    items = {g["full_name"]: g["rsvp_status"] for g in resp.json()["items"]}
+    assert items == {"Alice": "pending", "Bob": "confirmed"}
+
+
+def test_csv_import_unknown_columns_are_ignored(
+    client, register_and_login, db_session, create_wedding, user_id_from_email
+):
+    """Extra columns shouldn't cause errors."""
+    token = register_and_login(client)
+    user_id = user_id_from_email(db_session, "alice@example.com")
+    wedding = create_wedding(db_session, user_id)
+
+    csv = "full_name,email,future_field,xyz\nAlice,alice@example.com,foo,bar\n"
+    resp = client.post(
+        _import_url(wedding.id),
+        files={"file": ("guests.csv", _csv_bytes(csv), "text/csv")},
+        headers=_auth_headers(token),
+    )
+    assert resp.status_code == 200
+    assert resp.json() == {"imported": 1}
+
+
+def test_csv_import_bom_tolerated(
+    client, register_and_login, db_session, create_wedding, user_id_from_email
+):
+    """CSVs saved by Excel often have a UTF-8 BOM at the start."""
+    token = register_and_login(client)
+    user_id = user_id_from_email(db_session, "alice@example.com")
+    wedding = create_wedding(db_session, user_id)
+
+    csv_with_bom = b"\xef\xbb\xbf" + b"full_name\nAlice\n"
+    resp = client.post(
+        _import_url(wedding.id),
+        files={"file": ("guests.csv", csv_with_bom, "text/csv")},
+        headers=_auth_headers(token),
+    )
+    assert resp.status_code == 200
+    assert resp.json() == {"imported": 1}
+
+
+def test_csv_import_missing_required_column_returns_400(
+    client, register_and_login, db_session, create_wedding, user_id_from_email
+):
+    token = register_and_login(client)
+    user_id = user_id_from_email(db_session, "alice@example.com")
+    wedding = create_wedding(db_session, user_id)
+
+    csv = "email,phone\nalice@example.com,+61400111222\n"
+    resp = client.post(
+        _import_url(wedding.id),
+        files={"file": ("guests.csv", _csv_bytes(csv), "text/csv")},
+        headers=_auth_headers(token),
+    )
+    assert resp.status_code == 400
+    assert "full_name" in resp.json()["detail"]["message"]
+
+
+def test_csv_import_invalid_email_rejects_entire_upload(
+    client, register_and_login, db_session, create_wedding, user_id_from_email
+):
+    """All-or-nothing semantics: row 2 is bad, so row 1 is also rejected."""
+    token = register_and_login(client)
+    user_id = user_id_from_email(db_session, "alice@example.com")
+    wedding = create_wedding(db_session, user_id)
+
+    csv = "full_name,email\nAlice,alice@example.com\nBob,not-an-email\n"
+    resp = client.post(
+        _import_url(wedding.id),
+        files={"file": ("guests.csv", _csv_bytes(csv), "text/csv")},
+        headers=_auth_headers(token),
+    )
+    assert resp.status_code == 400
+
+    row_errors = resp.json()["detail"]["row_errors"]
+    assert len(row_errors) == 1
+    assert row_errors[0]["row"] == 2
+    assert "email" in row_errors[0]["errors"]
+
+    # Verify NEITHER guest was imported
+    resp = client.get(_guests_url(wedding.id), headers=_auth_headers(token))
+    assert len(resp.json()["items"]) == 0
+
+
+def test_csv_import_invalid_rsvp_status_rejected(
+    client, register_and_login, db_session, create_wedding, user_id_from_email
+):
+    token = register_and_login(client)
+    user_id = user_id_from_email(db_session, "alice@example.com")
+    wedding = create_wedding(db_session, user_id)
+
+    csv = "full_name,rsvp_status\nAlice,maybe\n"
+    resp = client.post(
+        _import_url(wedding.id),
+        files={"file": ("guests.csv", _csv_bytes(csv), "text/csv")},
+        headers=_auth_headers(token),
+    )
+    assert resp.status_code == 400
+    assert resp.json()["detail"]["row_errors"][0]["row"] == 1
+
+
+def test_csv_import_other_users_wedding_returns_404(
+    client, register_and_login, db_session, create_wedding, user_id_from_email
+):
+    register_and_login(client, "alice@example.com")
+    alice_id = user_id_from_email(db_session, "alice@example.com")
+    alice_wedding = create_wedding(db_session, alice_id)
+
+    bob_token = register_and_login(client, "bob@example.com")
+    csv = "full_name\nIntruder\n"
+    resp = client.post(
+        _import_url(alice_wedding.id),
+        files={"file": ("guests.csv", _csv_bytes(csv), "text/csv")},
+        headers=_auth_headers(bob_token),
+    )
+    assert resp.status_code == 404
+
+
+def test_csv_import_empty_file_returns_400(
+    client, register_and_login, db_session, create_wedding, user_id_from_email
+):
+    token = register_and_login(client)
+    user_id = user_id_from_email(db_session, "alice@example.com")
+    wedding = create_wedding(db_session, user_id)
+
+    resp = client.post(
+        _import_url(wedding.id),
+        files={"file": ("guests.csv", b"", "text/csv")},
+        headers=_auth_headers(token),
+    )
+    assert resp.status_code == 400
+
+
+def test_csv_import_oversized_file_returns_400(
+    client, register_and_login, db_session, create_wedding, user_id_from_email
+):
+    """Files over 1 MB should be rejected."""
+    token = register_and_login(client)
+    user_id = user_id_from_email(db_session, "alice@example.com")
+    wedding = create_wedding(db_session, user_id)
+
+    header = "full_name\n"
+    row = "A" * 100 + "\n"
+    big_csv = header + row * 11000  # ~1.1 MB
+    assert len(big_csv) > 1024 * 1024
+
+    resp = client.post(
+        _import_url(wedding.id),
+        files={"file": ("guests.csv", _csv_bytes(big_csv), "text/csv")},
+        headers=_auth_headers(token),
+    )
+    assert resp.status_code == 400
+    assert "too large" in resp.json()["detail"]["message"].lower()

@@ -1,14 +1,16 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
+from api.core.csv_import import CSVImportError, parse_guest_csv
 from api.core.db import get_db
 from api.core.deps import require_wedding_access
 from api.core.pagination import cursor_or_422, encode_cursor
 from api.schemas.guest import (
     BulkRSVPResult,
     BulkRSVPUpdate,
+    CSVImportResult,
     GuestCreate,
     GuestList,
     GuestPublic,
@@ -80,6 +82,37 @@ def bulk_update_rsvp(
     db.commit()
 
     return BulkRSVPResult(updated_count=updated_count)
+
+
+@router.post(
+    "/import",
+    response_model=CSVImportResult,
+    responses={
+        400: {"description": "CSV validation failed (per-row errors in body)"},
+    },
+)
+async def import_guests_csv(
+    file: Annotated[UploadFile, File()],
+    wedding: Annotated[object, Depends(require_wedding_access)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    from app.models import Guest
+
+    file_bytes = await file.read()
+
+    try:
+        result = parse_guest_csv(file_bytes, GuestCreate)
+    except CSVImportError as exc:
+        detail: dict = {"message": str(exc)}
+        if hasattr(exc, "row_errors"):
+            detail["row_errors"] = [{"row": e.row, "errors": e.errors} for e in exc.row_errors]
+        raise HTTPException(status_code=400, detail=detail) from exc
+
+    new_guests = [Guest(wedding_id=wedding.id, **row_data) for row_data in result.rows]
+    db.add_all(new_guests)
+    db.commit()
+
+    return CSVImportResult(imported=len(new_guests))
 
 
 @router.get("/{guest_id}", response_model=GuestPublic)
