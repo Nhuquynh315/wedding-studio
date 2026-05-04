@@ -191,3 +191,19 @@ Prompts 2, 3, 4 of 15 complete:
 #### Tomorrow — Prompt 5
 
 JWT helpers (`create_access_token`, `create_refresh_token`, `verify_token`) in `api/core/security.py`.
+
+#### Session log — 2026-05-04
+
+Prompts 5, 6 of 15 complete:
+
+- JWT primitives landed: `create_access_token`, `create_refresh_token`, `decode_token` in `api/core/security.py` using python-jose; `InvalidTokenError` raised on any failure mode
+- 4 auth endpoints wired: `POST /register`, `POST /login`, `POST /refresh`, `GET /me`
+- `get_current_user` dependency in `api/core/deps.py` — reusable by all protected endpoints
+- Test count now 28 (up from 15) — 13 auth tests including duplicate-email, token-type confusion, missing-token, garbage-token
+- Per-test in-memory SQLite via `dependency_overrides` — tests no longer pollute dev DB
+- Browser-verified at `/api/v1/docs`: register → login → `/me` chain works end-to-end with real JWT
+- Commits: `ef11425`, `a75f4fd`
+
+#### Tomorrow — Prompt 7
+
+Wedding ownership dependency (`require_wedding_access`) — the reusable decorator that addresses the Phase 1 known debt about `get_wedding_or_403`.
