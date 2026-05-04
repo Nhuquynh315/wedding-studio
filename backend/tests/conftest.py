@@ -107,6 +107,26 @@ def create_wedding():
 
 
 @pytest.fixture
+def create_guest():
+    """Factory: insert a Guest row directly into the test DB."""
+
+    def _inner(db_session, wedding_id, full_name="Charlie", rsvp_status="pending"):
+        from app.models import Guest
+
+        guest = Guest(
+            wedding_id=wedding_id,
+            full_name=full_name,
+            rsvp_status=rsvp_status,
+        )
+        db_session.add(guest)
+        db_session.commit()
+        db_session.refresh(guest)
+        return guest
+
+    return _inner
+
+
+@pytest.fixture
 def user_id_from_email():
     """Factory: look up a User's id by email in the test DB."""
 
