@@ -46,3 +46,11 @@ class GuestPublic(BaseModel):
     table_number: int | None = None
     table_id: int | None = None
     created_at: datetime
+
+
+class GuestList(BaseModel):
+    """Paginated list of guests."""
+
+    items: list[GuestPublic]
+    next_cursor: str | None = None
+    limit: int

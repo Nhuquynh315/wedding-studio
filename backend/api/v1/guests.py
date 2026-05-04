@@ -1,23 +1,41 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from api.core.db import get_db
 from api.core.deps import require_wedding_access
-from api.schemas.guest import GuestCreate, GuestPublic, GuestUpdate
+from api.core.pagination import cursor_or_422, encode_cursor
+from api.schemas.guest import GuestCreate, GuestList, GuestPublic, GuestUpdate, RSVPStatus
 
 router = APIRouter(prefix="/weddings/{wedding_id}/guests", tags=["guests"])
 
 
-@router.get("", response_model=list[GuestPublic])
+@router.get("", response_model=GuestList)
 def list_guests(
     wedding: Annotated[object, Depends(require_wedding_access)],
     db: Annotated[Session, Depends(get_db)],
+    cursor: Annotated[str | None, Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+    rsvp: Annotated[RSVPStatus | None, Query()] = None,
 ):
     from app.models import Guest
 
-    return db.query(Guest).filter(Guest.wedding_id == wedding.id).all()
+    last_id = cursor_or_422(cursor)
+
+    q = db.query(Guest).filter(Guest.wedding_id == wedding.id)
+    if rsvp is not None:
+        q = q.filter(Guest.rsvp_status == rsvp.value)
+    if last_id is not None:
+        q = q.filter(Guest.id > last_id)
+
+    rows = q.order_by(Guest.id.asc()).limit(limit + 1).all()
+
+    has_more = len(rows) > limit
+    items = rows[:limit]
+    next_cursor = encode_cursor(items[-1].id) if has_more and items else None
+
+    return GuestList(items=items, next_cursor=next_cursor, limit=limit)
 
 
 @router.post("", response_model=GuestPublic, status_code=status.HTTP_201_CREATED)
