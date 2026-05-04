@@ -54,3 +54,16 @@ class GuestList(BaseModel):
     items: list[GuestPublic]
     next_cursor: str | None = None
     limit: int
+
+
+class BulkRSVPUpdate(BaseModel):
+    """Input for POST /weddings/{wedding_id}/guests/bulk-rsvp."""
+
+    rsvp_status: RSVPStatus
+    group_name: str | None = Field(default=None, max_length=100)
+
+
+class BulkRSVPResult(BaseModel):
+    """Response from bulk RSVP update."""
+
+    updated_count: int

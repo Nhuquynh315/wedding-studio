@@ -6,7 +6,15 @@ from sqlalchemy.orm import Session
 from api.core.db import get_db
 from api.core.deps import require_wedding_access
 from api.core.pagination import cursor_or_422, encode_cursor
-from api.schemas.guest import GuestCreate, GuestList, GuestPublic, GuestUpdate, RSVPStatus
+from api.schemas.guest import (
+    BulkRSVPResult,
+    BulkRSVPUpdate,
+    GuestCreate,
+    GuestList,
+    GuestPublic,
+    GuestUpdate,
+    RSVPStatus,
+)
 
 router = APIRouter(prefix="/weddings/{wedding_id}/guests", tags=["guests"])
 
@@ -51,6 +59,27 @@ def create_guest(
     db.commit()
     db.refresh(guest)
     return guest
+
+
+@router.post("/bulk-rsvp", response_model=BulkRSVPResult)
+def bulk_update_rsvp(
+    body: BulkRSVPUpdate,
+    wedding: Annotated[object, Depends(require_wedding_access)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    from app.models import Guest
+
+    q = db.query(Guest).filter(Guest.wedding_id == wedding.id)
+    if body.group_name is not None:
+        q = q.filter(Guest.group_name == body.group_name)
+
+    updated_count = q.update(
+        {Guest.rsvp_status: body.rsvp_status.value},
+        synchronize_session=False,
+    )
+    db.commit()
+
+    return BulkRSVPResult(updated_count=updated_count)
 
 
 @router.get("/{guest_id}", response_model=GuestPublic)

@@ -357,3 +357,128 @@ def test_list_guests_filter_and_pagination_combined(
     assert len(data["items"]) >= 1
     assert all(g["rsvp_status"] == "pending" for g in data["items"])
     assert not any(g["rsvp_status"] == "confirmed" for g in data["items"])
+
+
+# ── Bulk RSVP update ──────────────────────────────────────────────────────────
+
+
+def _bulk_url(wedding_id: int) -> str:
+    return f"/api/v1/weddings/{wedding_id}/guests/bulk-rsvp"
+
+
+def test_bulk_rsvp_updates_group(
+    client, register_and_login, db_session, create_wedding, create_guest, user_id_from_email
+):
+    token = register_and_login(client)
+    user_id = user_id_from_email(db_session, "alice@example.com")
+    wedding = create_wedding(db_session, user_id)
+    create_guest(db_session, wedding.id, full_name="Alice Smith", group_name="Smith Family")
+    create_guest(db_session, wedding.id, full_name="Bob Smith", group_name="Smith Family")
+    create_guest(db_session, wedding.id, full_name="Charlie Doe", group_name="Doe Family")
+
+    resp = client.post(
+        _bulk_url(wedding.id),
+        json={"rsvp_status": "confirmed", "group_name": "Smith Family"},
+        headers=_auth_headers(token),
+    )
+    assert resp.status_code == 200
+    assert resp.json() == {"updated_count": 2}
+
+    resp = client.get(f"{_guests_url(wedding.id)}?rsvp=confirmed", headers=_auth_headers(token))
+    confirmed = resp.json()["items"]
+    assert len(confirmed) == 2
+    assert {g["full_name"] for g in confirmed} == {"Alice Smith", "Bob Smith"}
+
+
+def test_bulk_rsvp_no_group_updates_all(
+    client, register_and_login, db_session, create_wedding, create_guest, user_id_from_email
+):
+    """Without group_name, all guests in the wedding are updated."""
+    token = register_and_login(client)
+    user_id = user_id_from_email(db_session, "alice@example.com")
+    wedding = create_wedding(db_session, user_id)
+    for i in range(5):
+        create_guest(db_session, wedding.id, full_name=f"Guest {i}")
+
+    resp = client.post(
+        _bulk_url(wedding.id),
+        json={"rsvp_status": "declined"},
+        headers=_auth_headers(token),
+    )
+    assert resp.status_code == 200
+    assert resp.json() == {"updated_count": 5}
+
+
+def test_bulk_rsvp_empty_match_returns_zero(
+    client, register_and_login, db_session, create_wedding, create_guest, user_id_from_email
+):
+    """No matching guests is success with updated_count=0, not an error."""
+    token = register_and_login(client)
+    user_id = user_id_from_email(db_session, "alice@example.com")
+    wedding = create_wedding(db_session, user_id)
+    create_guest(db_session, wedding.id, full_name="Alice")
+
+    resp = client.post(
+        _bulk_url(wedding.id),
+        json={"rsvp_status": "confirmed", "group_name": "Nonexistent Group"},
+        headers=_auth_headers(token),
+    )
+    assert resp.status_code == 200
+    assert resp.json() == {"updated_count": 0}
+
+
+def test_bulk_rsvp_does_not_affect_other_weddings(
+    client, register_and_login, db_session, create_wedding, create_guest, user_id_from_email
+):
+    """Bulk update on wedding 1 must not touch wedding 2's guests."""
+    token = register_and_login(client)
+    user_id = user_id_from_email(db_session, "alice@example.com")
+    w1 = create_wedding(db_session, user_id)
+    w2 = create_wedding(db_session, user_id)
+    create_guest(db_session, w1.id, full_name="W1 Guest", group_name="Family")
+    w2_guest = create_guest(db_session, w2.id, full_name="W2 Guest", group_name="Family")
+
+    resp = client.post(
+        _bulk_url(w1.id),
+        json={"rsvp_status": "confirmed", "group_name": "Family"},
+        headers=_auth_headers(token),
+    )
+    assert resp.json()["updated_count"] == 1
+
+    from app.models import Guest
+
+    db_session.expire_all()
+    still_pending = db_session.query(Guest).filter(Guest.id == w2_guest.id).first()
+    assert still_pending.rsvp_status == "pending"
+
+
+def test_bulk_rsvp_other_users_wedding_returns_404(
+    client, register_and_login, db_session, create_wedding, create_guest, user_id_from_email
+):
+    register_and_login(client, "alice@example.com")
+    alice_id = user_id_from_email(db_session, "alice@example.com")
+    alice_wedding = create_wedding(db_session, alice_id)
+    create_guest(db_session, alice_wedding.id, full_name="Alice's Guest")
+
+    bob_token = register_and_login(client, "bob@example.com")
+    resp = client.post(
+        _bulk_url(alice_wedding.id),
+        json={"rsvp_status": "confirmed"},
+        headers=_auth_headers(bob_token),
+    )
+    assert resp.status_code == 404
+
+
+def test_bulk_rsvp_invalid_status_returns_422(
+    client, register_and_login, db_session, create_wedding, create_guest, user_id_from_email
+):
+    token = register_and_login(client)
+    user_id = user_id_from_email(db_session, "alice@example.com")
+    wedding = create_wedding(db_session, user_id)
+
+    resp = client.post(
+        _bulk_url(wedding.id),
+        json={"rsvp_status": "maybe"},
+        headers=_auth_headers(token),
+    )
+    assert resp.status_code == 422

@@ -110,13 +110,14 @@ def create_wedding():
 def create_guest():
     """Factory: insert a Guest row directly into the test DB."""
 
-    def _inner(db_session, wedding_id, full_name="Charlie", rsvp_status="pending"):
+    def _inner(db_session, wedding_id, full_name="Charlie", rsvp_status="pending", group_name=None):
         from app.models import Guest
 
         guest = Guest(
             wedding_id=wedding_id,
             full_name=full_name,
             rsvp_status=rsvp_status,
+            group_name=group_name,
         )
         db_session.add(guest)
         db_session.commit()
