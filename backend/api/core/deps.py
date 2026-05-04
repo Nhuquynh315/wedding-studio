@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Path, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
@@ -50,3 +50,30 @@ def get_current_user(
         raise _credentials_exception
 
     return user
+
+
+def require_wedding_access(
+    wedding_id: Annotated[int, Path()],
+    current_user: Annotated[object, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    """Resolve a Wedding for a given path parameter, enforcing ownership.
+
+    Returns the Wedding row if it exists AND is owned by the current
+    user. Raises 404 in either failure case (existence is hidden from
+    unauthorized users by deliberate design).
+
+    Usage:
+        @router.get("/{wedding_id}/guests")
+        def list_guests(wedding: Wedding = Depends(require_wedding_access)):
+            ...
+    """
+    from app.models import Wedding
+
+    wedding = db.query(Wedding).filter(Wedding.id == wedding_id).first()
+    if wedding is None or wedding.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Wedding not found",
+        )
+    return wedding
