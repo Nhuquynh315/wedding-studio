@@ -204,6 +204,19 @@ Prompts 5, 6 of 15 complete:
 - Browser-verified at `/api/v1/docs`: register → login → `/me` chain works end-to-end with real JWT
 - Commits: `ef11425`, `a75f4fd`
 
-#### Tomorrow — Prompt 7
+Prompts 7, 8, 9a, 9b of 15 complete:
 
-Wedding ownership dependency (`require_wedding_access`) — the reusable decorator that addresses the Phase 1 known debt about `get_wedding_or_403`.
+- `require_wedding_access` dependency landed in `api/core/deps.py` — returns 404 (not 403) to hide resource existence; addresses Phase 1 known debt about `get_wedding_or_403`
+- Wedding CRUD endpoints: list, create, get, patch, delete under `/api/v1/weddings`
+- Guest CRUD endpoints (9a): list, create, get, patch, delete under `/api/v1/weddings/{wedding_id}/guests`; `RSVPStatus` StrEnum validates pending/confirmed/declined
+- Cursor pagination + RSVP filter (9b): `GET /api/v1/weddings/{wedding_id}/guests` now returns `{"items": [...], "next_cursor": str|null, "limit": int}`; default limit 50, max 200; reusable cursor utilities in `api/core/pagination.py` (will be used by vendors and checklist)
+- Caught and fixed naming bug: `cursor_or_400` → `cursor_or_422` (helper raises 422, name now matches)
+- All edge cases tested: limit bounds, invalid cursor (422), empty page, filter+pagination combined, missing-id-in-payload
+- Test count now 67 (up from 28)
+- Commits: `672c0b2`, `4da93b0`, `d4d680a`
+
+#### Tomorrow — Prompts 9c, 9d, 10–13
+
+- 9c — RSVP bulk update endpoint (mark whole group as confirmed/etc)
+- 9d — CSV import endpoint
+- After that, Prompts 10–13 (budget, vendors, checklist, seating) — largely mechanical applications of established patterns
