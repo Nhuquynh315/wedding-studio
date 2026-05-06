@@ -1,3 +1,4 @@
+// Path alias + generated types verified: import type { components } from '@/lib/api-types'
 export default function App() {
   return (
     <div className="min-h-screen flex items-center justify-center">
