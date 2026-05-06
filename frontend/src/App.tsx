@@ -1,22 +1,32 @@
-import { useAuth } from '@/lib/auth-context'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+
+import { AuthExpiredHandler } from '@/components/AuthExpiredHandler'
+import { ProtectedRoute } from '@/components/ProtectedRoute'
+import { DashboardPage } from '@/pages/DashboardPage'
+import { LoginPage } from '@/pages/LoginPage'
+import { NotFoundPage } from '@/pages/NotFoundPage'
 
 export default function App() {
-  const { user, isLoading } = useAuth()
-
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="font-serif text-5xl mb-2 text-[var(--color-text-dark)]">
-          Wedding Studio
-        </h1>
-        <p className="text-sm tracking-widest uppercase text-[var(--color-rose)]">
-          {isLoading
-            ? 'Loading…'
-            : user
-              ? `Logged in as ${user.email}`
-              : 'Not logged in'}
-        </p>
-      </div>
-    </div>
+    <BrowserRouter>
+      <AuthExpiredHandler />
+      <Routes>
+        {/* Public */}
+        <Route path="/login" element={<LoginPage />} />
+
+        {/* Protected */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* 404 */}
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </BrowserRouter>
   )
 }
