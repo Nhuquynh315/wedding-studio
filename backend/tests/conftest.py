@@ -183,13 +183,15 @@ def create_expense():
 def create_vendor():
     """Factory: insert a Vendor row directly into the test DB."""
 
-    def _inner(db_session, wedding_id, business_name="Test Vendor"):
+    def _inner(db_session, wedding_id, business_name="Test Vendor", **kwargs):
         from app.models import Vendor
 
         vendor = Vendor(
             wedding_id=wedding_id,
             business_name=business_name,
-            category="Other",
+            status=kwargs.pop("status", "considering"),
+            category=kwargs.pop("category", "Other"),
+            **kwargs,
         )
         db_session.add(vendor)
         db_session.commit()
