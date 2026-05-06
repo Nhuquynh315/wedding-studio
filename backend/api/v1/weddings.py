@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from api.core.db import get_db
 from api.core.deps import get_current_user, require_wedding_access
 from api.schemas.wedding import WeddingCreate, WeddingPublic, WeddingUpdate
+from api.services.budget_seeding import seed_default_categories
 
 router = APIRouter(prefix="/weddings", tags=["weddings"])
 
@@ -48,6 +49,10 @@ def create_wedding(
     db.add(wedding)
     db.commit()
     db.refresh(wedding)
+
+    seed_default_categories(db, wedding.id, total_budget=wedding.total_budget)
+    db.commit()
+
     return wedding
 
 

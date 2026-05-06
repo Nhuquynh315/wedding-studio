@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
 from api.core.config import settings
-from api.v1 import auth, guests, health, weddings
+from api.v1 import auth, budget, guests, health, weddings
 
 app = FastAPI(
     title=settings.app_name,
@@ -15,3 +15,4 @@ app.include_router(health.router, prefix="/api/v1")
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(weddings.router, prefix="/api/v1")
 app.include_router(guests.router, prefix="/api/v1")
+app.include_router(budget.router, prefix="/api/v1")

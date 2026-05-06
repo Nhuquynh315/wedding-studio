@@ -128,6 +128,78 @@ def create_guest():
 
 
 @pytest.fixture
+def create_category():
+    """Factory: insert a BudgetCategory row directly into the test DB."""
+
+    def _inner(db_session, wedding_id, name="Test Cat", allocated_amount=1000.0, color=None):
+        from app.models import BudgetCategory
+
+        cat = BudgetCategory(
+            wedding_id=wedding_id,
+            name=name,
+            allocated_amount=allocated_amount,
+            color=color,
+        )
+        db_session.add(cat)
+        db_session.commit()
+        db_session.refresh(cat)
+        return cat
+
+    return _inner
+
+
+@pytest.fixture
+def create_expense():
+    """Factory: insert an Expense row directly into the test DB."""
+
+    def _inner(
+        db_session,
+        category_id,
+        wedding_id,
+        title="Test Expense",
+        estimated_cost=100.0,
+        actual_cost=None,
+        vendor_id=None,
+    ):
+        from app.models import Expense
+
+        expense = Expense(
+            category_id=category_id,
+            wedding_id=wedding_id,
+            title=title,
+            estimated_cost=estimated_cost,
+            actual_cost=actual_cost,
+            vendor_id=vendor_id,
+        )
+        db_session.add(expense)
+        db_session.commit()
+        db_session.refresh(expense)
+        return expense
+
+    return _inner
+
+
+@pytest.fixture
+def create_vendor():
+    """Factory: insert a Vendor row directly into the test DB."""
+
+    def _inner(db_session, wedding_id, business_name="Test Vendor"):
+        from app.models import Vendor
+
+        vendor = Vendor(
+            wedding_id=wedding_id,
+            business_name=business_name,
+            category="Other",
+        )
+        db_session.add(vendor)
+        db_session.commit()
+        db_session.refresh(vendor)
+        return vendor
+
+    return _inner
+
+
+@pytest.fixture
 def user_id_from_email():
     """Factory: look up a User's id by email in the test DB."""
 
