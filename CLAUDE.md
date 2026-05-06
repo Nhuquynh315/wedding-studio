@@ -168,57 +168,41 @@ Completed across 13 commits (`d4e7b00` → `739ebc4`):
 - Remaining template extractions (settings, checklist, vendors, budget, detail, seating) deferred to Phase 4 — those templates will be replaced by React components rather than refactored as Jinja
 - Opportunistic UX fixes shipped during Phase 2: RSVP status pills, budget proportional scaling, dashboard response rate calculation
 
-### Phase 3 — Port backend to FastAPI
+### Phase 3 — Port backend to FastAPI ✅ COMPLETE
 
-Migrate Flask routes to FastAPI with Pydantic schemas for request/response validation. SQLAlchemy models and Alembic migrations are reused as-is — only the route layer changes. The Jinja templates will be temporarily kept (served by a thin FastAPI/Starlette static mount) until Phase 4 replaces them with React. The output of Phase 3 is a JSON API at `/api/*` with auto-generated OpenAPI docs at `/api/docs`.
+Migrated Flask routes to FastAPI with Pydantic schemas. SQLAlchemy models and Alembic migrations reused as-is. Output: JSON API at `/api/v1/*` with OpenAPI docs at `/api/v1/docs`. 171 tests passing.
 
-#### Session log — 2026-05-03
+**Architecture decisions documented in `docs/architecture.md`** — JWT auth, backward-compatible password hashing, resource cloaking (404 over 403), three-schema pattern, cursor pagination, application-level SET NULL cascades, RFC 7807 errors, test isolation.
 
-- Started Phase 3 (prompt 1 of 15 complete): FastAPI scaffold with `/api/v1/health` endpoint
-- Added deps: `fastapi`, `uvicorn`, `python-jose`, `passlib`, `pydantic-settings`
-- `JWT_SECRET_KEY` generated and written to `.env` (not `.env.example`)
-- Commit: `f6d6359`
+#### Completed — 14 prompts across 2026-05-03 → 2026-05-06
 
-Prompts 2, 3, 4 of 15 complete:
+| Prompt | Deliverable | Tests |
+|---|---|---|
+| 1 | FastAPI scaffold, `/api/v1/health` | 8 |
+| 2–4 | pytest infra, auth schemas, bcrypt + werkzeug password hashing | 28 |
+| 5–6 | JWT primitives, auth endpoints (register/login/refresh/me) | 42 |
+| 7–8 | `require_wedding_access` dep, wedding CRUD | 56 |
+| 9a | Guest CRUD | 67 |
+| 9b | Cursor pagination + RSVP filter | 80 |
+| 9c | Bulk RSVP update | 95 |
+| 9d | CSV import (all-or-nothing, 1 MB cap, UTF-8-BOM tolerant) | 115 |
+| 10 | Budget API: categories, expenses, scaling, summary; auto-seed on wedding create | 129 |
+| 11 | Vendors API; application-level SET NULL on expense.vendor_id | 149 |
+| 12 | Checklist API; bulk-complete; `is_completed` + `completed_at` sync | 165 |
+| 13 | Seating API; `/tables/with-guests` (joinedload); SET NULL on guest.table_id | 165 |
+| 14 | RFC 7807 error format; OpenAPI metadata; `docs/architecture.md` | 171 |
 
-- FastAPI now reads same DB as Flask via shared `SessionLocal` (matched user counts: 1 = 1)
-- Discovered Flask-SQLAlchemy / raw SQLAlchemy URL incompatibility; fixed via separate `SQLALCHEMY_DATABASE_URL` env var
-- pytest infrastructure landed: 8 tests passing in <2s
-- Auth schemas defined (`UserCreate`, `UserLogin`, `UserPublic`, `Token`, `TokenPayload`) in `api/schemas/auth.py`
-- Password hashing implemented: bcrypt for new hashes, werkzeug for legacy Flask scrypt hashes
-- Removed `passlib` dependency (unmaintained, broken with modern bcrypt)
-- `needs_rehash()` helper added for transparent legacy user migration on login
-- Commits: `0ee3ce8`, `9d42259`, `8ad0a52`, `0d5053b`
+### Phase 4 — React + TypeScript frontend
 
-#### Tomorrow — Prompt 5
+Replace Jinja templates with a React SPA that consumes the Phase 3 API.
 
-JWT helpers (`create_access_token`, `create_refresh_token`, `verify_token`) in `api/core/security.py`.
+**Stack:** React 18 · TypeScript · Vite · React Query · React Router · Tailwind CSS
 
-#### Session log — 2026-05-04
+**Approach:** Build the frontend in `frontend/` in parallel with the still-running Flask server. Once the React app covers all pages, remove the Jinja templates. The FastAPI server serves both the API and the built React assets (via `StaticFiles` mount).
 
-Prompts 5, 6 of 15 complete:
+**Page targets:** Login/register, dashboard, guest list, budget, vendors, checklist, seating chart (drag-and-drop), settings, AI theme generator.
 
-- JWT primitives landed: `create_access_token`, `create_refresh_token`, `decode_token` in `api/core/security.py` using python-jose; `InvalidTokenError` raised on any failure mode
-- 4 auth endpoints wired: `POST /register`, `POST /login`, `POST /refresh`, `GET /me`
-- `get_current_user` dependency in `api/core/deps.py` — reusable by all protected endpoints
-- Test count now 28 (up from 15) — 13 auth tests including duplicate-email, token-type confusion, missing-token, garbage-token
-- Per-test in-memory SQLite via `dependency_overrides` — tests no longer pollute dev DB
-- Browser-verified at `/api/v1/docs`: register → login → `/me` chain works end-to-end with real JWT
-- Commits: `ef11425`, `a75f4fd`
-
-Prompts 7, 8, 9a, 9b of 15 complete:
-
-- `require_wedding_access` dependency landed in `api/core/deps.py` — returns 404 (not 403) to hide resource existence; addresses Phase 1 known debt about `get_wedding_or_403`
-- Wedding CRUD endpoints: list, create, get, patch, delete under `/api/v1/weddings`
-- Guest CRUD endpoints (9a): list, create, get, patch, delete under `/api/v1/weddings/{wedding_id}/guests`; `RSVPStatus` StrEnum validates pending/confirmed/declined
-- Cursor pagination + RSVP filter (9b): `GET /api/v1/weddings/{wedding_id}/guests` now returns `{"items": [...], "next_cursor": str|null, "limit": int}`; default limit 50, max 200; reusable cursor utilities in `api/core/pagination.py` (will be used by vendors and checklist)
-- Caught and fixed naming bug: `cursor_or_400` → `cursor_or_422` (helper raises 422, name now matches)
-- All edge cases tested: limit bounds, invalid cursor (422), empty page, filter+pagination combined, missing-id-in-payload
-- Test count now 67 (up from 28)
-- Commits: `672c0b2`, `4da93b0`, `d4d680a`
-
-#### Tomorrow — Prompts 9c, 9d, 10–13
-
-- 9c — RSVP bulk update endpoint (mark whole group as confirmed/etc)
-- 9d — CSV import endpoint
-- After that, Prompts 10–13 (budget, vendors, checklist, seating) — largely mechanical applications of established patterns
+**Phase 4 follow-up from Phase 3 decisions:**
+- Cursor pagination means the guest list needs a "load more" button, not traditional pages
+- The `/tables/with-guests` endpoint was purpose-built for the seating chart UI — one call, full state
+- The RFC 7807 error envelope means the frontend can reliably read `body.title` + `body.detail` for all error toasts
