@@ -202,6 +202,27 @@ def create_vendor():
 
 
 @pytest.fixture
+def create_table():
+    """Factory: insert a WeddingTable row directly into the test DB."""
+
+    def _inner(db_session, wedding_id, table_number=1, capacity=8, **kwargs):
+        from app.models import WeddingTable
+
+        table = WeddingTable(
+            wedding_id=wedding_id,
+            table_number=table_number,
+            capacity=capacity,
+            **kwargs,
+        )
+        db_session.add(table)
+        db_session.commit()
+        db_session.refresh(table)
+        return table
+
+    return _inner
+
+
+@pytest.fixture
 def create_checklist_item():
     """Factory: insert a ChecklistItem row directly into the test DB."""
 
