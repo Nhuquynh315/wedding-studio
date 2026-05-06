@@ -605,7 +605,7 @@ def test_csv_import_missing_required_column_returns_400(
         headers=_auth_headers(token),
     )
     assert resp.status_code == 400
-    assert "full_name" in resp.json()["detail"]["message"]
+    assert "full_name" in resp.json()["detail"]
 
 
 def test_csv_import_invalid_email_rejects_entire_upload(
@@ -624,7 +624,7 @@ def test_csv_import_invalid_email_rejects_entire_upload(
     )
     assert resp.status_code == 400
 
-    row_errors = resp.json()["detail"]["row_errors"]
+    row_errors = resp.json()["row_errors"]
     assert len(row_errors) == 1
     assert row_errors[0]["row"] == 2
     assert "email" in row_errors[0]["errors"]
@@ -648,7 +648,7 @@ def test_csv_import_invalid_rsvp_status_rejected(
         headers=_auth_headers(token),
     )
     assert resp.status_code == 400
-    assert resp.json()["detail"]["row_errors"][0]["row"] == 1
+    assert resp.json()["row_errors"][0]["row"] == 1
 
 
 def test_csv_import_other_users_wedding_returns_404(
@@ -702,4 +702,4 @@ def test_csv_import_oversized_file_returns_400(
         headers=_auth_headers(token),
     )
     assert resp.status_code == 400
-    assert "too large" in resp.json()["detail"]["message"].lower()
+    assert "too large" in resp.json()["detail"].lower()
