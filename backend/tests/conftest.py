@@ -202,6 +202,29 @@ def create_vendor():
 
 
 @pytest.fixture
+def create_checklist_item():
+    """Factory: insert a ChecklistItem row directly into the test DB."""
+
+    def _inner(db_session, wedding_id, title="Test Task", **kwargs):
+        from app.models import ChecklistItem
+
+        item = ChecklistItem(
+            wedding_id=wedding_id,
+            title=title,
+            category=kwargs.pop("category", "Other"),
+            priority=kwargs.pop("priority", "medium"),
+            is_completed=kwargs.pop("is_completed", False),
+            **kwargs,
+        )
+        db_session.add(item)
+        db_session.commit()
+        db_session.refresh(item)
+        return item
+
+    return _inner
+
+
+@pytest.fixture
 def user_id_from_email():
     """Factory: look up a User's id by email in the test DB."""
 
