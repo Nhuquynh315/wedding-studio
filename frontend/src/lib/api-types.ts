@@ -175,19 +175,698 @@ export interface paths {
         patch: operations["update_wedding_api_v1_weddings__wedding_id__patch"];
         trace?: never;
     };
+    "/api/v1/weddings/{wedding_id}/guests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Guests */
+        get: operations["list_guests_api_v1_weddings__wedding_id__guests_get"];
+        put?: never;
+        /** Create Guest */
+        post: operations["create_guest_api_v1_weddings__wedding_id__guests_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/weddings/{wedding_id}/guests/bulk-rsvp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Bulk Update Rsvp */
+        post: operations["bulk_update_rsvp_api_v1_weddings__wedding_id__guests_bulk_rsvp_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/weddings/{wedding_id}/guests/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Guests Csv */
+        post: operations["import_guests_csv_api_v1_weddings__wedding_id__guests_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/weddings/{wedding_id}/guests/{guest_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Guest */
+        get: operations["get_guest_api_v1_weddings__wedding_id__guests__guest_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Guest */
+        delete: operations["delete_guest_api_v1_weddings__wedding_id__guests__guest_id__delete"];
+        options?: never;
+        head?: never;
+        /** Patch Guest */
+        patch: operations["patch_guest_api_v1_weddings__wedding_id__guests__guest_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/weddings/{wedding_id}/budget/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Categories */
+        get: operations["list_categories_api_v1_weddings__wedding_id__budget_categories_get"];
+        put?: never;
+        /** Create Category */
+        post: operations["create_category_api_v1_weddings__wedding_id__budget_categories_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/weddings/{wedding_id}/budget/categories/{category_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Category */
+        get: operations["get_category_api_v1_weddings__wedding_id__budget_categories__category_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Category */
+        delete: operations["delete_category_api_v1_weddings__wedding_id__budget_categories__category_id__delete"];
+        options?: never;
+        head?: never;
+        /** Patch Category */
+        patch: operations["patch_category_api_v1_weddings__wedding_id__budget_categories__category_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/weddings/{wedding_id}/budget/scale": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Scale Budget */
+        post: operations["scale_budget_api_v1_weddings__wedding_id__budget_scale_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/weddings/{wedding_id}/budget/expenses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Expenses */
+        get: operations["list_expenses_api_v1_weddings__wedding_id__budget_expenses_get"];
+        put?: never;
+        /** Create Expense */
+        post: operations["create_expense_api_v1_weddings__wedding_id__budget_expenses_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/weddings/{wedding_id}/budget/expenses/{expense_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Expense */
+        get: operations["get_expense_api_v1_weddings__wedding_id__budget_expenses__expense_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Expense */
+        delete: operations["delete_expense_api_v1_weddings__wedding_id__budget_expenses__expense_id__delete"];
+        options?: never;
+        head?: never;
+        /** Patch Expense */
+        patch: operations["patch_expense_api_v1_weddings__wedding_id__budget_expenses__expense_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/weddings/{wedding_id}/budget/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Budget Summary */
+        get: operations["budget_summary_api_v1_weddings__wedding_id__budget_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/weddings/{wedding_id}/vendors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Vendors */
+        get: operations["list_vendors_api_v1_weddings__wedding_id__vendors_get"];
+        put?: never;
+        /** Create Vendor */
+        post: operations["create_vendor_api_v1_weddings__wedding_id__vendors_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/weddings/{wedding_id}/vendors/{vendor_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Vendor */
+        get: operations["get_vendor_api_v1_weddings__wedding_id__vendors__vendor_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete Vendor
+         * @description Delete a vendor. Manually nullifies vendor_id on associated expenses
+         *     before deleting the vendor itself.
+         *
+         *     The model FK doesn't have ON DELETE SET NULL configured, so we enforce
+         *     SET NULL semantics at the application layer. Documented in CLAUDE.md as
+         *     known debt — the DB-level constraint should be added in Phase 5 when
+         *     migrating to Postgres.
+         */
+        delete: operations["delete_vendor_api_v1_weddings__wedding_id__vendors__vendor_id__delete"];
+        options?: never;
+        head?: never;
+        /** Patch Vendor */
+        patch: operations["patch_vendor_api_v1_weddings__wedding_id__vendors__vendor_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/weddings/{wedding_id}/checklist/bulk-complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Bulk Complete */
+        post: operations["bulk_complete_api_v1_weddings__wedding_id__checklist_bulk_complete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/weddings/{wedding_id}/checklist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Items */
+        get: operations["list_items_api_v1_weddings__wedding_id__checklist_get"];
+        put?: never;
+        /** Create Item */
+        post: operations["create_item_api_v1_weddings__wedding_id__checklist_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/weddings/{wedding_id}/checklist/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Item */
+        get: operations["get_item_api_v1_weddings__wedding_id__checklist__item_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Item */
+        delete: operations["delete_item_api_v1_weddings__wedding_id__checklist__item_id__delete"];
+        options?: never;
+        head?: never;
+        /** Patch Item */
+        patch: operations["patch_item_api_v1_weddings__wedding_id__checklist__item_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/weddings/{wedding_id}/tables/with-guests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Tables With Guests
+         * @description List all tables with their assigned guests embedded — for the seating UI.
+         */
+        get: operations["list_tables_with_guests_api_v1_weddings__wedding_id__tables_with_guests_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/weddings/{wedding_id}/tables": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Tables */
+        get: operations["list_tables_api_v1_weddings__wedding_id__tables_get"];
+        put?: never;
+        /** Create Table */
+        post: operations["create_table_api_v1_weddings__wedding_id__tables_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/weddings/{wedding_id}/tables/{table_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Table */
+        get: operations["get_table_api_v1_weddings__wedding_id__tables__table_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete Table
+         * @description Delete a table. Manually nullifies guest.table_id before deleting (application-level
+         *     SET NULL — model FK lacks ondelete='SET NULL'; deferred to Phase 5).
+         */
+        delete: operations["delete_table_api_v1_weddings__wedding_id__tables__table_id__delete"];
+        options?: never;
+        head?: never;
+        /** Patch Table */
+        patch: operations["patch_table_api_v1_weddings__wedding_id__tables__table_id__patch"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** Body_import_guests_csv_api_v1_weddings__wedding_id__guests_import_post */
+        Body_import_guests_csv_api_v1_weddings__wedding_id__guests_import_post: {
+            /** File */
+            file: string;
+        };
         /** Body_refresh_api_v1_auth_refresh_post */
         Body_refresh_api_v1_auth_refresh_post: {
             /** Refresh Token */
             refresh_token: string;
         };
+        /** BudgetCategoryCreate */
+        BudgetCategoryCreate: {
+            /** Name */
+            name: string;
+            /** Allocated Amount */
+            allocated_amount: number;
+            /** Color */
+            color?: string | null;
+        };
+        /** BudgetCategoryPublic */
+        BudgetCategoryPublic: {
+            /** Id */
+            id: number;
+            /** Wedding Id */
+            wedding_id: number;
+            /** Name */
+            name: string;
+            /** Allocated Amount */
+            allocated_amount: number;
+            /** Color */
+            color?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** BudgetCategoryUpdate */
+        BudgetCategoryUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Allocated Amount */
+            allocated_amount?: number | null;
+            /** Color */
+            color?: string | null;
+        };
+        /** BudgetSummary */
+        BudgetSummary: {
+            /** Total Allocated */
+            total_allocated: number;
+            /** Total Spent */
+            total_spent: number;
+            /** Total Remaining */
+            total_remaining: number;
+            /** Categories */
+            categories: components["schemas"]["CategorySummary"][];
+        };
+        /** BulkCompleteRequest */
+        BulkCompleteRequest: {
+            /** Completed */
+            completed: boolean;
+            category?: components["schemas"]["ChecklistCategory"] | null;
+        };
+        /** BulkCompleteResult */
+        BulkCompleteResult: {
+            /** Updated Count */
+            updated_count: number;
+        };
+        /**
+         * BulkRSVPResult
+         * @description Response from bulk RSVP update.
+         */
+        BulkRSVPResult: {
+            /** Updated Count */
+            updated_count: number;
+        };
+        /**
+         * BulkRSVPUpdate
+         * @description Input for POST /weddings/{wedding_id}/guests/bulk-rsvp.
+         */
+        BulkRSVPUpdate: {
+            rsvp_status: components["schemas"]["RSVPStatus"];
+            /** Group Name */
+            group_name?: string | null;
+        };
+        /**
+         * CSVImportResult
+         * @description Successful CSV import response.
+         */
+        CSVImportResult: {
+            /** Imported */
+            imported: number;
+        };
+        /** CategorySummary */
+        CategorySummary: {
+            /** Category Id */
+            category_id: number;
+            /** Category Name */
+            category_name: string;
+            /** Allocated Amount */
+            allocated_amount: number;
+            /** Spent Amount */
+            spent_amount: number;
+            /** Remaining */
+            remaining: number;
+        };
+        /**
+         * ChecklistCategory
+         * @enum {string}
+         */
+        ChecklistCategory: "Venue" | "Catering" | "Attire" | "Photography" | "Flowers" | "Music" | "Stationery" | "Transport" | "Honeymoon" | "Other";
+        /** ChecklistItemCreate */
+        ChecklistItemCreate: {
+            /** Title */
+            title: string;
+            /** @default Other */
+            category: components["schemas"]["ChecklistCategory"];
+            /** @default medium */
+            priority: components["schemas"]["ChecklistPriority"];
+            /** Due Date */
+            due_date?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /**
+             * Is Completed
+             * @default false
+             */
+            is_completed: boolean;
+        };
+        /** ChecklistItemPublic */
+        ChecklistItemPublic: {
+            /** Id */
+            id: number;
+            /** Wedding Id */
+            wedding_id: number;
+            /** Title */
+            title: string;
+            category: components["schemas"]["ChecklistCategory"];
+            priority: components["schemas"]["ChecklistPriority"];
+            /** Due Date */
+            due_date?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /** Is Completed */
+            is_completed: boolean;
+            /** Completed At */
+            completed_at?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** ChecklistItemUpdate */
+        ChecklistItemUpdate: {
+            /** Title */
+            title?: string | null;
+            category?: components["schemas"]["ChecklistCategory"] | null;
+            priority?: components["schemas"]["ChecklistPriority"] | null;
+            /** Due Date */
+            due_date?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /** Is Completed */
+            is_completed?: boolean | null;
+        };
+        /**
+         * ChecklistPriority
+         * @enum {string}
+         */
+        ChecklistPriority: "low" | "medium" | "high";
+        /** ExpenseCreate */
+        ExpenseCreate: {
+            /** Category Id */
+            category_id: number;
+            /** Vendor Id */
+            vendor_id?: number | null;
+            /** Title */
+            title: string;
+            /**
+             * Estimated Cost
+             * @default 0
+             */
+            estimated_cost: number;
+            /** Actual Cost */
+            actual_cost?: number | null;
+            /**
+             * Is Paid
+             * @default false
+             */
+            is_paid: boolean;
+            /** Paid Date */
+            paid_date?: string | null;
+            /** Due Date */
+            due_date?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** ExpensePublic */
+        ExpensePublic: {
+            /** Id */
+            id: number;
+            /** Wedding Id */
+            wedding_id: number;
+            /** Category Id */
+            category_id?: number | null;
+            /** Vendor Id */
+            vendor_id?: number | null;
+            /** Title */
+            title: string;
+            /** Estimated Cost */
+            estimated_cost: number;
+            /** Actual Cost */
+            actual_cost?: number | null;
+            /** Is Paid */
+            is_paid: boolean;
+            /** Paid Date */
+            paid_date?: string | null;
+            /** Due Date */
+            due_date?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** ExpenseUpdate */
+        ExpenseUpdate: {
+            /** Category Id */
+            category_id?: number | null;
+            /** Vendor Id */
+            vendor_id?: number | null;
+            /** Title */
+            title?: string | null;
+            /** Estimated Cost */
+            estimated_cost?: number | null;
+            /** Actual Cost */
+            actual_cost?: number | null;
+            /** Is Paid */
+            is_paid?: boolean | null;
+            /** Paid Date */
+            paid_date?: string | null;
+            /** Due Date */
+            due_date?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** GuestCreate */
+        GuestCreate: {
+            /** Full Name */
+            full_name: string;
+            /** Email */
+            email?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Group Name */
+            group_name?: string | null;
+            /** Meal Preference */
+            meal_preference?: string | null;
+            /** @default pending */
+            rsvp_status: components["schemas"]["RSVPStatus"];
+            /** Table Number */
+            table_number?: number | null;
+            /** Table Id */
+            table_id?: number | null;
+        };
+        /**
+         * GuestList
+         * @description Paginated list of guests.
+         */
+        GuestList: {
+            /** Items */
+            items: components["schemas"]["GuestPublic"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+            /** Limit */
+            limit: number;
+        };
+        /** GuestPublic */
+        GuestPublic: {
+            /** Id */
+            id: number;
+            /** Wedding Id */
+            wedding_id: number;
+            /** Full Name */
+            full_name: string;
+            /** Email */
+            email?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Group Name */
+            group_name?: string | null;
+            /** Meal Preference */
+            meal_preference?: string | null;
+            rsvp_status: components["schemas"]["RSVPStatus"];
+            /** Table Number */
+            table_number?: number | null;
+            /** Table Id */
+            table_id?: number | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** GuestUpdate */
+        GuestUpdate: {
+            /** Full Name */
+            full_name?: string | null;
+            /** Email */
+            email?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Group Name */
+            group_name?: string | null;
+            /** Meal Preference */
+            meal_preference?: string | null;
+            rsvp_status?: components["schemas"]["RSVPStatus"] | null;
+            /** Table Number */
+            table_number?: number | null;
+            /** Table Id */
+            table_id?: number | null;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /**
+         * RSVPStatus
+         * @enum {string}
+         */
+        RSVPStatus: "pending" | "confirmed" | "declined";
+        /** ScaleBudgetRequest */
+        ScaleBudgetRequest: {
+            /** New Total */
+            new_total: number;
+        };
+        /** ScaleBudgetResult */
+        ScaleBudgetResult: {
+            /** Previous Total */
+            previous_total: number;
+            /** New Total */
+            new_total: number;
+            /** Categories Scaled */
+            categories_scaled: number;
         };
         /**
          * Token
@@ -265,6 +944,153 @@ export interface components {
             /** Context */
             ctx?: Record<string, never>;
         };
+        /** VendorCreate */
+        VendorCreate: {
+            /** Business Name */
+            business_name: string;
+            /**
+             * Category
+             * @default Other
+             */
+            category: string;
+            /** Contact Name */
+            contact_name?: string | null;
+            /** Email */
+            email?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Website */
+            website?: string | null;
+            /** Quoted Price */
+            quoted_price?: number | null;
+            /** Deposit Amount */
+            deposit_amount?: number | null;
+            /**
+             * Deposit Paid
+             * @default false
+             */
+            deposit_paid: boolean;
+            /** Deposit Due Date */
+            deposit_due_date?: string | null;
+            /**
+             * Contracted
+             * @default false
+             */
+            contracted: boolean;
+            /** Contract Signed Date */
+            contract_signed_date?: string | null;
+            /** Contract Url */
+            contract_url?: string | null;
+            /** Rating */
+            rating?: number | null;
+            /** Notes */
+            notes?: string | null;
+            /** @default considering */
+            status: components["schemas"]["VendorStatus"];
+            /** Final Payment Amount */
+            final_payment_amount?: number | null;
+            /**
+             * Final Payment Paid
+             * @default false
+             */
+            final_payment_paid: boolean;
+            /** Final Payment Due Date */
+            final_payment_due_date?: string | null;
+        };
+        /** VendorPublic */
+        VendorPublic: {
+            /** Id */
+            id: number;
+            /** Wedding Id */
+            wedding_id: number;
+            /** Business Name */
+            business_name: string;
+            /** Category */
+            category: string;
+            /** Contact Name */
+            contact_name?: string | null;
+            /** Email */
+            email?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Website */
+            website?: string | null;
+            /** Quoted Price */
+            quoted_price?: number | null;
+            /** Deposit Amount */
+            deposit_amount?: number | null;
+            /** Deposit Paid */
+            deposit_paid: boolean;
+            /** Deposit Due Date */
+            deposit_due_date?: string | null;
+            /** Contracted */
+            contracted: boolean;
+            /** Contract Signed Date */
+            contract_signed_date?: string | null;
+            /** Contract Url */
+            contract_url?: string | null;
+            /** Rating */
+            rating?: number | null;
+            /** Notes */
+            notes?: string | null;
+            status: components["schemas"]["VendorStatus"];
+            /** Final Payment Amount */
+            final_payment_amount?: number | null;
+            /** Final Payment Paid */
+            final_payment_paid: boolean;
+            /** Final Payment Due Date */
+            final_payment_due_date?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * VendorStatus
+         * @enum {string}
+         */
+        VendorStatus: "considering" | "booked" | "rejected" | "backup";
+        /** VendorUpdate */
+        VendorUpdate: {
+            /** Business Name */
+            business_name?: string | null;
+            /** Category */
+            category?: string | null;
+            /** Contact Name */
+            contact_name?: string | null;
+            /** Email */
+            email?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Website */
+            website?: string | null;
+            /** Quoted Price */
+            quoted_price?: number | null;
+            /** Deposit Amount */
+            deposit_amount?: number | null;
+            /** Deposit Paid */
+            deposit_paid?: boolean | null;
+            /** Deposit Due Date */
+            deposit_due_date?: string | null;
+            /** Contracted */
+            contracted?: boolean | null;
+            /** Contract Signed Date */
+            contract_signed_date?: string | null;
+            /** Contract Url */
+            contract_url?: string | null;
+            /** Rating */
+            rating?: number | null;
+            /** Notes */
+            notes?: string | null;
+            status?: components["schemas"]["VendorStatus"] | null;
+            /** Final Payment Amount */
+            final_payment_amount?: number | null;
+            /** Final Payment Paid */
+            final_payment_paid?: boolean | null;
+            /** Final Payment Due Date */
+            final_payment_due_date?: string | null;
+        };
         /**
          * WeddingCreate
          * @description Input for POST /api/v1/weddings.
@@ -338,6 +1164,96 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /** WeddingTableCreate */
+        WeddingTableCreate: {
+            /** Table Number */
+            table_number: number;
+            /** Table Name */
+            table_name?: string | null;
+            /**
+             * Capacity
+             * @default 8
+             */
+            capacity: number;
+            /**
+             * Shape
+             * @default round
+             */
+            shape: string;
+            /** Position X */
+            position_x?: number | null;
+            /** Position Y */
+            position_y?: number | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** WeddingTablePublic */
+        WeddingTablePublic: {
+            /** Id */
+            id: number;
+            /** Wedding Id */
+            wedding_id: number;
+            /** Table Number */
+            table_number: number;
+            /** Table Name */
+            table_name?: string | null;
+            /** Capacity */
+            capacity: number;
+            /** Shape */
+            shape: string;
+            /** Position X */
+            position_x?: number | null;
+            /** Position Y */
+            position_y?: number | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** WeddingTableUpdate */
+        WeddingTableUpdate: {
+            /** Table Number */
+            table_number?: number | null;
+            /** Table Name */
+            table_name?: string | null;
+            /** Capacity */
+            capacity?: number | null;
+            /** Shape */
+            shape?: string | null;
+            /** Position X */
+            position_x?: number | null;
+            /** Position Y */
+            position_y?: number | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /**
+         * WeddingTableWithGuests
+         * @description Table with its assigned guests embedded — for the seating UI.
+         */
+        WeddingTableWithGuests: {
+            /** Id */
+            id: number;
+            /** Wedding Id */
+            wedding_id: number;
+            /** Table Number */
+            table_number: number;
+            /** Table Name */
+            table_name?: string | null;
+            /** Capacity */
+            capacity: number;
+            /** Shape */
+            shape: string;
+            /** Position X */
+            position_x?: number | null;
+            /** Position Y */
+            position_y?: number | null;
+            /** Notes */
+            notes?: string | null;
+            /**
+             * Guests
+             * @default []
+             */
+            guests: components["schemas"]["GuestPublic"][];
         };
         /**
          * WeddingUpdate
@@ -670,6 +1586,1209 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WeddingPublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_guests_api_v1_weddings__wedding_id__guests_get: {
+        parameters: {
+            query?: {
+                cursor?: string | null;
+                limit?: number;
+                rsvp?: components["schemas"]["RSVPStatus"] | null;
+            };
+            header?: never;
+            path: {
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_guest_api_v1_weddings__wedding_id__guests_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GuestCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestPublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bulk_update_rsvp_api_v1_weddings__wedding_id__guests_bulk_rsvp_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkRSVPUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkRSVPResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_guests_csv_api_v1_weddings__wedding_id__guests_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_guests_csv_api_v1_weddings__wedding_id__guests_import_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CSVImportResult"];
+                };
+            };
+            /** @description CSV validation failed (per-row errors in body) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_guest_api_v1_weddings__wedding_id__guests__guest_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                guest_id: number;
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestPublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_guest_api_v1_weddings__wedding_id__guests__guest_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                guest_id: number;
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_guest_api_v1_weddings__wedding_id__guests__guest_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                guest_id: number;
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GuestUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestPublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_categories_api_v1_weddings__wedding_id__budget_categories_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetCategoryPublic"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_category_api_v1_weddings__wedding_id__budget_categories_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BudgetCategoryCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetCategoryPublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_category_api_v1_weddings__wedding_id__budget_categories__category_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                category_id: number;
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetCategoryPublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_category_api_v1_weddings__wedding_id__budget_categories__category_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                category_id: number;
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_category_api_v1_weddings__wedding_id__budget_categories__category_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                category_id: number;
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BudgetCategoryUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetCategoryPublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    scale_budget_api_v1_weddings__wedding_id__budget_scale_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScaleBudgetRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScaleBudgetResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_expenses_api_v1_weddings__wedding_id__budget_expenses_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpensePublic"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_expense_api_v1_weddings__wedding_id__budget_expenses_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExpenseCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpensePublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_expense_api_v1_weddings__wedding_id__budget_expenses__expense_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                expense_id: number;
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpensePublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_expense_api_v1_weddings__wedding_id__budget_expenses__expense_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                expense_id: number;
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_expense_api_v1_weddings__wedding_id__budget_expenses__expense_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                expense_id: number;
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExpenseUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpensePublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    budget_summary_api_v1_weddings__wedding_id__budget_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_vendors_api_v1_weddings__wedding_id__vendors_get: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["VendorStatus"] | null;
+            };
+            header?: never;
+            path: {
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorPublic"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_vendor_api_v1_weddings__wedding_id__vendors_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VendorCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorPublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_vendor_api_v1_weddings__wedding_id__vendors__vendor_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vendor_id: number;
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorPublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_vendor_api_v1_weddings__wedding_id__vendors__vendor_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vendor_id: number;
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_vendor_api_v1_weddings__wedding_id__vendors__vendor_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vendor_id: number;
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VendorUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorPublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bulk_complete_api_v1_weddings__wedding_id__checklist_bulk_complete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkCompleteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkCompleteResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_items_api_v1_weddings__wedding_id__checklist_get: {
+        parameters: {
+            query?: {
+                category?: components["schemas"]["ChecklistCategory"] | null;
+                priority?: components["schemas"]["ChecklistPriority"] | null;
+                completed?: boolean | null;
+            };
+            header?: never;
+            path: {
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChecklistItemPublic"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_item_api_v1_weddings__wedding_id__checklist_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChecklistItemCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChecklistItemPublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_item_api_v1_weddings__wedding_id__checklist__item_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: number;
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChecklistItemPublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_item_api_v1_weddings__wedding_id__checklist__item_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: number;
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_item_api_v1_weddings__wedding_id__checklist__item_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: number;
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChecklistItemUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChecklistItemPublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_tables_with_guests_api_v1_weddings__wedding_id__tables_with_guests_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeddingTableWithGuests"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_tables_api_v1_weddings__wedding_id__tables_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeddingTablePublic"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_table_api_v1_weddings__wedding_id__tables_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WeddingTableCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeddingTablePublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_table_api_v1_weddings__wedding_id__tables__table_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                table_id: number;
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeddingTablePublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_table_api_v1_weddings__wedding_id__tables__table_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                table_id: number;
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_table_api_v1_weddings__wedding_id__tables__table_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                table_id: number;
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WeddingTableUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeddingTablePublic"];
                 };
             };
             /** @description Validation Error */

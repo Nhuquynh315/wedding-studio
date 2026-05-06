@@ -1,5 +1,8 @@
-// Path alias + generated types verified: import type { components } from '@/lib/api-types'
+import { useAuth } from '@/lib/auth-context'
+
 export default function App() {
+  const { user, isLoading } = useAuth()
+
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
@@ -7,7 +10,11 @@ export default function App() {
           Wedding Studio
         </h1>
         <p className="text-sm tracking-widest uppercase text-[var(--color-rose)]">
-          Frontend scaffold ready
+          {isLoading
+            ? 'Loading…'
+            : user
+              ? `Logged in as ${user.email}`
+              : 'Not logged in'}
         </p>
       </div>
     </div>
