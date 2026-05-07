@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Heart } from 'lucide-react'
 
@@ -7,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { RSVPBar } from '@/components/dashboard/RSVPBar'
 import { StatCard } from '@/components/dashboard/StatCard'
 import { WeddingSelector } from '@/components/dashboard/WeddingSelector'
+import { CreateWeddingDialog } from '@/pages/dashboard/CreateWeddingDialog'
 import { useActiveWedding } from '@/hooks/useActiveWedding'
 import { api } from '@/lib/api'
 import { queryKeys } from '@/lib/query-keys'
@@ -30,6 +32,7 @@ function formatCurrency(amount: number): string {
 }
 
 export function DashboardPage() {
+  const [showCreate, setShowCreate] = useState(false)
   const {
     weddings,
     active,
@@ -77,13 +80,21 @@ export function DashboardPage() {
               Create your first wedding to start tracking guests, budget, vendors, and more.
             </p>
             <Button
-              onClick={() => alert('Wedding creation flow coming in a later prompt.')}
+              onClick={() => setShowCreate(true)}
               className="bg-[var(--color-rose)] hover:bg-[var(--color-rose-dark)] text-white"
             >
               Create your first wedding
             </Button>
           </CardContent>
         </Card>
+        <CreateWeddingDialog
+          open={showCreate}
+          onClose={() => setShowCreate(false)}
+          onCreated={(id) => {
+            setShowCreate(false)
+            setActiveId(id)
+          }}
+        />
       </div>
     )
   }
