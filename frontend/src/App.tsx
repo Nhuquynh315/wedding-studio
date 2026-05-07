@@ -4,6 +4,7 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { AuthExpiredHandler } from '@/components/AuthExpiredHandler'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { DashboardPage } from '@/pages/DashboardPage'
+import { GuestsPage } from '@/pages/guests/GuestsPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { RegisterPage } from '@/pages/RegisterPage'
@@ -35,7 +36,7 @@ export default function App() {
           }
         >
           <Route path="/" element={<DashboardPage />} />
-          <Route path="/guests" element={<PlaceholderPage name="Guests" />} />
+          <Route path="/guests" element={<GuestsPage />} />
           <Route path="/seating" element={<PlaceholderPage name="Seating" />} />
           <Route path="/budget" element={<PlaceholderPage name="Budget" />} />
           <Route path="/vendors" element={<PlaceholderPage name="Vendors" />} />
