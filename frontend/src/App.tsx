@@ -5,6 +5,7 @@ import { AuthExpiredHandler } from '@/components/AuthExpiredHandler'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { BudgetPage } from '@/pages/budget/BudgetPage'
+import { ChecklistPage } from '@/pages/checklist/ChecklistPage'
 import { GuestsPage } from '@/pages/guests/GuestsPage'
 import { VendorsPage } from '@/pages/vendors/VendorsPage'
 import { LoginPage } from '@/pages/LoginPage'
@@ -42,7 +43,7 @@ export default function App() {
           <Route path="/seating" element={<PlaceholderPage name="Seating" />} />
           <Route path="/budget" element={<BudgetPage />} />
           <Route path="/vendors" element={<VendorsPage />} />
-          <Route path="/checklist" element={<PlaceholderPage name="Checklist" />} />
+          <Route path="/checklist" element={<ChecklistPage />} />
           <Route path="/settings" element={<PlaceholderPage name="Settings" />} />
         </Route>
 
