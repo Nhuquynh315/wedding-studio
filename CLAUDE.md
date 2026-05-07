@@ -206,3 +206,21 @@ Replace Jinja templates with a React SPA that consumes the Phase 3 API.
 - Cursor pagination means the guest list needs a "load more" button, not traditional pages
 - The `/tables/with-guests` endpoint was purpose-built for the seating chart UI — one call, full state
 - The RFC 7807 error envelope means the frontend can reliably read `body.title` + `body.detail` for all error toasts
+
+#### Session log — 2026-05-07
+
+Phase 4 Prompts 5, 6, 6.5, 7 complete (4 prompts in one session):
+
+- **Prompt 5:** Login form — React Hook Form + Zod validation, API error mapping (401/422/other), redirect-back via `location.state.from`
+- **Prompt 6:** Layout shell — 256px sidebar (desktop) + mobile top bar with hamburger Sheet drawer, 7 nav items with lucide icons, NavLink active styling, UserMenu with avatar initials + dropdown
+- **Prompt 6.5:** Registration page — added mid-session, not in original 18-prompt plan; full_name + email + password + confirm_password, Zod `.refine()` for password match, auto-login after register (backend returns UserPublic not Token), reciprocal login↔register links
+- **Prompt 7:** TanStack Query + Dashboard — QueryClient (5min stale / 10min gc / 1 retry), centralized query key factory (`src/lib/query-keys.ts`), devtools wired in dev; 4 stat cards (guests + RSVP bar, response rate, days until wedding, budget spent/allocated), `useActiveWedding` hook persisting active ID in localStorage
+
+4 commits ahead of previous session checkpoint (`666785c` → `6e320c6`).
+
+**Two patterns established for the rest of Phase 4:**
+
+1. **Manual shadcn workaround** — TS 6 peer dep conflict prevents `npx shadcn@latest add` from running (internal `npm install` fails). Pattern: install Radix packages directly with `--legacy-peer-deps`, hand-write the shadcn wrapper matching the New York style source. Components written so far: Button, Input, Label, Card, Sheet, DropdownMenu, Avatar, Skeleton.
+2. **TanStack Query for all server state** — every data fetch goes through `useQuery`; query keys centralized in `src/lib/query-keys.ts` for namespace invalidation; each card/section owns its query so they fetch in parallel and fail independently.
+
+**Next:** Prompt 8 — Guests page. Virtualized table, search, RSVP filter, edit-in-place. Estimated 2.5–3 hours; should be its own session.
