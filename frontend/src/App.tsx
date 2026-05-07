@@ -7,6 +7,7 @@ import { DashboardPage } from '@/pages/DashboardPage'
 import { BudgetPage } from '@/pages/budget/BudgetPage'
 import { ChecklistPage } from '@/pages/checklist/ChecklistPage'
 import { GuestsPage } from '@/pages/guests/GuestsPage'
+import { SeatingPage } from '@/pages/seating/SeatingPage'
 import { VendorsPage } from '@/pages/vendors/VendorsPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
@@ -40,7 +41,7 @@ export default function App() {
         >
           <Route path="/" element={<DashboardPage />} />
           <Route path="/guests" element={<GuestsPage />} />
-          <Route path="/seating" element={<PlaceholderPage name="Seating" />} />
+          <Route path="/seating" element={<SeatingPage />} />
           <Route path="/budget" element={<BudgetPage />} />
           <Route path="/vendors" element={<VendorsPage />} />
           <Route path="/checklist" element={<ChecklistPage />} />
