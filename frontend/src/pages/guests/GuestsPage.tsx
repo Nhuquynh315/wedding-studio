@@ -1,39 +1,64 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Pencil, Trash2, Users } from 'lucide-react'
+import { Search, Users } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AddGuestDialog } from '@/pages/guests/AddGuestDialog'
 import { DeleteGuestDialog } from '@/pages/guests/DeleteGuestDialog'
 import { EditGuestDialog } from '@/pages/guests/EditGuestDialog'
-import { RSVPPill } from '@/pages/guests/RSVPPill'
+import { RSVPFilterChips, type FilterValue } from '@/pages/guests/RSVPFilterChips'
+import { VirtualizedGuestRows } from '@/pages/guests/VirtualizedGuestRows'
 import { useActiveWedding } from '@/hooks/useActiveWedding'
+import { useDebounce } from '@/hooks/useDebounce'
+import { useUrlState } from '@/hooks/useUrlState'
 import { api } from '@/lib/api'
 import { queryKeys } from '@/lib/query-keys'
-import type { GuestPublic } from '@/lib/api-schemas'
+import type { GuestPublic, RSVPStatus } from '@/lib/api-schemas'
+
+function isFilterValue(v: string | null): v is FilterValue {
+  return v === 'pending' || v === 'confirmed' || v === 'declined' || v === 'all'
+}
 
 export function GuestsPage() {
   const { activeId, isLoading: weddingsLoading } = useActiveWedding()
   const [editing, setEditing] = useState<GuestPublic | null>(null)
   const [deleting, setDeleting] = useState<GuestPublic | null>(null)
 
+  const [filterParam, setFilterParam] = useUrlState('rsvp')
+  const filter: FilterValue = isFilterValue(filterParam) ? filterParam : 'all'
+
+  const [search, setSearch] = useState('')
+  const debouncedSearch = useDebounce(search, 350)
+
+  const rsvpForApi: RSVPStatus | undefined = filter === 'all' ? undefined : filter
+
   const guestsQuery = useQuery({
-    queryKey: queryKeys.guests.list(activeId ?? -1, { limit: 200 }),
-    queryFn: () => api.guests.list(activeId!, { limit: 200 }),
+    queryKey: queryKeys.guests.list(activeId ?? -1, { limit: 200, rsvp: rsvpForApi }),
+    queryFn: () => api.guests.list(activeId!, { limit: 200, rsvp: rsvpForApi }),
     enabled: !!activeId,
   })
+
+  const filteredGuests = useMemo(() => {
+    const items = guestsQuery.data?.items ?? []
+    if (!debouncedSearch.trim()) return items
+    const q = debouncedSearch.trim().toLowerCase()
+    return items.filter(
+      (g) =>
+        g.full_name.toLowerCase().includes(q) ||
+        (g.email?.toLowerCase().includes(q) ?? false) ||
+        (g.group_name?.toLowerCase().includes(q) ?? false),
+    )
+  }, [guestsQuery.data, debouncedSearch])
 
   if (weddingsLoading) {
     return (
       <div className="p-8">
         <Skeleton className="h-8 w-48 mb-6" />
-        <div className="space-y-2">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-12" />
-          ))}
-        </div>
+        <Skeleton className="h-10 mb-4" />
+        <Skeleton className="h-96" />
       </div>
     )
   }
@@ -55,12 +80,41 @@ export function GuestsPage() {
         <AddGuestDialog weddingId={activeId} />
       </div>
 
-      {guestsQuery.isLoading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-12" />
-          ))}
+      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-text-muted)]" />
+          <Input
+            type="search"
+            placeholder="Search by name, email, or group…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
         </div>
+        <RSVPFilterChips
+          value={filter}
+          onChange={(v) => setFilterParam(v === 'all' ? null : v)}
+        />
+      </div>
+
+      {(debouncedSearch || filter !== 'all') && !guestsQuery.isLoading && (
+        <p className="text-sm text-[var(--color-text-muted)] mb-3">
+          Showing {filteredGuests.length} of {guestsQuery.data?.items.length ?? 0}
+          {filter !== 'all' && ` ${filter}`} guest
+          {filteredGuests.length !== 1 && 's'}
+        </p>
+      )}
+
+      {guestsQuery.isLoading ? (
+        <Card>
+          <CardContent className="p-0">
+            <div className="space-y-1 p-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Skeleton key={i} className="h-12" />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       ) : guestsQuery.isError ? (
         <Card>
           <CardContent className="p-8 text-center">
@@ -68,75 +122,37 @@ export function GuestsPage() {
             <Button onClick={() => guestsQuery.refetch()}>Try again</Button>
           </CardContent>
         </Card>
-      ) : guestsQuery.data && guestsQuery.data.items.length === 0 ? (
+      ) : (guestsQuery.data?.items.length ?? 0) === 0 ? (
         <Card>
           <CardContent className="p-12 text-center">
             <Users className="h-10 w-10 text-[var(--color-rose)] mx-auto mb-3" />
-            <h2 className="font-serif text-xl mb-1">No guests yet</h2>
+            <h2 className="font-serif text-xl mb-1">
+              {filter !== 'all' ? `No ${filter} guests` : 'No guests yet'}
+            </h2>
             <p className="text-sm text-[var(--color-text-muted)] mb-4">
-              Add your first guest to start tracking RSVPs.
+              {filter !== 'all'
+                ? 'Try a different filter, or add a new guest.'
+                : 'Add your first guest to start tracking RSVPs.'}
             </p>
             <AddGuestDialog weddingId={activeId} />
+          </CardContent>
+        </Card>
+      ) : filteredGuests.length === 0 ? (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <p className="text-sm text-[var(--color-text-muted)]">
+              No guests match your search.
+            </p>
           </CardContent>
         </Card>
       ) : (
         <Card>
           <CardContent className="p-0">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-[var(--color-border-default)] text-left text-xs uppercase tracking-wider text-[var(--color-text-muted)]">
-                  <th className="px-4 py-3">Name</th>
-                  <th className="px-4 py-3 hidden md:table-cell">Group</th>
-                  <th className="px-4 py-3 hidden lg:table-cell">Email</th>
-                  <th className="px-4 py-3">RSVP</th>
-                  <th className="px-4 py-3 w-20"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {guestsQuery.data?.items.map((guest) => (
-                  <tr
-                    key={guest.id}
-                    className="border-b border-[var(--color-border-default)] last:border-0 hover:bg-[var(--color-cream)]"
-                  >
-                    <td className="px-4 py-3">
-                      <div className="font-medium">{guest.full_name}</div>
-                      {guest.meal_preference && (
-                        <div className="text-xs text-[var(--color-text-muted)]">
-                          {guest.meal_preference}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 hidden md:table-cell text-sm text-[var(--color-text-muted)]">
-                      {guest.group_name || '—'}
-                    </td>
-                    <td className="px-4 py-3 hidden lg:table-cell text-sm text-[var(--color-text-muted)]">
-                      {guest.email || '—'}
-                    </td>
-                    <td className="px-4 py-3">
-                      <RSVPPill status={guest.rsvp_status} />
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex gap-1 justify-end">
-                        <button
-                          onClick={() => setEditing(guest)}
-                          className="p-1.5 rounded hover:bg-[var(--color-rose-bg)] text-[var(--color-text-muted)] hover:text-[var(--color-rose-dark)]"
-                          aria-label="Edit"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => setDeleting(guest)}
-                          className="p-1.5 rounded hover:bg-red-50 text-[var(--color-text-muted)] hover:text-red-700"
-                          aria-label="Delete"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <VirtualizedGuestRows
+              guests={filteredGuests}
+              onEdit={setEditing}
+              onDelete={setDeleting}
+            />
           </CardContent>
         </Card>
       )}
