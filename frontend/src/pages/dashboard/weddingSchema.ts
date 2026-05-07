@@ -10,15 +10,15 @@ export const WEDDING_STYLES = [
 ] as const
 
 export const weddingSchema = z.object({
-  partner1_name: z.string().min(1, 'Required'),
-  partner2_name: z.string().min(1, 'Required'),
+  partner1_name: z.string().min(1, 'Required').max(120, 'Max 120 characters'),
+  partner2_name: z.string().min(1, 'Required').max(120, 'Max 120 characters'),
   wedding_date: z.string().min(1, 'Required'),
-  location: z.string().min(1, 'Required'),
-  venue_name: z.string().min(1, 'Required'),
+  location: z.string().min(1, 'Required').max(255, 'Max 255 characters'),
+  venue_name: z.string().min(1, 'Required').max(255, 'Max 255 characters'),
   style: z.enum(WEDDING_STYLES, { message: 'Select a style' }),
   total_budget: z.preprocess(
     (v) => (v === '' || v === undefined || v === null ? null : Number(v)),
-    z.number().positive('Must be positive').nullable(),
+    z.number().min(0, 'Must be 0 or greater').nullable(),
   ),
 })
 
