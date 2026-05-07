@@ -1,10 +1,20 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 
+import { AppLayout } from '@/components/layout/AppLayout'
 import { AuthExpiredHandler } from '@/components/AuthExpiredHandler'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
+
+function PlaceholderPage({ name }: { name: string }) {
+  return (
+    <div className="p-8">
+      <h1 className="font-serif text-3xl mb-2">{name}</h1>
+      <p className="text-sm text-[var(--color-text-muted)]">Coming in a later prompt.</p>
+    </div>
+  )
+}
 
 export default function App() {
   return (
@@ -14,15 +24,22 @@ export default function App() {
         {/* Public */}
         <Route path="/login" element={<LoginPage />} />
 
-        {/* Protected */}
+        {/* Protected — all share the AppLayout shell */}
         <Route
-          path="/"
           element={
             <ProtectedRoute>
-              <DashboardPage />
+              <AppLayout />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/guests" element={<PlaceholderPage name="Guests" />} />
+          <Route path="/seating" element={<PlaceholderPage name="Seating" />} />
+          <Route path="/budget" element={<PlaceholderPage name="Budget" />} />
+          <Route path="/vendors" element={<PlaceholderPage name="Vendors" />} />
+          <Route path="/checklist" element={<PlaceholderPage name="Checklist" />} />
+          <Route path="/settings" element={<PlaceholderPage name="Settings" />} />
+        </Route>
 
         {/* 404 */}
         <Route path="*" element={<NotFoundPage />} />
