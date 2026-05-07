@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @theme inline {
+  /* Brand colors */
   --color-rose: #c9687a;
   --color-rose-bg: #fdf0f2;
   --color-rose-dark: #a8566a;
@@ -11,6 +12,26 @@
 
   --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
   --font-serif: 'Lora', Georgia, serif;
+
+  /* shadcn/ui semantic color tokens — mapped to wedding studio palette */
+  --color-background: #faf8f5;
+  --color-foreground: #2d2420;
+  --color-card: #ffffff;
+  --color-card-foreground: #2d2420;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #2d2420;
+  --color-primary: #c9687a;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f5f0eb;
+  --color-secondary-foreground: #2d2420;
+  --color-muted: #f5f0eb;
+  --color-muted-foreground: #8a7f7a;
+  --color-accent: #f5f0eb;
+  --color-accent-foreground: #2d2420;
+  --color-destructive: #dc2626;
+  --color-border: #e8e0d8;
+  --color-input: #e8e0d8;
+  --color-ring: #c9687a;
 }
 
 @layer base {
