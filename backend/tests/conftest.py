@@ -19,13 +19,9 @@ def db_engine():
         poolclass=StaticPool,
     )
 
-    from app import create_app
+    from app.models import Base
 
-    _flask_app = create_app()
-    with _flask_app.app_context():
-        from app import db as _db
-
-        _db.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
 
     yield engine
     engine.dispose()
