@@ -12,24 +12,8 @@ import { CreateWeddingDialog } from '@/pages/dashboard/CreateWeddingDialog'
 import { useActiveWedding } from '@/hooks/useActiveWedding'
 import { api } from '@/lib/api'
 import { queryKeys } from '@/lib/query-keys'
-
-function daysUntil(dateString: string | null | undefined): number | null {
-  if (!dateString) return null
-  const target = new Date(dateString)
-  if (isNaN(target.getTime())) return null
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  target.setHours(0, 0, 0, 0)
-  return Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-}
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-AU', {
-    style: 'currency',
-    currency: 'AUD',
-    maximumFractionDigits: 0,
-  }).format(amount)
-}
+import { daysUntil } from '@/lib/dates'
+import { formatAUD as formatCurrency } from '@/lib/format'
 
 export function DashboardPage() {
   const [showCreate, setShowCreate] = useState(false)
