@@ -6,6 +6,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { BudgetPage } from '@/pages/budget/BudgetPage'
 import { GuestsPage } from '@/pages/guests/GuestsPage'
+import { VendorsPage } from '@/pages/vendors/VendorsPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { RegisterPage } from '@/pages/RegisterPage'
@@ -40,7 +41,7 @@ export default function App() {
           <Route path="/guests" element={<GuestsPage />} />
           <Route path="/seating" element={<PlaceholderPage name="Seating" />} />
           <Route path="/budget" element={<BudgetPage />} />
-          <Route path="/vendors" element={<PlaceholderPage name="Vendors" />} />
+          <Route path="/vendors" element={<VendorsPage />} />
           <Route path="/checklist" element={<PlaceholderPage name="Checklist" />} />
           <Route path="/settings" element={<PlaceholderPage name="Settings" />} />
         </Route>
