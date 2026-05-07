@@ -5,6 +5,7 @@ import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { QueryErrorState } from '@/components/QueryErrorState'
 import { CreateWeddingDialog } from '@/pages/dashboard/CreateWeddingDialog'
 import { EditWeddingDialog } from '@/pages/settings/EditWeddingDialog'
 import { DeleteWeddingDialog } from '@/pages/settings/DeleteWeddingDialog'
@@ -47,6 +48,12 @@ export function WeddingListSection() {
               <Skeleton key={i} className="h-14" />
             ))}
           </div>
+        ) : weddingsQuery.isError ? (
+          <QueryErrorState
+            error={weddingsQuery.error}
+            onRetry={() => weddingsQuery.refetch()}
+            resourceName="your weddings"
+          />
         ) : (weddingsQuery.data?.length ?? 0) === 0 ? (
           <p className="text-sm text-[var(--color-text-muted)] py-4">
             No weddings yet. Create one to get started.

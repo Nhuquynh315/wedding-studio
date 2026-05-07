@@ -5,6 +5,7 @@ import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { QueryErrorState } from '@/components/QueryErrorState'
 import { useActiveWedding } from '@/hooks/useActiveWedding'
 import { api } from '@/lib/api'
 import { queryKeys } from '@/lib/query-keys'
@@ -46,6 +47,20 @@ export function BudgetPage() {
     return (
       <div className="p-8">
         <Skeleton className="h-96" />
+      </div>
+    )
+  }
+
+  if (categoriesQuery.isError || expensesQuery.isError || summaryQuery.isError) {
+    const err = categoriesQuery.error ?? expensesQuery.error ?? summaryQuery.error
+    const retry = () => {
+      categoriesQuery.refetch()
+      expensesQuery.refetch()
+      summaryQuery.refetch()
+    }
+    return (
+      <div className="p-8 max-w-6xl mx-auto">
+        <QueryErrorState error={err} onRetry={retry} resourceName="your budget" />
       </div>
     )
   }

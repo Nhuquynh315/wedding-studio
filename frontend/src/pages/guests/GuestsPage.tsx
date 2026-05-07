@@ -2,10 +2,10 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Search, Users } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import { QueryErrorState } from '@/components/QueryErrorState'
 import { AddGuestDialog } from '@/pages/guests/AddGuestDialog'
 import { ImportCsvDialog } from '@/pages/guests/ImportCsvDialog'
 import { DeleteGuestDialog } from '@/pages/guests/DeleteGuestDialog'
@@ -120,12 +120,11 @@ export function GuestsPage() {
           </CardContent>
         </Card>
       ) : guestsQuery.isError ? (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <p className="text-sm text-red-700 mb-4">Couldn't load guests.</p>
-            <Button onClick={() => guestsQuery.refetch()}>Try again</Button>
-          </CardContent>
-        </Card>
+        <QueryErrorState
+          error={guestsQuery.error}
+          onRetry={() => guestsQuery.refetch()}
+          resourceName="guests"
+        />
       ) : (guestsQuery.data?.items.length ?? 0) === 0 ? (
         <Card>
           <CardContent className="p-12 text-center">

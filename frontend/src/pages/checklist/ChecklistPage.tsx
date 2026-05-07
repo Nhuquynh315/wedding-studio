@@ -4,6 +4,7 @@ import { CheckSquare } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { QueryErrorState } from '@/components/QueryErrorState'
 import { AddItemDialog } from '@/pages/checklist/AddItemDialog'
 import { BulkCompleteDialog } from '@/pages/checklist/BulkCompleteDialog'
 import { ChecklistFilters } from '@/pages/checklist/ChecklistFilters'
@@ -80,6 +81,12 @@ export function ChecklistPage() {
             ))}
           </CardContent>
         </Card>
+      ) : itemsQuery.isError ? (
+        <QueryErrorState
+          error={itemsQuery.error}
+          onRetry={() => itemsQuery.refetch()}
+          resourceName="checklist items"
+        />
       ) : items.length === 0 ? (
         <Card>
           <CardContent className="p-12 text-center">

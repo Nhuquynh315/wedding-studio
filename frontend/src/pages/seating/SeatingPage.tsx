@@ -15,6 +15,7 @@ import { Plus, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { QueryErrorState } from '@/components/QueryErrorState'
 import { DeleteTableDialog } from '@/pages/seating/DeleteTableDialog'
 import { DroppableZone } from '@/pages/seating/DroppableZone'
 import { TableCard } from '@/pages/seating/TableCard'
@@ -148,6 +149,19 @@ export function SeatingPage() {
     return (
       <div className="p-8">
         <Skeleton className="h-96" />
+      </div>
+    )
+  }
+
+  if (tablesQuery.isError || allGuestsQuery.isError) {
+    const err = tablesQuery.error ?? allGuestsQuery.error
+    const retry = () => {
+      tablesQuery.refetch()
+      allGuestsQuery.refetch()
+    }
+    return (
+      <div className="p-8 max-w-7xl mx-auto">
+        <QueryErrorState error={err} onRetry={retry} resourceName="seating data" />
       </div>
     )
   }

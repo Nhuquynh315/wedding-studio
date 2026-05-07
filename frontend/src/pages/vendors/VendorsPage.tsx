@@ -4,6 +4,7 @@ import { Briefcase } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { QueryErrorState } from '@/components/QueryErrorState'
 import { AddVendorDialog } from '@/pages/vendors/AddVendorDialog'
 import { DeleteVendorDialog } from '@/pages/vendors/DeleteVendorDialog'
 import { EditVendorDialog } from '@/pages/vendors/EditVendorDialog'
@@ -68,6 +69,12 @@ export function VendorsPage() {
             <Skeleton key={i} className="h-48" />
           ))}
         </div>
+      ) : vendorsQuery.isError ? (
+        <QueryErrorState
+          error={vendorsQuery.error}
+          onRetry={() => vendorsQuery.refetch()}
+          resourceName="vendors"
+        />
       ) : vendors.length === 0 ? (
         <Card>
           <CardContent className="p-12 text-center">

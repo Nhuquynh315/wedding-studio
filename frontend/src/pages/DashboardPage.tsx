@@ -136,7 +136,14 @@ function GuestCountCard({ weddingId }: { weddingId: number }) {
   })
 
   if (isLoading) return <Skeleton className="h-32" />
-  if (isError) return <StatCard label="Guests" value="—" sub="error" />
+  if (isError)
+    return (
+      <StatCard
+        label="Guests"
+        value="—"
+        sub={<span className="text-red-600">Error loading</span>}
+      />
+    )
 
   const guests = data?.items ?? []
   const confirmed = guests.filter((g) => g.rsvp_status === 'confirmed').length
@@ -171,12 +178,20 @@ function GuestCountCard({ weddingId }: { weddingId: number }) {
 }
 
 function ResponseRateCard({ weddingId }: { weddingId: number }) {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: queryKeys.guests.list(weddingId, { limit: 200 }),
     queryFn: () => api.guests.list(weddingId, { limit: 200 }),
   })
 
   if (isLoading) return <Skeleton className="h-32" />
+  if (isError)
+    return (
+      <StatCard
+        label="Response rate"
+        value="—"
+        sub={<span className="text-red-600">Error loading</span>}
+      />
+    )
 
   const guests = data?.items ?? []
   const total = guests.length
@@ -209,12 +224,20 @@ function DaysUntilCard({ date }: { date: string | null | undefined }) {
 }
 
 function BudgetCard({ weddingId }: { weddingId: number }) {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: queryKeys.budget.summary(weddingId),
     queryFn: () => api.budget.summary(weddingId),
   })
 
   if (isLoading) return <Skeleton className="h-32" />
+  if (isError)
+    return (
+      <StatCard
+        label="Budget"
+        value="—"
+        sub={<span className="text-red-600">Error loading</span>}
+      />
+    )
 
   const allocated = data?.total_allocated ?? 0
   const spent = data?.total_spent ?? 0
