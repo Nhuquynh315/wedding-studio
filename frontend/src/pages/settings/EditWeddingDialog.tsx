@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -14,19 +14,16 @@ import {
   weddingSchema,
   type WeddingFormValues,
   type WeddingFormOutput,
-} from './weddingSchema'
+} from '@/pages/dashboard/weddingSchema'
+import type { WeddingPublic } from '@/lib/api-schemas'
 
-const DEFAULT_PRIMARY = '#c9687a'
-const DEFAULT_SECONDARY = '#a8566a'
+type Props = {
+  wedding: WeddingPublic | null
+  onClose: () => void
+}
 
-type Props =
-  | { open: boolean; onClose: () => void; onCreated: (id: number) => void; trigger?: never }
-  | { trigger: ReactNode; onCreated?: (id: number) => void; open?: never; onClose?: never }
-
-export function CreateWeddingDialog({ open: openProp, onClose, onCreated, trigger }: Props) {
-  const [internalOpen, setInternalOpen] = useState(false)
-  const open = trigger ? internalOpen : (openProp ?? false)
-  const queryClient = useQueryClient()
+export function EditWeddingDialog({ wedding, onClose }: Props) {
+  const qc = useQueryClient()
   const [serverError, setServerError] = useState<string | null>(null)
 
   const {
@@ -36,32 +33,38 @@ export function CreateWeddingDialog({ open: openProp, onClose, onCreated, trigge
     formState: { errors, isSubmitting },
   } = useForm<WeddingFormValues>({
     resolver: zodResolver(weddingSchema),
-    defaultValues: { style: 'rustic' },
+    values: wedding
+      ? {
+          partner1_name: wedding.partner1_name,
+          partner2_name: wedding.partner2_name,
+          wedding_date: wedding.wedding_date ?? '',
+          location: wedding.location ?? '',
+          venue_name: wedding.venue_name ?? '',
+          style: (wedding.style as WeddingFormValues['style']) ?? 'rustic',
+          total_budget: wedding.total_budget != null ? String(wedding.total_budget) : '',
+        }
+      : undefined,
   })
 
   const mutation = useMutation({
     mutationFn: (values: WeddingFormOutput) =>
-      api.weddings.create({
+      api.weddings.update(wedding!.id, {
         partner1_name: values.partner1_name,
         partner2_name: values.partner2_name,
         wedding_date: values.wedding_date,
         location: values.location,
         venue_name: values.venue_name,
         style: values.style,
-        primary_color: DEFAULT_PRIMARY,
-        secondary_color: DEFAULT_SECONDARY,
         total_budget: values.total_budget,
       }),
-    onSuccess: (wedding) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.weddings.all() })
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.weddings.all() })
       reset()
       setServerError(null)
-      if (trigger) setInternalOpen(false)
-      onCreated?.(wedding.id)
+      onClose()
     },
     onError: (err: unknown) => {
-      const msg =
-        err instanceof Error ? err.message : 'Something went wrong. Please try again.'
+      const msg = err instanceof Error ? err.message : 'Something went wrong. Please try again.'
       setServerError(msg)
     },
   })
@@ -69,17 +72,14 @@ export function CreateWeddingDialog({ open: openProp, onClose, onCreated, trigge
   function handleClose() {
     reset()
     setServerError(null)
-    if (trigger) setInternalOpen(false)
-    else onClose?.()
+    onClose()
   }
 
   return (
-    <>
-      {trigger && <span onClick={() => setInternalOpen(true)} className="contents">{trigger}</span>}
-    <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
+    <Dialog open={!!wedding} onOpenChange={(o) => !o && handleClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-serif text-2xl">Create your wedding</DialogTitle>
+          <DialogTitle className="font-serif text-2xl">Edit wedding</DialogTitle>
         </DialogHeader>
 
         <form
@@ -88,10 +88,9 @@ export function CreateWeddingDialog({ open: openProp, onClose, onCreated, trigge
         >
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="partner1_name">Partner 1</Label>
+              <Label htmlFor="edit-partner1_name">Partner 1</Label>
               <Input
-                id="partner1_name"
-                placeholder="Alex"
+                id="edit-partner1_name"
                 {...register('partner1_name')}
                 aria-invalid={!!errors.partner1_name}
               />
@@ -101,10 +100,9 @@ export function CreateWeddingDialog({ open: openProp, onClose, onCreated, trigge
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="partner2_name">Partner 2</Label>
+              <Label htmlFor="edit-partner2_name">Partner 2</Label>
               <Input
-                id="partner2_name"
-                placeholder="Jordan"
+                id="edit-partner2_name"
                 {...register('partner2_name')}
                 aria-invalid={!!errors.partner2_name}
               />
@@ -115,9 +113,9 @@ export function CreateWeddingDialog({ open: openProp, onClose, onCreated, trigge
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="wedding_date">Wedding date</Label>
+            <Label htmlFor="edit-wedding_date">Wedding date</Label>
             <Input
-              id="wedding_date"
+              id="edit-wedding_date"
               type="date"
               {...register('wedding_date')}
               aria-invalid={!!errors.wedding_date}
@@ -128,10 +126,9 @@ export function CreateWeddingDialog({ open: openProp, onClose, onCreated, trigge
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="location">Location</Label>
+            <Label htmlFor="edit-location">Location</Label>
             <Input
-              id="location"
-              placeholder="Melbourne, VIC"
+              id="edit-location"
               {...register('location')}
               aria-invalid={!!errors.location}
             />
@@ -141,10 +138,9 @@ export function CreateWeddingDialog({ open: openProp, onClose, onCreated, trigge
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="venue_name">Venue</Label>
+            <Label htmlFor="edit-venue_name">Venue</Label>
             <Input
-              id="venue_name"
-              placeholder="The Grand Ballroom"
+              id="edit-venue_name"
               {...register('venue_name')}
               aria-invalid={!!errors.venue_name}
             />
@@ -155,9 +151,9 @@ export function CreateWeddingDialog({ open: openProp, onClose, onCreated, trigge
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="style">Style</Label>
+              <Label htmlFor="edit-style">Style</Label>
               <select
-                id="style"
+                id="edit-style"
                 {...register('style')}
                 className="w-full h-9 rounded-md border border-[var(--color-border-default)] bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-rose)] capitalize"
                 aria-invalid={!!errors.style}
@@ -174,9 +170,9 @@ export function CreateWeddingDialog({ open: openProp, onClose, onCreated, trigge
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="total_budget">Total budget (optional)</Label>
+              <Label htmlFor="edit-total_budget">Total budget (optional)</Label>
               <Input
-                id="total_budget"
+                id="edit-total_budget"
                 type="number"
                 min="0"
                 step="1000"
@@ -205,12 +201,11 @@ export function CreateWeddingDialog({ open: openProp, onClose, onCreated, trigge
               disabled={isSubmitting || mutation.isPending}
               className="bg-[var(--color-rose)] hover:bg-[var(--color-rose-dark)] text-white"
             >
-              {mutation.isPending ? 'Creating…' : 'Create wedding'}
+              {mutation.isPending ? 'Saving…' : 'Save changes'}
             </Button>
           </div>
         </form>
       </DialogContent>
     </Dialog>
-    </>
   )
 }

@@ -12,15 +12,7 @@ import { VendorsPage } from '@/pages/vendors/VendorsPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { RegisterPage } from '@/pages/RegisterPage'
-
-function PlaceholderPage({ name }: { name: string }) {
-  return (
-    <div className="p-8">
-      <h1 className="font-serif text-3xl mb-2">{name}</h1>
-      <p className="text-sm text-[var(--color-text-muted)]">Coming in a later prompt.</p>
-    </div>
-  )
-}
+import { SettingsPage } from '@/pages/settings/SettingsPage'
 
 export default function App() {
   return (
@@ -45,7 +37,7 @@ export default function App() {
           <Route path="/budget" element={<BudgetPage />} />
           <Route path="/vendors" element={<VendorsPage />} />
           <Route path="/checklist" element={<ChecklistPage />} />
-          <Route path="/settings" element={<PlaceholderPage name="Settings" />} />
+          <Route path="/settings" element={<SettingsPage />} />
         </Route>
 
         {/* 404 */}
