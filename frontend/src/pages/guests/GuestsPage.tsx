@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AddGuestDialog } from '@/pages/guests/AddGuestDialog'
+import { ImportCsvDialog } from '@/pages/guests/ImportCsvDialog'
 import { DeleteGuestDialog } from '@/pages/guests/DeleteGuestDialog'
 import { EditGuestDialog } from '@/pages/guests/EditGuestDialog'
 import { RSVPFilterChips, type FilterValue } from '@/pages/guests/RSVPFilterChips'
@@ -77,7 +78,10 @@ export function GuestsPage() {
     <div className="p-8 max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-serif text-3xl">Guests</h1>
-        <AddGuestDialog weddingId={activeId} />
+        <div className="flex gap-2">
+          <ImportCsvDialog weddingId={activeId} />
+          <AddGuestDialog weddingId={activeId} />
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
