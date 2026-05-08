@@ -2,52 +2,40 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## System dependencies (macOS)
-
-WeasyPrint (PDF generation) requires Pango, Cairo, and GLib system libraries. Install once via Homebrew:
-
-```bash
-brew install pango cairo glib
-```
-
-uv-managed Python (standalone distribution) does not inherit Homebrew's dyld search paths the way framework Pythons do. `DYLD_FALLBACK_LIBRARY_PATH` must be set so cffi can find `libgobject`, `libpango`, etc. This is already set in `backend/.env` (which Flask CLI auto-loads before importing the app). If you're on Intel Mac, change the path from `/opt/homebrew/lib` to `/usr/local/lib`.
-
 ## Commands
 
 ```bash
-# Run development server (use port 5001 on macOS — port 5000 is taken by AirPlay Receiver)
-flask run --port 5001
-
-# Database migrations
-flask db migrate -m "description"   # generate migration after model changes
-flask db upgrade                     # apply pending migrations
-flask db downgrade                   # roll back one migration
-
-# Install dependencies (Python version pinned via backend/.python-version — Python 3.12)
+# Backend — install + start
 cd backend
-uv venv                      # creates .venv using the pinned 3.12 interpreter
-uv pip install -e ".[dev]"   # installs all deps including dev extras
+uv venv                          # creates .venv using Python 3.12 (pinned in .python-version)
+source .venv/bin/activate
+uv pip install -e ".[dev]"
+alembic upgrade head             # create/migrate SQLite DB
+uvicorn api.main:app --reload --port 8000
+
+# Alembic migrations
+alembic revision --autogenerate -m "description"   # generate after model changes
+alembic upgrade head
+alembic downgrade -1
+
+# Backend tests
+pytest -q
+
+# Frontend — install + start
+cd frontend
+npm install
+npm run dev          # http://localhost:5173 (proxies /api → :8000)
+npm run test         # Vitest unit tests
+npm run e2e          # Playwright (auto-starts both servers)
+npm run build        # production bundle → frontend/dist/
+npx tsc --noEmit     # type-check without emitting
 ```
 
-### Running Flask — directory matters
-
-All `flask` commands must be run from `backend/`, not the repo root. `run.py` lives in `backend/` and is what Flask resolves as the app entry point — running from the repo root produces `Could not import 'run'`.
-
-Canonical smoke-test sequence:
-
-```bash
-cd backend && source .venv/bin/activate && \
-  flask --app run run --port 5001 --no-debugger
+Environment variables (backend `.env`):
 ```
-
-`FLASK_APP=run flask run --port 5001` is an equivalent alternative but `--app run` is the more explicit form and matches all migration commands (`flask --app run db upgrade`, etc.).
-
-Environment variables are loaded from `.env`. Minimum required:
-```
-FLASK_ENV=development
-SECRET_KEY=<any string>
-DATABASE_URL=sqlite:///wedding_studio.db   # optional, this is the default
-GEMINI_API_KEY=<key>                       # required for AI theme generation
+JWT_SECRET_KEY=<hex string>                        # required — openssl rand -hex 32
+SQLALCHEMY_DATABASE_URL=sqlite:///instance/wedding_studio.db   # optional default
+GEMINI_API_KEY=<key>                               # optional — AI theme generation
 ```
 
 ## Development — test account
@@ -68,28 +56,13 @@ Test data attached to this account (one wedding, partners SHELL & SEA, date 2026
 | Wedding tables | 0 |
 | Vendors | 0 |
 
-If the database was deleted and recreated from migrations, re-register at `/register` — the schema is empty after a fresh `flask db upgrade`.
+If the database was deleted, run `alembic upgrade head` then register a new account at `http://localhost:5173/register`.
 
 ## Architecture
 
-**Application factory** in `app/__init__.py` — `create_app(config_name)` accepts `'development'`, `'testing'`, or `'production'`. Config classes live in `config.py`. Extensions initialised at module level: `db`, `login_manager`, `migrate`, `csrf`, `limiter`.
+**Backend** — FastAPI app at `backend/api/main.py`. Router modules under `backend/api/v1/`. Pydantic schemas under `backend/api/schemas/`. SQLAlchemy models in `backend/app/models.py` (pure SQLAlchemy, `declarative_base` — no Flask-SQLAlchemy). Alembic manages migrations in `backend/migrations/`.
 
-**Blueprint layout:**
-| Blueprint | File | Notes |
-|---|---|---|
-| `main_bp` | `app/routes/main.py` | Home page |
-| `auth_bp` | `app/routes/auth.py` | Register, login, logout |
-| `wedding_bp` | `app/routes/wedding.py` | Dashboard, create/edit wedding, activate wedding |
-| `guests_bp` | `app/routes/guests.py` | Guest list, RSVP management, CSV/Excel import |
-| `budget_bp` | `app/routes/budget.py` | Budget categories and expense tracking |
-| `vendors_bp` | `app/routes/vendors.py` | Vendor management, contract tracking, payments |
-| `checklist_bp` | `app/routes/checklist.py` | Task/timeline checklist |
-| `seating_bp` | `app/routes/seating.py` | Table layout and guest seating assignment |
-| `settings_bp` | `app/routes/settings.py` | User profile and notification preferences |
-
-All blueprints except `main_bp` are re-exported through `app/routes/__init__.py`.
-
-**Models** (`app/models.py`):
+**Models** (`backend/app/models.py`):
 
 | Model | Table | Purpose |
 |---|---|---|
@@ -103,49 +76,39 @@ All blueprints except `main_bp` are re-exported through `app/routes/__init__.py`
 | `WeddingTable` | `wedding_tables` | Physical table with capacity, shape, and drag-and-drop position |
 | `Design` | `designs` | AI-generated invitation HTML + PDF file path |
 
-Relationships all use `cascade='all, delete-orphan'`. `WEDDING_STYLES`, `VENDOR_CATEGORIES`, `VENDOR_STATUSES`, `CHECKLIST_CATEGORIES`, `CHECKLIST_PRIORITIES` tuples define valid enum values — always validate against them. Always filter `Wedding` queries by `user_id=current_user.id` (ownership).
+Relationships all use `cascade='all, delete-orphan'`. `WEDDING_STYLES`, `VENDOR_CATEGORIES`, `VENDOR_STATUSES`, `CHECKLIST_CATEGORIES`, `CHECKLIST_PRIORITIES` tuples define valid enum values — always validate against them. Always filter `Wedding` queries by `user_id` from the JWT (`require_wedding_access` dependency).
 
-**Security layer:**
-- `CSRFProtect` — active globally; every form needs `<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">`. CSRF error renders `app/templates/errors/csrf.html`.
-- `Flask-Limiter` — `limiter` exported from `app/__init__.py`; applied per-route with `@limiter.limit(...)`.
-- `db.session.commit()` calls are wrapped in `try/except` with `db.session.rollback()` on failure.
+**Service layer** (`backend/api/services/`):
 
-**Service layer** (`app/services/`):
+| File | Purpose |
+|---|---|
+| `ai_service.py` | Calls Gemini 2.5 Flash to generate wedding theme JSON |
+| `csv_service.py` | Parses guest CSV uploads (all-or-nothing, 1 MB cap, UTF-8-BOM tolerant) |
+| `checklist_service.py` | Seeds ~35 default planning tasks on wedding create |
+| `budget_service.py` | Seeds 8 default budget categories on wedding create; exposes proportional rescaling |
 
-| File | Status | Purpose |
-|---|---|---|
-| `ai_service.py` | Implemented | Calls Gemini 2.5 Flash to generate wedding theme JSON (colour palette, font suggestions, invitation wording, decor ideas) |
-| `pdf_service.py` | Implemented | Renders invitation HTML template and converts to PDF via WeasyPrint; persists a `Design` record |
-| `csv_service.py` | Implemented | Parses guest CSV and Excel (.xlsx) uploads with column aliasing and validation |
-| `checklist_service.py` | Implemented | Seeds a new wedding with ~35 default planning tasks calculated relative to the wedding date |
-| `budget_service.py` | Implemented | Seeds a new wedding with 8 default budget categories scaled to the wedding's `total_budget` (falls back to $20k if unset); also exposes `scale_existing_categories` for proportional rescaling |
+**Frontend** — React SPA at `frontend/src/`. See `docs/architecture-frontend.md` for full details.
 
-**Templates** extend `base.html` using `{% block content %}`, `{% block extra_css %}`, `{% block extra_js %}`. Wedding templates live in `app/templates/wedding/`. Auth templates in `app/templates/auth/`. Error templates in `app/templates/errors/`. Brand CSS variables (rose palette) defined under `:root` in `app/static/css/style.css`, loaded globally by `base.html`.
-
-**Fonts:** Lora (headings) and DM Sans (body/UI) loaded via Google Fonts in `base.html`. Self-hosted fallback for Playfair Display is in `app/static/fonts/`.
-
-**Database**: SQLite in development (`instance/wedding_studio.db`). Schema is managed exclusively by Flask-Migrate — `db.create_all()` has been removed. Run `flask db upgrade` on first setup and after every model change.
+**Database**: SQLite in development (`backend/instance/wedding_studio.db`). Schema managed by Alembic — run `alembic upgrade head` on first setup and after every model change.
 
 ## Known refactor opportunities
 
-**Authorization-check-and-discard pattern (Phase 3):** Six routes call `get_wedding_or_403(wedding_id)` purely for its 403-raising side effect without using the returned `Wedding` object (`budget.py`, `checklist.py`, `seating.py` ×3, `vendors.py`). These should be consolidated into a decorator (e.g. `@require_wedding_ownership`) in Phase 3 when the route layer is refactored.
-
 **Vendor delete cascade (Phase 5):** `Expense.vendor_id` FK has no `ondelete="SET NULL"` at the DB level. The FastAPI `delete_vendor` route manually nullifies linked expenses before deleting the vendor. This application-level SET NULL should be replaced with a proper DB-level constraint (`ForeignKey("vendors.id", ondelete="SET NULL")`) in Phase 5 when migrating to Postgres.
+
+**Profile + Password sections (Phase 5):** `SettingsPage` renders placeholder sections for profile editing and password change. The `PATCH /api/v1/auth/me` and password-change endpoints are not yet wired up in the frontend.
+
+**Token refresh (Phase 5):** Expired JWTs show a toast + redirect to `/login`. Silent refresh using the stored `refresh_token` is not implemented.
 
 ## Verification policy
 
-When making code changes that affect the UI, the verification workflow is:
+When making code changes that affect the UI:
 
-1. Make the code change
-2. Run a basic smoke test from the command line:
-     ```bash
-     curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5001/<route>
-     ```
-   Acceptable: 200, 302 (redirect to login), 401, 403. NOT 500.
-3. Commit if smoke test passes
-4. The user verifies the actual UI in their real browser
+1. Run type-check: `cd frontend && npx tsc --noEmit`
+2. Run backend tests: `cd backend && pytest -q`
+3. Smoke-test the API: `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8000/api/v1/health`
+4. The user verifies the actual UI in their browser
 
-Do NOT automate user logins, simulate browser sessions, scrape authenticated HTML, or write Python scripts that POST to `/login`. The user does browser verification; Claude Code confirms only that the server doesn't crash. If a change can't be verified without a real browser, that's fine — stop after the smoke test passes and tell the user what page to load and what to look for.
+Do NOT automate user logins or simulate browser sessions. The user does browser verification.
 
 ## Refactor status
 
@@ -192,35 +155,36 @@ Migrated Flask routes to FastAPI with Pydantic schemas. SQLAlchemy models and Al
 | 13 | Seating API; `/tables/with-guests` (joinedload); SET NULL on guest.table_id | 165 |
 | 14 | RFC 7807 error format; OpenAPI metadata; `docs/architecture.md` | 171 |
 
-### Phase 4 — React + TypeScript frontend
+### Phase 4 — React + TypeScript frontend ✅ COMPLETE
 
-Replace Jinja templates with a React SPA that consumes the Phase 3 API.
+Replaced Jinja templates with a React SPA. Removed the legacy Flask backend entirely. The FastAPI server now serves the built React assets (via `StaticFiles` mount at `/`) in addition to the JSON API.
 
-**Stack:** React 18 · TypeScript · Vite · React Query · React Router · Tailwind CSS
+**Architecture decisions documented in `docs/architecture-frontend.md`** — stack, API integration, state management, cache invalidation, optimistic updates, component architecture, form pattern, testing, known gaps.
 
-**Approach:** Build the frontend in `frontend/` in parallel with the still-running Flask server. Once the React app covers all pages, remove the Jinja templates. The FastAPI server serves both the API and the built React assets (via `StaticFiles` mount).
+#### Completed — 18 prompts across 2026-05-07 → 2026-05-08
 
-**Page targets:** Login/register, dashboard, guest list, budget, vendors, checklist, seating chart (drag-and-drop), settings, AI theme generator.
+| Prompt | Deliverable |
+|---|---|
+| 1–4 | Vite scaffold, Tailwind, React Router, AuthContext, token storage |
+| 5 | Login page — React Hook Form + Zod, API error mapping, redirect-back |
+| 6 | Layout shell — sidebar (desktop), mobile top bar + Sheet drawer, NavLink active styling |
+| 6.5 | Registration page (added mid-session) |
+| 7 | TanStack Query setup + Dashboard — 4 stat cards, `useActiveWedding`, query key factory |
+| 8 | Guests page — table, search, RSVP filter, add/edit/delete dialogs, bulk RSVP, CSV import |
+| 9 | Budget page — category cards, expense table, pie chart, add/edit/delete dialogs, proportional scale |
+| 10 | Vendors page — card grid, status filter, add/edit/delete dialogs, deposit + payment tracking |
+| 11 | Checklist page — grouped by category, priority badges, add/edit/delete, bulk-complete, optimistic toggle |
+| 12 | Seating page — dnd-kit drag-and-drop, unassigned pool, table zones, add/edit/delete tables |
+| 13 (fix) | `DeleteTableDialog` parse error (apostrophe in single-quoted string) |
+| 13.5 | `react-is` peer dep + production build fix |
+| 14 | Settings page — WeddingListSection with create/edit/delete wedding dialogs |
+| 15 | Loading + error states audit — `QueryErrorState`, skeletons on all pages |
+| 16 | Vitest + Playwright tests — unit tests for `daysUntil`, form schemas; e2e register→create wedding flow |
+| 17 | Delete Flask backend — removed `app/`, `config.py`, `run.py`, Flask deps from `pyproject.toml`; rewrote `models.py` to pure SQLAlchemy; updated `migrations/env.py` and `tests/conftest.py` |
+| 18 | Phase closeout — gitignore, `docs/architecture-frontend.md`, README, CLAUDE.md |
 
-**Phase 4 follow-up from Phase 3 decisions:**
-- Cursor pagination means the guest list needs a "load more" button, not traditional pages
-- The `/tables/with-guests` endpoint was purpose-built for the seating chart UI — one call, full state
-- The RFC 7807 error envelope means the frontend can reliably read `body.title` + `body.detail` for all error toasts
-
-#### Session log — 2026-05-07
-
-Phase 4 Prompts 5, 6, 6.5, 7 complete (4 prompts in one session):
-
-- **Prompt 5:** Login form — React Hook Form + Zod validation, API error mapping (401/422/other), redirect-back via `location.state.from`
-- **Prompt 6:** Layout shell — 256px sidebar (desktop) + mobile top bar with hamburger Sheet drawer, 7 nav items with lucide icons, NavLink active styling, UserMenu with avatar initials + dropdown
-- **Prompt 6.5:** Registration page — added mid-session, not in original 18-prompt plan; full_name + email + password + confirm_password, Zod `.refine()` for password match, auto-login after register (backend returns UserPublic not Token), reciprocal login↔register links
-- **Prompt 7:** TanStack Query + Dashboard — QueryClient (5min stale / 10min gc / 1 retry), centralized query key factory (`src/lib/query-keys.ts`), devtools wired in dev; 4 stat cards (guests + RSVP bar, response rate, days until wedding, budget spent/allocated), `useActiveWedding` hook persisting active ID in localStorage
-
-4 commits ahead of previous session checkpoint (`666785c` → `6e320c6`).
-
-**Two patterns established for the rest of Phase 4:**
-
-1. **Manual shadcn workaround** — TS 6 peer dep conflict prevents `npx shadcn@latest add` from running (internal `npm install` fails). Pattern: install Radix packages directly with `--legacy-peer-deps`, hand-write the shadcn wrapper matching the New York style source. Components written so far: Button, Input, Label, Card, Sheet, DropdownMenu, Avatar, Skeleton.
-2. **TanStack Query for all server state** — every data fetch goes through `useQuery`; query keys centralized in `src/lib/query-keys.ts` for namespace invalidation; each card/section owns its query so they fetch in parallel and fail independently.
-
-**Next:** Prompt 8 — Guests page. Virtualized table, search, RSVP filter, edit-in-place. Estimated 2.5–3 hours; should be its own session.
+**Key patterns:**
+- `npx shadcn@latest add` blocked by TS 6 peer dep conflict — Radix packages installed directly with `--legacy-peer-deps`, shadcn components hand-written
+- All server state via TanStack Query; query keys in `src/lib/query-keys.ts`
+- Optimistic updates on checklist toggle + seating assignment (onMutate snapshot → onError rollback → onSettled invalidate)
+- `QueryErrorState` centralises error display; 401 branch clears tokens + dispatches `AUTH_EXPIRED_EVENT`
