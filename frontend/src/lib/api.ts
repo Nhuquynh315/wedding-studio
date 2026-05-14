@@ -6,11 +6,13 @@ const API_BASE = '/api/v1'
 // ── Errors ──────────────────────────────────────────────────────
 
 export class ApiError extends Error {
-  constructor(
-    public status: number,
-    public problem: Schema.ProblemDetails,
-  ) {
+  status: number
+  problem: Schema.ProblemDetails
+
+  constructor(status: number, problem: Schema.ProblemDetails) {
     super(problem.detail || problem.title)
+    this.status = status
+    this.problem = problem
     this.name = 'ApiError'
   }
 }
@@ -139,6 +141,10 @@ export const api = {
     login: (body: Schema.UserLogin) =>
       request<Schema.Token>('/auth/login', { method: 'POST', body, skipAuth: true }),
     me: () => request<Schema.UserPublic>('/auth/me'),
+    updateMe: (body: Schema.UserUpdate) =>
+      request<Schema.UserPublic>('/auth/me', { method: 'PATCH', body }),
+    changePassword: (body: Schema.PasswordChange) =>
+      request<void>('/auth/change-password', { method: 'POST', body }),
     logout: () => {
       tokens.clear()
     },

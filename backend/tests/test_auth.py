@@ -134,3 +134,150 @@ def test_refresh_returns_new_tokens(client):
 def test_refresh_rejects_access_token():
     """Trying to use an access token at /refresh must fail."""
     pass
+
+
+# ── PATCH /auth/me ────────────────────────────────────────────────────────────
+
+
+def _register_and_token(
+    client, email=_VALID_REGISTER["email"], password=_VALID_REGISTER["password"]
+):
+    client.post(
+        "/api/v1/auth/register", json={**_VALID_REGISTER, "email": email, "password": password}
+    )
+    login = client.post("/api/v1/auth/login", json={"email": email, "password": password})
+    return login.json()["access_token"]
+
+
+def _auth(token):
+    return {"Authorization": f"Bearer {token}"}
+
+
+def test_update_me_changes_full_name(client):
+    token = _register_and_token(client)
+    resp = client.patch("/api/v1/auth/me", json={"full_name": "New Name"}, headers=_auth(token))
+    assert resp.status_code == 200
+    assert resp.json()["full_name"] == "New Name"
+
+    me = client.get("/api/v1/auth/me", headers=_auth(token))
+    assert me.json()["full_name"] == "New Name"
+
+
+def test_update_me_changes_email(client):
+    token = _register_and_token(client)
+    resp = client.patch("/api/v1/auth/me", json={"email": "new@example.com"}, headers=_auth(token))
+    assert resp.status_code == 200
+    assert resp.json()["email"] == "new@example.com"
+
+    me = client.get("/api/v1/auth/me", headers=_auth(token))
+    assert me.json()["email"] == "new@example.com"
+
+
+def test_update_me_partial(client):
+    """PATCHing only full_name must leave email unchanged."""
+    token = _register_and_token(client)
+    original_email = _VALID_REGISTER["email"]
+
+    resp = client.patch(
+        "/api/v1/auth/me", json={"full_name": "Partial Update"}, headers=_auth(token)
+    )
+    assert resp.status_code == 200
+    assert resp.json()["email"] == original_email
+    assert resp.json()["full_name"] == "Partial Update"
+
+
+def test_update_me_duplicate_email_rejected(client):
+    """User A cannot PATCH to user B's email."""
+    token_a = _register_and_token(client, email="a@example.com")
+    client.post(
+        "/api/v1/auth/register",
+        json={**_VALID_REGISTER, "email": "b@example.com"},
+    )
+
+    resp = client.patch("/api/v1/auth/me", json={"email": "b@example.com"}, headers=_auth(token_a))
+    assert resp.status_code == 409
+
+
+def test_update_me_same_email_ok(client):
+    """Re-submitting one's own email (with a name change) must not 409."""
+    token = _register_and_token(client)
+    own_email = _VALID_REGISTER["email"]
+
+    resp = client.patch(
+        "/api/v1/auth/me",
+        json={"email": own_email, "full_name": "Same Email Fine"},
+        headers=_auth(token),
+    )
+    assert resp.status_code == 200
+    assert resp.json()["full_name"] == "Same Email Fine"
+
+
+def test_update_me_requires_auth(client):
+    resp = client.patch("/api/v1/auth/me", json={"full_name": "No Token"})
+    assert resp.status_code == 401
+
+
+# ── POST /auth/change-password ────────────────────────────────────────────────
+
+
+def test_change_password_success(client):
+    token = _register_and_token(client)
+    old_password = _VALID_REGISTER["password"]
+    new_password = "newpassword999"
+
+    resp = client.post(
+        "/api/v1/auth/change-password",
+        json={"current_password": old_password, "new_password": new_password},
+        headers=_auth(token),
+    )
+    assert resp.status_code == 204
+
+    # Old password no longer works
+    bad_login = client.post(
+        "/api/v1/auth/login",
+        json={"email": _VALID_REGISTER["email"], "password": old_password},
+    )
+    assert bad_login.status_code == 401
+
+    # New password works
+    good_login = client.post(
+        "/api/v1/auth/login",
+        json={"email": _VALID_REGISTER["email"], "password": new_password},
+    )
+    assert good_login.status_code == 200
+
+
+def test_change_password_wrong_current(client):
+    token = _register_and_token(client)
+
+    resp = client.post(
+        "/api/v1/auth/change-password",
+        json={"current_password": "wrong-password", "new_password": "newpassword999"},
+        headers=_auth(token),
+    )
+    assert resp.status_code == 400
+
+    # Original password still works — hash was NOT changed
+    good_login = client.post(
+        "/api/v1/auth/login",
+        json={"email": _VALID_REGISTER["email"], "password": _VALID_REGISTER["password"]},
+    )
+    assert good_login.status_code == 200
+
+
+def test_change_password_too_short(client):
+    token = _register_and_token(client)
+    resp = client.post(
+        "/api/v1/auth/change-password",
+        json={"current_password": _VALID_REGISTER["password"], "new_password": "short"},
+        headers=_auth(token),
+    )
+    assert resp.status_code == 422
+
+
+def test_change_password_requires_auth(client):
+    resp = client.post(
+        "/api/v1/auth/change-password",
+        json={"current_password": "anything", "new_password": "newpassword999"},
+    )
+    assert resp.status_code == 401

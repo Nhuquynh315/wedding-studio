@@ -5,6 +5,8 @@ export type Token = components['schemas']['Token']
 export type UserCreate = components['schemas']['UserCreate']
 export type UserLogin = components['schemas']['UserLogin']
 export type UserPublic = components['schemas']['UserPublic']
+export type UserUpdate = components['schemas']['UserUpdate']
+export type PasswordChange = components['schemas']['PasswordChange']
 
 // ── Wedding ───────────────────────────────────────────────────
 export type WeddingCreate = components['schemas']['WeddingCreate']

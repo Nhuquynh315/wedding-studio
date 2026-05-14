@@ -29,6 +29,20 @@ class UserPublic(BaseModel):
     created_at: datetime
 
 
+class UserUpdate(BaseModel):
+    """Input for PATCH /api/v1/auth/me — partial profile update."""
+
+    full_name: str | None = Field(default=None, min_length=1, max_length=200)
+    email: EmailStr | None = None
+
+
+class PasswordChange(BaseModel):
+    """Input for POST /api/v1/auth/change-password."""
+
+    current_password: str = Field(min_length=1)
+    new_password: str = Field(min_length=8, max_length=128)
+
+
 class Token(BaseModel):
     """Response from /login and /refresh."""
 
