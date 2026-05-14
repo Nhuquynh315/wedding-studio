@@ -10,7 +10,7 @@ class Settings(BaseSettings):
         default="sqlite:///instance/wedding_studio.db",
         alias="SQLALCHEMY_DATABASE_URL",
     )
-    jwt_secret_key: str = Field(default="dev-only-jwt-secret", alias="JWT_SECRET_KEY")
+    jwt_secret_key: str = Field(alias="JWT_SECRET_KEY")
     jwt_algorithm: str = Field(default="HS256", alias="JWT_ALGORITHM")
     access_token_expire_minutes: int = Field(default=15, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
     refresh_token_expire_days: int = Field(default=7, alias="REFRESH_TOKEN_EXPIRE_DAYS")

@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Secrets and local config — NEVER in the image
+.env
+.env.*
+!.env.example
+instance/
+*.db
+*.sqlite
+
+# Dev tooling
+.git/
+.gitignore
+tests/
+.python-version
+
+# OS
+.DS_Store
