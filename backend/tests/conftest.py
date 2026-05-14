@@ -2,45 +2,58 @@ from datetime import date
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
+from sqlalchemy import create_engine, event
+from sqlalchemy.orm import Session, sessionmaker
 
 from api.core.db import get_db
 from api.main import app
+from app.models import Base
+
+TEST_DATABASE_URL = "postgresql+psycopg://quynhnhu@localhost:5432/wedding_studio_test"
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def db_engine():
-    """In-memory SQLite engine with all tables created. Fresh per test."""
-    engine = create_engine(
-        "sqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-
-    from app.models import Base
-
+    """One engine for the whole test session. Schema created once."""
+    engine = create_engine(TEST_DATABASE_URL)
+    Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
-
     yield engine
+    Base.metadata.drop_all(bind=engine)
     engine.dispose()
 
 
 @pytest.fixture
 def db_session(db_engine):
-    """A session that gets closed after each test."""
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=db_engine)
+    """
+    Each test runs inside a transaction that is rolled back at the end.
+    Uses SQLAlchemy's "join an external transaction" recipe so that
+    session.commit() inside the code under test doesn't actually commit.
+    """
+    connection = db_engine.connect()
+    transaction = connection.begin()
+
+    SessionLocal = sessionmaker(bind=connection, class_=Session, expire_on_commit=False)
     session = SessionLocal()
-    try:
-        yield session
-    finally:
-        session.close()
+
+    nested = connection.begin_nested()
+
+    @event.listens_for(session, "after_transaction_end")
+    def restart_savepoint(sess, trans):
+        nonlocal nested
+        if not nested.is_active:
+            nested = connection.begin_nested()
+
+    yield session
+
+    session.close()
+    transaction.rollback()
+    connection.close()
 
 
 @pytest.fixture
 def client(db_session):
-    """FastAPI test client wired to the in-memory test DB."""
+    """FastAPI test client wired to the transaction-bound test session."""
 
     def _override_get_db():
         try:

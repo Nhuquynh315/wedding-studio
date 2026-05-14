@@ -256,7 +256,6 @@ def test_delete_vendor_nullifies_expense_vendor_id(
 
     from app.models import Expense
 
-    db_session.expire_all()
     refreshed = db_session.query(Expense).filter(Expense.id == expense.id).first()
     assert refreshed is not None, "expense must still exist after vendor delete"
     assert refreshed.vendor_id is None, "vendor_id must be NULL after vendor delete"

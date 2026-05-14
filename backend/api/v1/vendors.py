@@ -100,7 +100,7 @@ def delete_vendor(
 
     db.query(Expense).filter(Expense.vendor_id == vendor.id).update(
         {Expense.vendor_id: None},
-        synchronize_session=False,
+        synchronize_session="fetch",
     )
     db.delete(vendor)
     db.commit()

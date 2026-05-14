@@ -111,7 +111,7 @@ def delete_table(
     table = _get_table_or_404(db, wedding.id, table_id)
     db.query(Guest).filter(Guest.table_id == table.id).update(
         {Guest.table_id: None},
-        synchronize_session=False,
+        synchronize_session="fetch",
     )
     db.delete(table)
     db.commit()
