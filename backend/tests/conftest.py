@@ -1,3 +1,4 @@
+import os
 from datetime import date
 
 import pytest
@@ -9,7 +10,10 @@ from api.core.db import get_db
 from api.main import app
 from app.models import Base
 
-TEST_DATABASE_URL = "postgresql+psycopg://quynhnhu@localhost:5432/wedding_studio_test"
+TEST_DATABASE_URL = os.environ.get(
+    "TEST_DATABASE_URL",
+    "postgresql+psycopg://localhost:5432/wedding_studio_test",
+)
 
 
 @pytest.fixture(scope="session")
