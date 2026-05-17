@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -60,6 +60,19 @@ export function ExpenseDialog({ weddingId, categories, trigger, expense, onClose
     },
   })
 
+  useEffect(() => {
+    reset({
+      category_id: expense?.category_id ?? '',
+      title: expense?.title ?? '',
+      estimated_cost: expense?.estimated_cost ?? '',
+      actual_cost: expense?.actual_cost ?? '',
+      is_paid: expense?.is_paid ?? false,
+      paid_date: expense?.paid_date ?? '',
+      due_date: expense?.due_date ?? '',
+      notes: expense?.notes ?? '',
+    })
+  }, [expense?.id, reset])
+
   const isPaid = watch('is_paid')
 
   const mutation = useMutation({
@@ -74,7 +87,6 @@ export function ExpenseDialog({ weddingId, categories, trigger, expense, onClose
       qc.invalidateQueries({ queryKey: queryKeys.budget.all(weddingId) })
       setOpen(false)
       setSubmitError(null)
-      reset()
     },
     onError: (err) => {
       setSubmitError(
