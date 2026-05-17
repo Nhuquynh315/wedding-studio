@@ -49,7 +49,7 @@ export function BudgetDonut({ categories }: Props) {
               <Cell key={i} fill={entry.color} />
             ))}
           </Pie>
-          <Tooltip formatter={(value: number) => formatAUD(value)} />
+          <Tooltip formatter={(value) => formatAUD(Number(value))} />
           <Legend
             verticalAlign="bottom"
             iconSize={10}

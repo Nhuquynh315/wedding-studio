@@ -58,7 +58,7 @@ export function EditGuestDialog({ weddingId, guest, onClose }: Props) {
         {guest && (
           <GuestForm
             initial={guest}
-            onSubmit={(payload) => mutation.mutateAsync(payload as GuestUpdate)}
+            onSubmit={async (payload) => { await mutation.mutateAsync(payload as GuestUpdate) }}
             onCancel={onClose}
             submitLabel="Save changes"
             isSubmitting={mutation.isPending}

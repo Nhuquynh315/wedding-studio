@@ -12,7 +12,7 @@ const optionalNum = z
 
 export const vendorSchema = z.object({
   business_name: z.string().min(1, 'Required').max(200),
-  category: z.string().max(50).default('Other'),
+  category: z.string().max(50),
   status: z.enum(VENDOR_STATUSES),
 
   contact_name: z.string().max(200).optional().or(z.literal('')),
@@ -31,15 +31,15 @@ export const vendorSchema = z.object({
     }),
 
   deposit_amount: optionalNum,
-  deposit_paid: z.boolean().default(false),
+  deposit_paid: z.boolean(),
   deposit_due_date: z.string().optional().or(z.literal('')),
 
-  contracted: z.boolean().default(false),
+  contracted: z.boolean(),
   contract_signed_date: z.string().optional().or(z.literal('')),
   contract_url: z.string().max(500).optional().or(z.literal('')),
 
   final_payment_amount: optionalNum,
-  final_payment_paid: z.boolean().default(false),
+  final_payment_paid: z.boolean(),
   final_payment_due_date: z.string().optional().or(z.literal('')),
 })
 

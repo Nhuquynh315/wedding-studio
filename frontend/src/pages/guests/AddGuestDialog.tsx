@@ -63,7 +63,7 @@ export function AddGuestDialog({ weddingId }: { weddingId: number }) {
           </div>
         )}
         <GuestForm
-          onSubmit={(payload) => mutation.mutateAsync(payload as GuestCreate)}
+          onSubmit={async (payload) => { await mutation.mutateAsync(payload as GuestCreate) }}
           onCancel={() => setOpen(false)}
           submitLabel="Add guest"
           isSubmitting={mutation.isPending}
