@@ -161,7 +161,9 @@ class Expense(Base):
     id = Column(Integer, primary_key=True)
     wedding_id = Column(Integer, ForeignKey("weddings.id"), nullable=False, index=True)
     category_id = Column(Integer, ForeignKey("budget_categories.id"), nullable=True, index=True)
-    vendor_id = Column(Integer, ForeignKey("vendors.id"), nullable=True, index=True)
+    vendor_id = Column(
+        Integer, ForeignKey("vendors.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     title = Column(String(200), nullable=False)
     estimated_cost = Column(Float, default=0)
     actual_cost = Column(Float, nullable=True)

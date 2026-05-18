@@ -86,22 +86,11 @@ def delete_vendor(
     wedding: Annotated[object, Depends(require_wedding_access)],
     db: Annotated[Session, Depends(get_db)],
 ):
-    """Delete a vendor. Manually nullifies vendor_id on associated expenses
-    before deleting the vendor itself.
-
-    The model FK doesn't have ON DELETE SET NULL configured, so we enforce
-    SET NULL semantics at the application layer. Documented in CLAUDE.md as
-    known debt — the DB-level constraint should be added in Phase 5 when
-    migrating to Postgres.
+    """Delete a vendor. Linked expenses have their vendor_id set to NULL
+    via the ON DELETE SET NULL constraint on expenses.vendor_id
+    (see migration e9f63c003051).
     """
-    from app.models import Expense
-
     vendor = _get_vendor_or_404(db, wedding.id, vendor_id)
-
-    db.query(Expense).filter(Expense.vendor_id == vendor.id).update(
-        {Expense.vendor_id: None},
-        synchronize_session="fetch",
-    )
     db.delete(vendor)
     db.commit()
     return Response(status_code=204)

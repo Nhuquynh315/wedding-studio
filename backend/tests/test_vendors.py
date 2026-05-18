@@ -240,8 +240,8 @@ def test_delete_vendor_nullifies_expense_vendor_id(
     user_id_from_email,
 ):
     """Deleting a vendor must not delete the linked expenses — it must set
-    expense.vendor_id to None (application-level SET NULL, since the model FK
-    lacks ON DELETE SET NULL)."""
+    expense.vendor_id to None via the DB-level ON DELETE SET NULL constraint
+    on expenses.vendor_id (migration e9f63c003051)."""
     token = register_and_login(client)
     uid = user_id_from_email(db_session, "alice@example.com")
     w = create_wedding(db_session, uid)
