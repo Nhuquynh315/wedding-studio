@@ -192,29 +192,17 @@ These are deliberate portfolio tradeoffs, not oversights. Each entry includes wh
 **RDS is publicly accessible, gated by security group + SSL**
 The RDS instance accepts connections only from the ECS task's security group on port 5432, and SSL is enforced at the connection string level (`sslmode=require`). For a production service: deploy into a private subnet with no internet-facing endpoint; reach the database over private IP via VPC routing.
 
-**No CI/CD pipeline yet**
-Deploys are manual: `docker buildx build --platform linux/amd64 --push` to ECR (the `linux/amd64` flag is required because the dev machine is Apple Silicon and ECS Fargate runs x86_64), then `aws ecs update-service --force-new-deployment`. Next step: a GitHub Actions workflow that builds, pushes, and triggers a rolling deploy on every merge to `main`.
-
-**ECS task definition tracks `:latest`, not a digest-pinned image**
-Using `:latest` means a force-redeploy always pulls the current image, which is convenient during active development but removes the audit trail of exactly what's running. Production: pin to `@sha256:...` digest in the task definition, managed by the CI/CD pipeline.
-
 **Single ECS task — rolling replace, no blue/green**
-During a deploy, ECS keeps the old task running until the new task passes its health check (we observed `Running: 2` in the console during this period). There is no rollback candidate if the first deploy of a new image fails health checks — the service simply stops. Production: run two tasks minimum with ECS circuit breaker enabled; use CodeDeploy blue/green for zero-downtime cutover.
+During a deploy, ECS replaces the single running task with the new revision (we observed `Running: 2` in the console during this period). ECS circuit breaker with automatic rollback is enabled — if the new task fails health checks, ECS rolls back to the previous revision. There is still no blue/green separation: traffic is not shifted gradually, so there is a brief window with zero healthy tasks if the old task stops before the new one passes its health check. Production: run two tasks minimum; use CodeDeploy blue/green for zero-downtime cutover.
 
 **Token invalidation is client-side only**
 Logout clears the JWT from `localStorage`. The server has no blocklist, so a stolen token remains valid until expiry (15-minute access tokens, 7-day refresh tokens). Production: Redis-backed token blocklist checked on every request, or short-lived access tokens with server-side refresh token rotation.
-
-**Application-level FK cascade for `expense.vendor_id`**
-`Expense.vendor_id` is declared as `ForeignKey("vendors.id")` with no `ondelete` parameter — there is no `ON DELETE SET NULL` constraint at the database level. The `delete_vendor` route manually nullifies linked expenses before deleting the vendor, which pushes referential integrity into application code. Production: add `ondelete="SET NULL"` to the FK declaration and generate a new Alembic migration.
-
-**Local Postgres 16 vs RDS PostgreSQL 18.3**
-The minor version gap is low-risk for this schema (no features used that differ between 16 and 18), but it is a gap. Production: keep dev and prod engines on the same major version.
 
 ---
 
 ## Repository
 
-119 commits across 5 phases:
+122 commits across 6 phases:
 
 | Phase | Work |
 |---|---|
@@ -223,5 +211,6 @@ The minor version gap is low-risk for this schema (no features used that differ 
 | 3 | FastAPI JSON API — 9 resources, 30+ endpoints, JWT auth, RFC 7807, 181 tests |
 | 4 | React + TypeScript SPA; removed legacy Flask/Jinja frontend entirely |
 | 5 | Production deployment: Docker, ECR, ECS Fargate, RDS PostgreSQL, Vercel |
+| 6 | DB-level FK cascade; GitHub Actions CI/CD with OIDC + digest-pinned ECS deploys; local Postgres aligned to 18.x |
 
 Architecture decisions are documented in [docs/architecture.md](docs/architecture.md) (backend) and [docs/architecture-frontend.md](docs/architecture-frontend.md) (frontend).

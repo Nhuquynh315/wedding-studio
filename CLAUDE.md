@@ -93,8 +93,6 @@ Relationships all use `cascade='all, delete-orphan'`. `WEDDING_STYLES`, `VENDOR_
 
 ## Known refactor opportunities
 
-**Vendor delete cascade (Phase 5):** `Expense.vendor_id` FK has no `ondelete="SET NULL"` at the DB level. The FastAPI `delete_vendor` route manually nullifies linked expenses before deleting the vendor. This application-level SET NULL should be replaced with a proper DB-level constraint (`ForeignKey("vendors.id", ondelete="SET NULL")`) in Phase 5 when migrating to Postgres.
-
 **Profile + Password sections (Phase 5):** `SettingsPage` renders placeholder sections for profile editing and password change. The `PATCH /api/v1/auth/me` and password-change endpoints are not yet wired up in the frontend.
 
 **Token refresh (Phase 5):** Expired JWTs show a toast + redirect to `/login`. Silent refresh using the stored `refresh_token` is not implemented.
