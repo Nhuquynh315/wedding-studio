@@ -1,0 +1,190 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# OIDC token required for aws-actions/configure-aws-credentials.
+# contents:read is the minimum for actions/checkout.
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  # ─────────────────────────────────────────────────────────────
+  # test: run the full backend suite against a real Postgres DB.
+  # deploy is gated on this job — if tests fail, nothing ships.
+  #
+  # Frontend tests are NOT included in this gate (deliberate):
+  #   - Vitest unit tests don't affect deploy safety
+  #   - Playwright e2e requires both servers + browser binaries —
+  #     non-trivial CI setup that warrants its own workflow job
+  # Frontend CI is a future addition, not part of the deploy gate.
+  # ─────────────────────────────────────────────────────────────
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16  # matches local dev PG major; prod is 18.3 (documented drift)
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: wedding_studio_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      # alembic env.py imports api.core.config which requires SQLALCHEMY_DATABASE_URL
+      SQLALCHEMY_DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/wedding_studio_test
+      # conftest reads TEST_DATABASE_URL directly (see tests/conftest.py:13-15)
+      TEST_DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/wedding_studio_test
+      # config.py requires JWT_SECRET_KEY at import time — missing = pytest fails at collection
+      JWT_SECRET_KEY: ci-throwaway-not-used-in-production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"  # pinned: requires-python = ">=3.12,<3.13"
+
+      - name: Install uv and project dependencies
+        run: |
+          pip install uv
+          uv venv .venv
+          uv pip install -e ".[dev]"
+
+      # Non-default config path — bare `alembic upgrade head` fails (no alembic.ini at backend/).
+      # This step also validates the migration chain itself, independently of conftest's
+      # drop_all/create_all which runs from SQLAlchemy models rather than migrations.
+      - name: Run migrations
+        run: uv run alembic -c migrations/alembic.ini upgrade head
+
+      - name: Run tests
+        run: uv run pytest -q
+
+  # ─────────────────────────────────────────────────────────────
+  # deploy: build → push → digest-pin task def → update service.
+  # Only runs after test passes.
+  # ─────────────────────────────────────────────────────────────
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ap-southeast-2
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # Buildx required for linux/amd64 platform targeting.
+      # ubuntu-latest runners are amd64-native — no cross-compile overhead.
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Pushes two tags: :latest (human-readable) and :<sha> (traceability).
+      # The DEPLOY uses the digest from outputs.digest, not either tag —
+      # tags are labels; the digest is the immutable content address.
+      - name: Build and push image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/wedding-studio-api:latest
+            ${{ steps.login-ecr.outputs.registry }}/wedding-studio-api:${{ github.sha }}
+
+      # Fetch task def BY FAMILY (not via describe-services, which returns TaskDef:None
+      # for this Express Mode service). Strip the 7 read-only fields that
+      # register-task-definition rejects, then pin the image to the digest
+      # from the build step — content-addressed, immutable reference.
+      - name: Render new task definition
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition default-wedding-studio-api \
+            --region ap-southeast-2 \
+            --query taskDefinition \
+            --output json > td.json
+
+          python3 - <<'PYEOF'
+          import json, os
+          td = json.load(open('td.json'))
+          for k in ['taskDefinitionArn', 'revision', 'status', 'requiresAttributes',
+                    'compatibilities', 'registeredAt', 'registeredBy']:
+              td.pop(k, None)
+          image = f"{os.environ['ECR_REGISTRY']}/wedding-studio-api@{os.environ['IMAGE_DIGEST']}"
+          td['containerDefinitions'][0]['image'] = image
+          json.dump(td, open('td-new.json', 'w'))
+          print(f"Image pinned to: {image}")
+          PYEOF
+
+      - name: Register new task definition revision
+        id: register-td
+        run: |
+          ARN=$(aws ecs register-task-definition \
+            --cli-input-json file://td-new.json \
+            --region ap-southeast-2 \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+          echo "arn=$ARN" >> $GITHUB_OUTPUT
+          echo "Registered: $ARN"
+
+      - name: Update ECS service to new revision
+        run: |
+          aws ecs update-service \
+            --cluster default \
+            --service wedding-studio-api \
+            --task-definition ${{ steps.register-td.outputs.arn }} \
+            --region ap-southeast-2
+
+      # Polls rolloutState on the PRIMARY deployment until COMPLETED or FAILED.
+      # Ceiling: 1200s (20 min) — canary (5 %) + bake (3 min) + full rollout
+      # + final bake (3 min) can legitimately reach ~620s on a healthy deploy;
+      # aws ecs wait services-stable caps at 600s and would false-red.
+      # On FAILED the circuit breaker has already rolled ECS back; we just
+      # surface the failure so the GitHub Actions run turns red.
+      - name: Wait for service stable
+        run: |
+          MAX_WAIT=1200
+          INTERVAL=15
+          elapsed=0
+          while [ $elapsed -lt $MAX_WAIT ]; do
+            STATE=$(aws ecs describe-services \
+              --cluster default \
+              --services wedding-studio-api \
+              --region ap-southeast-2 \
+              --query "services[0].deployments[?status=='PRIMARY'].rolloutState | [0]" \
+              --output text)
+            echo "[${elapsed}s] rolloutState: $STATE"
+            case $STATE in
+              COMPLETED) echo "Deploy stable."; exit 0 ;;
+              FAILED)    echo "Circuit breaker tripped — ECS rolled back."; exit 1 ;;
+            esac
+            sleep $INTERVAL
+            elapsed=$((elapsed + INTERVAL))
+          done
+          echo "Timed out after ${MAX_WAIT}s."
+          exit 1
