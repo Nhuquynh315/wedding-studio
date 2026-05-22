@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = Field(default=15, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
     refresh_token_expire_days: int = Field(default=7, alias="REFRESH_TOKEN_EXPIRE_DAYS")
 
+    sentry_dsn: str | None = None
+    sentry_environment: str = "local"
+
     # Comma-separated allowed CORS origins, e.g. "https://app.vercel.app,http://localhost:5173"
     cors_origins: str = Field(
         default="http://localhost:5173",

@@ -1,9 +1,18 @@
+import sentry_sdk
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.core.config import settings
 from api.core.errors import install_exception_handlers
 from api.v1 import auth, budget, checklist, guests, health, seating, vendors, weddings
+
+if settings.sentry_dsn:
+    sentry_sdk.init(
+        dsn=settings.sentry_dsn,
+        environment=settings.sentry_environment,
+        traces_sample_rate=0.1,
+        send_default_pii=False,
+    )
 
 app = FastAPI(
     title="Wedding Studio API",
@@ -19,6 +28,12 @@ app = FastAPI(
     openapi_url="/api/v1/openapi.json",
     contact={"name": "Wedding Studio"},
 )
+
+
+@app.get("/api/v1/sentry-prod-test")
+def sentry_prod_test():
+    raise RuntimeError("Sentry prod verification — will be removed")
+
 
 app.include_router(health.router, prefix="/api/v1")
 app.include_router(auth.router, prefix="/api/v1")
