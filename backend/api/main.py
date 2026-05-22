@@ -30,11 +30,6 @@ app = FastAPI(
 )
 
 
-@app.get("/api/v1/sentry-prod-test")
-def sentry_prod_test():
-    raise RuntimeError("Sentry prod verification — will be removed")
-
-
 app.include_router(health.router, prefix="/api/v1")
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(weddings.router, prefix="/api/v1")
