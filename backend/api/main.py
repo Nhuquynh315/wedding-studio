@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api.core.config import settings
 from api.core.errors import install_exception_handlers
-from api.v1 import auth, budget, checklist, guests, health, seating, vendors, weddings
+from api.v1 import auth, budget, checklist, designs, guests, health, seating, vendors, weddings
 
 if settings.sentry_dsn:
     sentry_sdk.init(
@@ -38,6 +38,7 @@ app.include_router(budget.router, prefix="/api/v1")
 app.include_router(vendors.router, prefix="/api/v1")
 app.include_router(checklist.router, prefix="/api/v1")
 app.include_router(seating.router, prefix="/api/v1")
+app.include_router(designs.router, prefix="/api/v1")
 
 app.add_middleware(
     CORSMiddleware,

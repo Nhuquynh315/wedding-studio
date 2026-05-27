@@ -259,6 +259,30 @@ def create_checklist_item():
 
 
 @pytest.fixture
+def create_design():
+    """Factory: insert a Design row directly into the test DB."""
+
+    def _inner(
+        db_session, wedding_id, *, html_content="{}", design_type="invitation", created_at=None
+    ):
+        from app.models import Design
+
+        design = Design(
+            wedding_id=wedding_id,
+            design_type=design_type,
+            html_content=html_content,
+        )
+        if created_at is not None:
+            design.created_at = created_at
+        db_session.add(design)
+        db_session.commit()
+        db_session.refresh(design)
+        return design
+
+    return _inner
+
+
+@pytest.fixture
 def user_id_from_email():
     """Factory: look up a User's id by email in the test DB."""
 
