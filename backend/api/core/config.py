@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     sentry_dsn: str | None = None
     sentry_environment: str = "local"
 
+    gemini_api_key: str | None = None
+
     # Comma-separated allowed CORS origins, e.g. "https://app.vercel.app,http://localhost:5173"
     cors_origins: str = Field(
         default="http://localhost:5173",
