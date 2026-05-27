@@ -4,6 +4,7 @@ import {
   DollarSign,
   LayoutDashboard,
   Settings,
+  Sparkles,
   Users,
   Utensils,
 } from 'lucide-react'
@@ -22,5 +23,6 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Budget', to: '/budget', icon: DollarSign },
   { label: 'Vendors', to: '/vendors', icon: Calendar },
   { label: 'Checklist', to: '/checklist', icon: CheckSquare },
+  { label: 'Invitations', to: '/invitations', icon: Sparkles },
   { label: 'Settings', to: '/settings', icon: Settings },
 ]

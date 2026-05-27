@@ -1,0 +1,89 @@
+@page {
+  size: 5in 7in;
+  margin: 0;
+}
+
+.invitation {
+  width: 5in;
+  height: 7in;
+  overflow: hidden;
+  background: #fffdf9;
+  box-sizing: border-box;
+  position: relative;
+  color: #3a2e28;
+}
+
+/* ── Classic ────────────────────────────────────────── */
+
+.invitation-classic {
+  padding: 0.48in 0.52in;
+  text-align: center;
+}
+
+.invitation-classic::after {
+  content: '';
+  position: absolute;
+  top: 0.22in;
+  left: 0.22in;
+  right: 0.22in;
+  bottom: 0.22in;
+  border: 0.75pt solid var(--primary-color, #b8a9a0);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* ── Modern ─────────────────────────────────────────── */
+
+.invitation-modern {
+  padding: 0.55in;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: #fafaf7;
+}
+
+/* ── Romantic ───────────────────────────────────────── */
+
+.invitation-romantic {
+  padding: 0.52in 0.56in;
+  text-align: center;
+}
+
+/* ── Print ──────────────────────────────────────────── */
+
+/* Print: a clone of the invitation is mounted on <body> with
+   the class .print-portal. When printing, hide all body children
+   EXCEPT that portal. */
+@media print {
+  @page {
+    size: 5in 7in;
+    margin: 0;
+  }
+
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    height: auto !important;
+  }
+
+  body > *:not(.print-portal) {
+    display: none !important;
+  }
+
+  .print-portal {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .print-portal .invitation {
+    width: 5in !important;
+    height: 7in !important;
+    margin: 0 !important;
+    transform: none !important;
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
+  }
+}

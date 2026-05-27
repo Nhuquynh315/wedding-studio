@@ -13,6 +13,7 @@ import { LoginPage } from '@/pages/LoginPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { RegisterPage } from '@/pages/RegisterPage'
 import { SettingsPage } from '@/pages/settings/SettingsPage'
+import { InvitationsPage } from '@/pages/designs/InvitationsPage'
 
 export default function App() {
   return (
@@ -38,6 +39,7 @@ export default function App() {
           <Route path="/vendors" element={<VendorsPage />} />
           <Route path="/checklist" element={<ChecklistPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/invitations" element={<InvitationsPage />} />
         </Route>
 
         {/* 404 */}
