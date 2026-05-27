@@ -300,4 +300,13 @@ export const api = {
     delete: (weddingId: number, tableId: number) =>
       request<void>(`/weddings/${weddingId}/tables/${tableId}`, { method: 'DELETE' }),
   },
+
+  designs: {
+    generate: (weddingId: number, body: Schema.GenerateDesignRequest) =>
+      request<Schema.DesignPublic>(`/weddings/${weddingId}/designs`, { method: 'POST', body }),
+    list: (weddingId: number) =>
+      request<Schema.DesignPublic[]>(`/weddings/${weddingId}/designs`),
+    delete: (weddingId: number, designId: number) =>
+      request<void>(`/weddings/${weddingId}/designs/${designId}`, { method: 'DELETE' }),
+  },
 }

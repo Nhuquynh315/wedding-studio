@@ -55,6 +55,16 @@ export type WeddingTableUpdate = components['schemas']['WeddingTableUpdate']
 export type WeddingTablePublic = components['schemas']['WeddingTablePublic']
 export type WeddingTableWithGuests = components['schemas']['WeddingTableWithGuests']
 
+// ── Design ────────────────────────────────────────────────────
+export type ColorEntry = components['schemas']['ColorEntry']
+export type FontPairing = components['schemas']['FontPairing']
+export type GeneratedTheme = components['schemas']['GeneratedTheme']
+export type DesignPublic = components['schemas']['DesignPublic']
+export type GenerateDesignRequest = components['schemas']['GenerateDesignRequest']
+// Tone and Layout are inlined by OpenAPI — derive them from the schema
+export type Tone = GenerateDesignRequest['tone']
+export type Layout = GeneratedTheme['layout']
+
 // ── Errors ────────────────────────────────────────────────────
 // ProblemDetails is the RFC 7807 envelope the backend sends for all errors.
 // FastAPI doesn't register it as an OpenAPI component, so we define it here.

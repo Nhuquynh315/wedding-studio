@@ -414,13 +414,9 @@ export interface paths {
         post?: never;
         /**
          * Delete Vendor
-         * @description Delete a vendor. Manually nullifies vendor_id on associated expenses
-         *     before deleting the vendor itself.
-         *
-         *     The model FK doesn't have ON DELETE SET NULL configured, so we enforce
-         *     SET NULL semantics at the application layer. Documented in CLAUDE.md as
-         *     known debt — the DB-level constraint should be added in Phase 5 when
-         *     migrating to Postgres.
+         * @description Delete a vendor. Linked expenses have their vendor_id set to NULL
+         *     via the ON DELETE SET NULL constraint on expenses.vendor_id
+         *     (see migration e9f63c003051).
          */
         delete: operations["delete_vendor_api_v1_weddings__wedding_id__vendors__vendor_id__delete"];
         options?: never;
@@ -542,6 +538,41 @@ export interface paths {
         head?: never;
         /** Patch Table */
         patch: operations["patch_table_api_v1_weddings__wedding_id__tables__table_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/weddings/{wedding_id}/designs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Designs */
+        get: operations["list_designs_api_v1_weddings__wedding_id__designs_get"];
+        put?: never;
+        /** Generate Design */
+        post: operations["generate_design_api_v1_weddings__wedding_id__designs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/weddings/{wedding_id}/designs/{design_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Design */
+        delete: operations["delete_design_api_v1_weddings__wedding_id__designs__design_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
 }
@@ -719,6 +750,30 @@ export interface components {
          * @enum {string}
          */
         ChecklistPriority: "low" | "medium" | "high";
+        /** ColorEntry */
+        ColorEntry: {
+            /** Name */
+            name: string;
+            /** Hex */
+            hex: string;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "Primary" | "Secondary" | "Accent" | "Neutral" | "Highlight";
+        };
+        /** DesignPublic */
+        DesignPublic: {
+            /** Id */
+            id: number;
+            /** Wedding Id */
+            wedding_id: number;
+            /** Design Type */
+            design_type: string;
+            theme: components["schemas"]["GeneratedTheme"];
+            /** Created At */
+            created_at: string;
+        };
         /** ExpenseCreate */
         ExpenseCreate: {
             /** Category Id */
@@ -796,6 +851,68 @@ export interface components {
             due_date?: string | null;
             /** Notes */
             notes?: string | null;
+        };
+        /** FontPairing */
+        FontPairing: {
+            /** Heading */
+            heading: string;
+            /** Body */
+            body: string;
+            /** Description */
+            description: string;
+        };
+        /** GenerateDesignRequest */
+        GenerateDesignRequest: {
+            /** Partner1 Name */
+            partner1_name: string;
+            /** Partner2 Name */
+            partner2_name: string;
+            /** Wedding Date */
+            wedding_date: string;
+            /** Location */
+            location: string;
+            /** Venue Name */
+            venue_name: string;
+            /** Style */
+            style: string;
+            /** Primary Color */
+            primary_color: string;
+            /** Secondary Color */
+            secondary_color: string;
+            /**
+             * Tone
+             * @default Romantic
+             * @enum {string}
+             */
+            tone: "Romantic" | "Formal" | "Playful" | "Poetic" | "Simple";
+        };
+        /**
+         * GeneratedTheme
+         * @description The structured output Gemini returns for an invitation.
+         */
+        GeneratedTheme: {
+            /** Tagline */
+            tagline: string;
+            /** Color Palette */
+            color_palette: components["schemas"]["ColorEntry"][];
+            /** Font Suggestions */
+            font_suggestions: components["schemas"]["FontPairing"][];
+            /** Invitation Text */
+            invitation_text: string;
+            /** Ceremony Time */
+            ceremony_time: string;
+            /** Style Keywords */
+            style_keywords: string[];
+            /** Decor Suggestions */
+            decor_suggestions: string[];
+            /** Rsvp Info */
+            rsvp_info: string;
+            /**
+             * Layout
+             * @default classic
+             * @enum {string}
+             */
+            layout: "classic" | "modern" | "romantic";
         };
         /** GuestCreate */
         GuestCreate: {
@@ -2903,6 +3020,102 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["WeddingTablePublic"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_designs_api_v1_weddings__wedding_id__designs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DesignPublic"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_design_api_v1_weddings__wedding_id__designs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerateDesignRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DesignPublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_design_api_v1_weddings__wedding_id__designs__design_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                design_id: number;
+                wedding_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
