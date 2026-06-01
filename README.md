@@ -1,6 +1,6 @@
 # Wedding Studio
 
-A full-stack wedding planning application. Create an account, configure a wedding profile, and manage guests & RSVPs, budget & expenses, vendor contracts, a planning checklist, and drag-and-drop table seating — all from a single dashboard.
+A full-stack wedding planning application. Create an account, configure a wedding profile, and manage guests & RSVPs, budget & expenses, vendor contracts, a planning checklist, and drag-and-drop table seating — all from a single dashboard. An AI-powered invitation designer (Gemini 2.5 Flash) generates print-ready 5×7in cards from your wedding details and exports to PDF via the browser's native print dialog.
 
 ---
 
@@ -25,6 +25,7 @@ The demo account is pre-populated with a full sample wedding (guests, budget, ve
 ![Checklist](docs/screenshots/checklist.png)
 ![Seating](docs/screenshots/seating.png)
 ![Vendors](docs/screenshots/vendors.png)
+![Invitations](docs/screenshots/invitations.png)
 
 ---
 
@@ -45,6 +46,7 @@ The demo account is pre-populated with a full sample wedding (guests, budget, ve
 | dnd-kit | — | Drag-and-drop seating chart |
 | Recharts | 3 | Budget donut chart |
 | Lucide React | — | Icons |
+| @sentry/react | — | Error tracking & performance monitoring |
 
 ### Backend
 | Library | Version | Role |
@@ -57,6 +59,8 @@ The demo account is pre-populated with a full sample wedding (guests, budget, ve
 | bcrypt | 4 | Password hashing |
 | psycopg | 3 | PostgreSQL driver (psycopg3) |
 | uvicorn | — | ASGI server |
+| google-genai | ≥ 1.0 | Gemini 2.5 Flash — structured theme generation |
+| sentry-sdk | — | Error tracking & performance monitoring |
 
 ### Infrastructure
 | Component | Service |
@@ -65,7 +69,8 @@ The demo account is pre-populated with a full sample wedding (guests, budget, ve
 | Container registry | AWS ECR |
 | Backend runtime | AWS ECS Express Mode (managed ALB + Fargate service) |
 | Database | AWS RDS PostgreSQL 18.3 |
-| Secrets | AWS Secrets Manager (DB URL, JWT secret) |
+| Secrets | AWS Secrets Manager (DB URL, JWT secret, Gemini API key, Sentry DSN) |
+| Observability | Sentry (frontend + backend, error tracking & performance) |
 | Local dev DB | PostgreSQL 16 |
 
 ---
@@ -87,13 +92,16 @@ Browser
                          │             │
                          ▼             ▼
                     RDS PostgreSQL   AWS Secrets Manager
-                    18.3 (SSL)       (DB URL, JWT secret —
+                    18.3 (SSL)       (DB URL, JWT secret,
+                                      Gemini key, Sentry DSN —
                                       injected at task start)
 ```
 
 The React SPA is a static build served from Vercel. All API calls go to an AWS ALB provisioned by ECS Express Mode, which forwards to the ECS Fargate task running the FastAPI container. The container reads its database URL and JWT secret from AWS Secrets Manager at startup (injected as environment variables by the ECS task definition). The database is AWS RDS PostgreSQL 18.3 with SSL enforced.
 
 The FastAPI layer follows a three-schema pattern (Create / Update / Public) per resource, JWT authentication with refresh tokens (python-jose / HS256), RFC 7807 `application/problem+json` error responses, and cursor-based pagination for the guest list.
+
+The invitation designer sends wedding details to Gemini 2.5 Flash using native Pydantic `response_schema` for structured output. The model returns a validated `GeneratedTheme` (colour palette, font pairings, invitation copy, layout choice) which is stored in the database and rendered client-side as a print-ready 5×7in React component — no server-side PDF generation required.
 
 ---
 
@@ -165,7 +173,7 @@ Creates `demo@weddingstudio.app` / `DemoPass2026` with guests, vendors, budget, 
 ## Testing
 
 ```bash
-# Backend — 181 tests
+# Backend — 188 tests
 cd backend
 source .venv/bin/activate
 pytest -q
@@ -195,6 +203,12 @@ The RDS instance accepts connections only from the ECS task's security group on 
 **Single ECS task — rolling replace, no blue/green**
 During a deploy, ECS replaces the single running task with the new revision (we observed `Running: 2` in the console during this period). ECS circuit breaker with automatic rollback is enabled — if the new task fails health checks, ECS rolls back to the previous revision. There is still no blue/green separation: traffic is not shifted gradually, so there is a brief window with zero healthy tasks if the old task stops before the new one passes its health check. Production: run two tasks minimum; use CodeDeploy blue/green for zero-downtime cutover.
 
+**Gemini free tier may use inputs for model training**
+Requests sent to the Gemini API on the free tier are subject to Google's data-use policy, which permits using inputs to improve models. For a production service handling real wedding data: use a paid tier (Gemini API paid plans opt out of training use), or run a self-hosted open-weight model. The invitation form sends only wedding metadata (names, date, venue, style) — no guest lists or financial data.
+
+**`designs.html_content` stores JSON, not HTML**
+The `Design` model has an `html_content` column (VARCHAR) that the legacy Flask app used for rendered HTML. Phase 7 repurposed it to store `GeneratedTheme` JSON, avoiding a schema migration. The column name is misleading — a future cleanup would rename it to `theme_json` or migrate to a proper `JSONB` column on PostgreSQL. The data is valid and readable; only the name is wrong.
+
 **Token invalidation is client-side only**
 Logout clears the JWT from `localStorage`. The server has no blocklist, so a stolen token remains valid until expiry (15-minute access tokens, 7-day refresh tokens). Production: Redis-backed token blocklist checked on every request, or short-lived access tokens with server-side refresh token rotation.
 
@@ -202,15 +216,16 @@ Logout clears the JWT from `localStorage`. The server has no blocklist, so a sto
 
 ## Repository
 
-122 commits across 6 phases:
+131 commits across 7 phases:
 
 | Phase | Work |
 |---|---|
 | 1 | Repo hygiene: uv, Ruff, Black, pre-commit, monorepo layout |
 | 2 | Extract inline CSS/JS from Jinja templates |
-| 3 | FastAPI JSON API — 9 resources, 30+ endpoints, JWT auth, RFC 7807, 181 tests |
+| 3 | FastAPI JSON API — 9 resources, 30+ endpoints, JWT auth, RFC 7807, 188 tests |
 | 4 | React + TypeScript SPA; removed legacy Flask/Jinja frontend entirely |
 | 5 | Production deployment: Docker, ECR, ECS Fargate, RDS PostgreSQL, Vercel |
 | 6 | DB-level FK cascade; GitHub Actions CI/CD with OIDC + digest-pinned ECS deploys; local Postgres aligned to 18.x |
+| 7 | Sentry observability (frontend + backend); AI invitation designer — Gemini 2.5 Flash, three print-ready layouts, browser-native PDF export |
 
 Architecture decisions are documented in [docs/architecture.md](docs/architecture.md) (backend) and [docs/architecture-frontend.md](docs/architecture-frontend.md) (frontend).

@@ -10,7 +10,7 @@ cd backend
 uv venv                          # creates .venv using Python 3.12 (pinned in .python-version)
 source .venv/bin/activate
 uv pip install -e ".[dev]"
-alembic upgrade head             # create/migrate SQLite DB
+alembic upgrade head             # create/migrate Postgres DB
 uvicorn api.main:app --reload --port 8000
 
 # Alembic migrations
@@ -34,29 +34,21 @@ npx tsc --noEmit     # type-check without emitting
 Environment variables (backend `.env`):
 ```
 JWT_SECRET_KEY=<hex string>                        # required — openssl rand -hex 32
-SQLALCHEMY_DATABASE_URL=sqlite:///instance/wedding_studio.db   # optional default
-GEMINI_API_KEY=<key>                               # optional — AI theme generation
+SQLALCHEMY_DATABASE_URL=postgresql+psycopg://<user>@localhost:5432/wedding_studio   # required
+GEMINI_API_KEY=<key>                               # optional — AI invitation generation
+SENTRY_DSN=<dsn>                                   # optional — error tracking
 ```
 
 ## Development — test account
 
-Seeded in `backend/instance/wedding_studio.db` (dev database, not committed):
+Demo data is seeded via `python scripts/seed_demo.py` from the
+`backend/` directory (venv active). Creates `demo@weddingstudio.app`
+/ `DemoPass2026` with guests, vendors, budget, checklist, and
+seating data. Idempotent — safe to re-run.
 
-- **Email:** `doe@gmail.com`
-- **Password:** `12345678` — dev only, do not reuse anywhere real
-- **Full name:** Doe
-
-Test data attached to this account (one wedding, partners SHELL & SEA, date 2026-06-19):
-
-| Data | Count |
-|---|---|
-| Guests | 101 |
-| Checklist items | 36 |
-| Budget categories | 8 |
-| Wedding tables | 0 |
-| Vendors | 0 |
-
-If the database was deleted, run `alembic upgrade head` then register a new account at `http://localhost:5173/register`.
+If the database was reset, run `alembic upgrade head` then
+`python scripts/seed_demo.py`. Alternatively, register a fresh
+account at `http://localhost:5173/register` for ad-hoc testing.
 
 ## Architecture
 
@@ -74,28 +66,39 @@ If the database was deleted, run `alembic upgrade head` then register a new acco
 | `Expense` | `expenses` | Line-item cost linked to a category and optionally a vendor |
 | `Vendor` | `vendors` | Supplier with contract, deposit, final-payment tracking |
 | `WeddingTable` | `wedding_tables` | Physical table with capacity, shape, and drag-and-drop position |
-| `Design` | `designs` | AI-generated invitation HTML + PDF file path |
+| `Design` | `designs` | AI-generated invitation theme (GeneratedTheme JSON stored in `html_content`); `pdf_file_path` column unused — Phase 7B uses browser print-to-PDF |
 
 Relationships all use `cascade='all, delete-orphan'`. `WEDDING_STYLES`, `VENDOR_CATEGORIES`, `VENDOR_STATUSES`, `CHECKLIST_CATEGORIES`, `CHECKLIST_PRIORITIES` tuples define valid enum values — always validate against them. Always filter `Wedding` queries by `user_id` from the JWT (`require_wedding_access` dependency).
 
-**Service layer** (`backend/api/services/`):
+**Service layer**:
 
 | File | Purpose |
 |---|---|
-| `ai_service.py` | Calls Gemini 2.5 Flash to generate wedding theme JSON |
-| `csv_service.py` | Parses guest CSV uploads (all-or-nothing, 1 MB cap, UTF-8-BOM tolerant) |
-| `checklist_service.py` | Seeds ~35 default planning tasks on wedding create |
-| `budget_service.py` | Seeds 8 default budget categories on wedding create; exposes proportional rescaling |
+| `api/services/ai_service.py` | Calls Gemini 2.5 Flash to generate wedding theme JSON (Pydantic structured outputs, 5 tones, 3 layouts) |
+| `api/services/budget_seeding.py` | Seeds 8 default budget categories on wedding create; exposes proportional rescaling (called from `weddings.py` on POST and `budget.py` for rescale) |
+| `api/core/csv_import.py` | Parses guest CSV uploads (all-or-nothing, 1 MB cap, UTF-8-BOM tolerant) |
+
+Note: a Flask-era `checklist_service.py` (35 default planning tasks) was NOT ported to FastAPI. Creating a wedding seeds budget categories but no default checklist items.
 
 **Frontend** — React SPA at `frontend/src/`. See `docs/architecture-frontend.md` for full details.
 
-**Database**: SQLite in development (`backend/instance/wedding_studio.db`). Schema managed by Alembic — run `alembic upgrade head` on first setup and after every model change.
+**Database**: PostgreSQL 16+ locally; AWS RDS PostgreSQL 18.3 in production. Schema managed by Alembic — run `alembic upgrade head` on first setup and after every model change. Tests use a real local Postgres database (`wedding_studio_test`) with per-test transaction rollback via savepoints.
 
-## Known refactor opportunities
+## Known refactor opportunities (Phase 8)
 
-**Profile + Password sections (Phase 5):** `SettingsPage` renders placeholder sections for profile editing and password change. The `PATCH /api/v1/auth/me` and password-change endpoints are not yet wired up in the frontend.
+**Token blocklist for logout** — JWTs remain valid until expiry after logout. Server-side blocklist (DB table) needed for real invalidation. Originally scoped for Phase 7B; reprioritized in favor of AI invitation feature.
 
-**Token refresh (Phase 5):** Expired JWTs show a toast + redirect to `/login`. Silent refresh using the stored `refresh_token` is not implemented.
+**Default checklist seeding** — the Flask-era logic that seeded ~35 default planning tasks on wedding create was not ported during the FastAPI refactor. New weddings start with an empty checklist.
+
+**AI invitation in-place edit** — currently the user generates an invitation and views/downloads it; no edit-in-place for tagline, RSVP date, or copy. Would need persistence back to `designs.html_content` and edge-case handling around layout switches.
+
+**Frontend tests in CI workflow** — Vitest tests exist locally but aren't run by GitHub Actions on push.
+
+**Docs-only commits trigger full deploy** — the deploy workflow doesn't use `paths-ignore`, so README/CLAUDE.md commits run the full ~13 min ECS rebuild.
+
+**Bundle size code-split** — `index-*.js` exceeds 1 MB minified (chunk-size warning pre-existing since Phase 5).
+
+**Sentry spike protection + allowed-domains** — currently using Sentry defaults; not explicitly configured.
 
 ## Verification policy
 
@@ -131,7 +134,7 @@ Completed across 13 commits (`d4e7b00` → `739ebc4`):
 
 ### Phase 3 — Port backend to FastAPI ✅ COMPLETE
 
-Migrated Flask routes to FastAPI with Pydantic schemas. SQLAlchemy models and Alembic migrations reused as-is. Output: JSON API at `/api/v1/*` with OpenAPI docs at `/api/v1/docs`. 171 tests passing.
+Migrated Flask routes to FastAPI with Pydantic schemas. SQLAlchemy models and Alembic migrations reused as-is. Output: JSON API at `/api/v1/*` with OpenAPI docs at `/api/v1/docs`. 171 tests passing (188 after Phase 7B added designs router tests).
 
 **Architecture decisions documented in `docs/architecture.md`** — JWT auth, backward-compatible password hashing, resource cloaking (404 over 403), three-schema pattern, cursor pagination, application-level SET NULL cascades, RFC 7807 errors, test isolation.
 
@@ -186,3 +189,43 @@ Replaced Jinja templates with a React SPA. Removed the legacy Flask backend enti
 - All server state via TanStack Query; query keys in `src/lib/query-keys.ts`
 - Optimistic updates on checklist toggle + seating assignment (onMutate snapshot → onError rollback → onSettled invalidate)
 - `QueryErrorState` centralises error display; 401 branch clears tokens + dispatches `AUTH_EXPIRED_EVENT`
+
+### Phase 5 — Production deployment to AWS ✅ COMPLETE
+
+Backend deployed to ECS Fargate behind ALB (provisioned by ECS Express Mode). Frontend deployed to Vercel. Database on RDS PostgreSQL 18.3. Secrets in AWS Secrets Manager.
+
+**Architecture decisions documented in `docs/architecture.md`** — Docker image build, ECR registry, ECS Express Mode (over App Runner — deprecation pivot), RDS public-but-firewalled with SSL, CORS configuration, environment-variable injection from Secrets Manager at task start.
+
+Key blockers solved: App Runner deprecation pivot to ECS, IAM Secrets Manager `kms:Decrypt` permission, arm64/amd64 architecture mismatch (build target amd64), RDS security group ingress for ECS task SG, CORS configuration for Vercel origin.
+
+### Phase 6 — DB cascade + CI/CD ✅ COMPLETE
+
+Block 6A — DB-level FK cascade (`ON DELETE SET NULL` migration `8b9bdaf`).
+
+Block 6B — GitHub Actions CI/CD with OIDC. No long-lived AWS keys in GitHub secrets. Workflow builds Docker image, pushes to ECR with both `latest` tag and digest, registers a new task def revision pinned to the digest, updates the service, polls `rolloutState` (replaces `wait services-stable` whose 600s cap is below real-world rollout times of ~605s).
+
+Local Postgres aligned to 18.x to match RDS.
+
+### Phase 7 — Observability + AI invitations ✅ COMPLETE
+
+Block 7A — Sentry observability. Backend (`sentry-sdk[fastapi]`) and frontend (`@sentry/react`) both wired with `environment=production`. Separate Sentry projects per surface (`python-fastapi`, `javascript-react`). Verified in prod with deliberate test errors.
+
+Block 7B — AI invitation generation. Google Gemini 2.5 Flash, native structured outputs via Pydantic `response_schema`. 5 tones (Romantic/Formal/Playful/Poetic/Simple), 3 React layouts (classic/modern/romantic) selected by AI from style description with user override. Browser print-to-PDF via portal-clone pattern. 188 tests total (+7 from designs router).
+
+**See `## Architecture notes — AI invitation feature` below for the print-portal pattern and AI-service exception model — both are non-obvious and shouldn't be "fixed" without understanding the constraints.**
+
+## Architecture notes — AI invitation feature
+
+These patterns are non-obvious. Do not "simplify" without reading.
+
+**Gemini structured outputs via Pydantic schema** — `api/services/ai_service.py` passes `GeneratedTheme` (a Pydantic model from `api/schemas/design.py`) as `response_schema` in the Gemini config. Gemini returns `response.parsed` as the Pydantic instance directly; the `_repair_json` fallback handles cases where Gemini returns text with code fences instead of native JSON.
+
+**Auth-error matching for Gemini** — Gemini returns `400 INVALID_ARGUMENT` with `reason=API_KEY_INVALID` for bad keys, NOT `401/403` like most APIs. The exception handler matches on both status code AND message text (`API_KEY_INVALID` or `API key not valid`). Don't simplify to just `status in (401, 403)`.
+
+**Three exception classes, one HTTP status** — `AIServiceUnconfigured` / `AIServiceUnauthorized` / `AIServiceUnavailable` all translate to HTTP 503 in `api/v1/designs.py` with distinct `detail` strings. This is for Sentry-side distinguishability without leaking config state to clients. Keep all three classes.
+
+**`designs.html_content` stores JSON, not HTML** — the `designs` table predates the AI feature; the column name is vestigial from the Flask/WeasyPrint era. It now stores `GeneratedTheme.model_dump_json()`. Renaming would need a migration; deferred.
+
+**Print-to-PDF uses portal clone, NOT a print stylesheet on the existing DOM** — `frontend/src/pages/designs/InvitationsPage.tsx` `handleDownloadPdf` clones `.invitation` to a `body`-level `<div class="print-portal">` before `window.print()`, then cleans up on `afterprint`. The `@media print` rule in `invitation.css` hides everything *except* `.print-portal`. Don't try to print the in-place `.invitation` — its scaled wrapper (1.2×) plus AppLayout ancestors create phantom page breaks.
+
+**Layout selection** — Gemini picks one of `classic`/`modern`/`romantic` based on the style description (prompt-guided). User can override via dropdown. `InvitationPreview` switches the component based on `layoutOverride ?? theme.layout`. Font pairing within a layout is picked by `pickPairing()` in `fontHelpers.ts` — matches heading-font name against category lists (script/serif/sans).
