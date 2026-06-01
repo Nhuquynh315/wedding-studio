@@ -19,13 +19,11 @@ permissions:
 jobs:
   # ─────────────────────────────────────────────────────────────
   # test: run the full backend suite against a real Postgres DB.
-  # deploy is gated on this job — if tests fail, nothing ships.
+  # frontend-test: Vitest unit tests + tsc type-check.
+  # deploy is gated on both — if either fails, nothing ships.
   #
-  # Frontend tests are NOT included in this gate (deliberate):
-  #   - Vitest unit tests don't affect deploy safety
-  #   - Playwright e2e requires both servers + browser binaries —
-  #     non-trivial CI setup that warrants its own workflow job
-  # Frontend CI is a future addition, not part of the deploy gate.
+  # Playwright e2e requires both servers + browser binaries;
+  # non-trivial CI setup deferred to a separate workflow.
   # ─────────────────────────────────────────────────────────────
   test:
     runs-on: ubuntu-latest
@@ -79,12 +77,36 @@ jobs:
       - name: Run tests
         run: uv run pytest -q
 
+  frontend-test:
+    name: Frontend tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run unit tests
+        working-directory: frontend
+        run: npm run test -- --run
+
+      - name: Type check
+        working-directory: frontend
+        run: npx tsc --noEmit
+
   # ─────────────────────────────────────────────────────────────
   # deploy: build → push → digest-pin task def → update service.
-  # Only runs after test passes.
+  # Only runs after both test jobs pass.
   # ─────────────────────────────────────────────────────────────
   deploy:
-    needs: test
+    needs: [test, frontend-test]
     runs-on: ubuntu-latest
 
     steps:
