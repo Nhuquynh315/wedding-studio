@@ -14,7 +14,7 @@ type AuthContextValue = {
   user: UserPublic | null
   isLoading: boolean
   login: (email: string, password: string) => Promise<void>
-  logout: () => void
+  logout: () => Promise<void>
   updateUser: (user: UserPublic) => void
 }
 
@@ -63,8 +63,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(me)
   }
 
-  const logout = () => {
-    api.auth.logout()
+  const logout = async () => {
+    const refreshToken = tokens.getRefresh()
+    if (refreshToken) {
+      await api.auth.logout(refreshToken)
+    } else {
+      tokens.clear()
+    }
     setUser(null)
   }
 

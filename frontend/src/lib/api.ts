@@ -147,7 +147,12 @@ export const api = {
       request<Schema.UserPublic>('/auth/me', { method: 'PATCH', body }),
     changePassword: (body: Schema.PasswordChange) =>
       request<void>('/auth/change-password', { method: 'POST', body }),
-    logout: () => {
+    logout: async (refreshToken: string) => {
+      try {
+        await request<void>('/auth/logout', { method: 'POST', body: { refresh_token: refreshToken }, skipAuth: true })
+      } catch {
+        // best-effort — client-side logout proceeds regardless
+      }
       tokens.clear()
     },
   },
