@@ -265,3 +265,17 @@ class Design(Base):
 
     def __repr__(self):
         return f"<Design {self.design_type} for wedding {self.wedding_id}>"
+
+
+class RevokedToken(Base):
+    __tablename__ = "revoked_tokens"
+
+    jti = Column(String(36), primary_key=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    revoked_at = Column(DateTime, nullable=False, default=utcnow)
+    expires_at = Column(DateTime, nullable=False, index=True)
+
+    def __repr__(self):
+        return f"<RevokedToken jti={self.jti[:8]}... user={self.user_id}>"
