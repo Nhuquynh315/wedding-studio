@@ -1,3 +1,4 @@
+import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Literal
 
@@ -65,6 +66,7 @@ def _create_token(
     subject: str | int,
     token_type: Literal["access", "refresh"],
     expires_delta: timedelta,
+    jti: str | None = None,
 ) -> str:
     """Internal helper — encode a JWT with subject, type, and expiry."""
     expire = datetime.now(UTC) + expires_delta
@@ -73,6 +75,8 @@ def _create_token(
         "exp": int(expire.timestamp()),
         "type": token_type,
     }
+    if jti is not None:
+        payload["jti"] = jti
     return jwt.encode(
         payload,
         settings.jwt_secret_key,
@@ -93,13 +97,19 @@ def create_access_token(subject: str | int) -> str:
     )
 
 
-def create_refresh_token(subject: str | int) -> str:
-    """Create a long-lived refresh token (default 7 days)."""
-    return _create_token(
-        subject,
-        "refresh",
-        timedelta(days=settings.refresh_token_expire_days),
+def create_refresh_token(subject: str | int) -> tuple[str, str]:
+    """Create a long-lived refresh token (default 7 days).
+
+    Returns (token, jti). The jti is needed for blocklisting on logout/refresh.
+    """
+    jti = str(uuid.uuid4())
+    token = _create_token(
+        subject=subject,
+        token_type="refresh",
+        expires_delta=timedelta(days=settings.refresh_token_expire_days),
+        jti=jti,
     )
+    return token, jti
 
 
 def decode_token(token: str) -> TokenPayload:
@@ -122,3 +132,29 @@ def decode_token(token: str) -> TokenPayload:
         return TokenPayload(**raw)
     except (TypeError, ValueError) as exc:
         raise InvalidTokenError(f"Invalid token payload: {exc}") from exc
+
+
+def is_token_revoked(db, jti: str) -> bool:
+    """Check if a refresh token's jti is in the blocklist."""
+    from app.models import RevokedToken
+
+    return db.query(RevokedToken).filter(RevokedToken.jti == jti).first() is not None
+
+
+def revoke_token(db, jti: str, user_id: int, expires_at: datetime) -> None:
+    """Add a refresh token's jti to the blocklist.
+
+    Idempotent: writing the same jti twice is a no-op (PK constraint
+    would otherwise error, but IntegrityError is caught to make
+    double-logout safe).
+    """
+    from sqlalchemy.exc import IntegrityError
+
+    from app.models import RevokedToken
+
+    revoked = RevokedToken(jti=jti, user_id=user_id, expires_at=expires_at)
+    db.add(revoked)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()

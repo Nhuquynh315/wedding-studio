@@ -1,3 +1,5 @@
+from datetime import UTC
+
 _VALID_REGISTER = {
     "email": "alice@example.com",
     "password": "supersecret123",
@@ -280,4 +282,90 @@ def test_change_password_requires_auth(client):
         "/api/v1/auth/change-password",
         json={"current_password": "anything", "new_password": "newpassword999"},
     )
+    assert resp.status_code == 401
+
+
+# ── Token blocklist (Phase 8A) ────────────────────────────────────────────────
+
+
+def _login_tokens(client):
+    """Register alice and return (access_token, refresh_token)."""
+    client.post("/api/v1/auth/register", json=_VALID_REGISTER)
+    login = client.post(
+        "/api/v1/auth/login",
+        json={"email": _VALID_REGISTER["email"], "password": _VALID_REGISTER["password"]},
+    )
+    data = login.json()
+    return data["access_token"], data["refresh_token"]
+
+
+def test_refresh_blocklists_old_refresh_token(client):
+    """After /refresh, the OLD refresh token is blocklisted and rejected."""
+    _, old_refresh = _login_tokens(client)
+
+    # First refresh — succeeds, blocklists old_refresh
+    resp1 = client.post("/api/v1/auth/refresh", json={"refresh_token": old_refresh})
+    assert resp1.status_code == 200
+
+    # Second attempt with the same old token — must be rejected
+    resp2 = client.post("/api/v1/auth/refresh", json={"refresh_token": old_refresh})
+    assert resp2.status_code == 401
+    assert "revoked" in resp2.json()["detail"].lower()
+
+
+def test_logout_blocklists_refresh_token(client):
+    """After /logout, the refresh token can't be used to refresh."""
+    _, refresh = _login_tokens(client)
+
+    logout_resp = client.post("/api/v1/auth/logout", json={"refresh_token": refresh})
+    assert logout_resp.status_code == 204
+
+    resp = client.post("/api/v1/auth/refresh", json={"refresh_token": refresh})
+    assert resp.status_code == 401
+
+
+def test_logout_is_idempotent(client):
+    """Calling /logout twice with the same token returns 204 both times."""
+    _, refresh = _login_tokens(client)
+
+    r1 = client.post("/api/v1/auth/logout", json={"refresh_token": refresh})
+    r2 = client.post("/api/v1/auth/logout", json={"refresh_token": refresh})
+    assert r1.status_code == 204
+    assert r2.status_code == 204
+
+
+def test_logout_with_garbage_token_returns_204(client):
+    """/logout never errors — soft-fail on invalid tokens (nothing to revoke)."""
+    resp = client.post("/api/v1/auth/logout", json={"refresh_token": "not.a.real.jwt"})
+    assert resp.status_code == 204
+
+
+def test_refresh_rejects_token_with_no_jti(client):
+    """Refresh tokens issued before jti support get rejected — forces re-login."""
+    from datetime import datetime, timedelta
+
+    from jose import jwt
+
+    from api.core.config import settings
+
+    client.post("/api/v1/auth/register", json=_VALID_REGISTER)
+    legacy_token = jwt.encode(
+        {
+            "sub": "1",
+            "exp": datetime.now(UTC) + timedelta(days=1),
+            "type": "refresh",
+            # no jti
+        },
+        settings.jwt_secret_key,
+        algorithm=settings.jwt_algorithm,
+    )
+    resp = client.post("/api/v1/auth/refresh", json={"refresh_token": legacy_token})
+    assert resp.status_code == 401
+    detail = resp.json()["detail"].lower()
+    assert "identifier" in detail or "log in again" in detail
+
+
+def test_refresh_rejects_garbage_token(client):
+    """Garbage tokens fail signature verification, return 401."""
+    resp = client.post("/api/v1/auth/refresh", json={"refresh_token": "garbage"})
     assert resp.status_code == 401

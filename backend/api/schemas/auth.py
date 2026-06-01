@@ -43,6 +43,12 @@ class PasswordChange(BaseModel):
     new_password: str = Field(min_length=8, max_length=128)
 
 
+class RefreshRequest(BaseModel):
+    """Input for POST /api/v1/auth/refresh and /auth/logout."""
+
+    refresh_token: str
+
+
 class Token(BaseModel):
     """Response from /login and /refresh."""
 
@@ -57,3 +63,4 @@ class TokenPayload(BaseModel):
     sub: str  # user id as string (JWT spec)
     exp: int  # unix timestamp
     type: str  # "access" or "refresh"
+    jti: str | None = None  # only present on refresh tokens

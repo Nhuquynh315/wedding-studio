@@ -1,21 +1,32 @@
 from datetime import UTC, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import Response
+from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
+from api.core.config import settings
 from api.core.db import get_db
 from api.core.deps import get_current_user
 from api.core.security import (
-    InvalidTokenError,
     create_access_token,
     create_refresh_token,
-    decode_token,
     hash_password,
+    is_token_revoked,
     needs_rehash,
+    revoke_token,
     verify_password,
 )
-from api.schemas.auth import PasswordChange, Token, UserCreate, UserLogin, UserPublic, UserUpdate
+from api.schemas.auth import (
+    PasswordChange,
+    RefreshRequest,
+    Token,
+    UserCreate,
+    UserLogin,
+    UserPublic,
+    UserUpdate,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -86,41 +97,99 @@ def login(
         user.password_hash = hash_password(creds.password)
         db.commit()
 
+    refresh_token, _ = create_refresh_token(subject=user.id)
     return Token(
         access_token=create_access_token(subject=user.id),
-        refresh_token=create_refresh_token(subject=user.id),
+        refresh_token=refresh_token,
     )
 
 
 @router.post("/refresh", response_model=Token)
 def refresh(
-    refresh_token: Annotated[str, Body(..., embed=True)],
+    body: RefreshRequest,
     db: Annotated[Session, Depends(get_db)],
 ):
-    """Exchange a valid refresh token for new access + refresh tokens."""
+    """Exchange a valid refresh token for new access + refresh tokens.
+
+    The incoming refresh token is blocklisted after use — single-use rotation.
+    Tokens issued before jti support (pre-8A) are rejected.
+    """
     from app.models import User
 
     try:
-        payload = decode_token(refresh_token)
-    except InvalidTokenError as exc:
+        payload = jwt.decode(
+            body.refresh_token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm]
+        )
+    except JWTError as exc:
         raise _bad_token from exc
 
-    if payload.type != "refresh":
+    if payload.get("type") != "refresh":
         raise _bad_token
 
+    jti = payload.get("jti")
+    if not jti:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token missing identifier; please log in again",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if is_token_revoked(db, jti):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token revoked",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     try:
-        user_id = int(payload.sub)
-    except ValueError as exc:
+        user_id = int(payload["sub"])
+    except (ValueError, KeyError) as exc:
         raise _bad_token from exc
 
     user = db.query(User).filter(User.id == user_id).first()
     if user is None:
         raise _bad_token
 
+    old_expires = datetime.fromtimestamp(payload["exp"], tz=UTC)
+    revoke_token(db, jti=jti, user_id=user.id, expires_at=old_expires)
+
+    new_refresh, _ = create_refresh_token(subject=user.id)
     return Token(
         access_token=create_access_token(subject=user.id),
-        refresh_token=create_refresh_token(subject=user.id),
+        refresh_token=new_refresh,
     )
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+def logout(
+    body: RefreshRequest,
+    db: Annotated[Session, Depends(get_db)],
+):
+    """Blocklist the user's refresh token. Idempotent.
+
+    Accepts any well-formed refresh token. Does not error on already-revoked
+    or expired tokens — the desired post-state is 'token is revoked', which
+    is already true in both cases. Does not require a Bearer auth header
+    because the refresh token itself is the credential being surrendered.
+    """
+    try:
+        payload = jwt.decode(
+            body.refresh_token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm]
+        )
+    except JWTError:
+        return Response(status_code=204)
+
+    if payload.get("type") != "refresh":
+        return Response(status_code=204)
+
+    jti = payload.get("jti")
+    if not jti:
+        return Response(status_code=204)
+
+    user_id = int(payload["sub"])
+    expires_at = datetime.fromtimestamp(payload["exp"], tz=UTC)
+    revoke_token(db, jti=jti, user_id=user_id, expires_at=expires_at)
+    return Response(status_code=204)
 
 
 @router.get("/me", response_model=UserPublic)

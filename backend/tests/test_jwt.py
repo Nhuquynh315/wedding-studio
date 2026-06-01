@@ -24,12 +24,13 @@ def test_access_token_round_trip():
 
 
 def test_refresh_token_round_trip():
-    """Refresh tokens should encode type='refresh' with a longer expiry."""
-    token = create_refresh_token(subject="user-99")
+    """Refresh tokens should encode type='refresh' with a longer expiry and a jti."""
+    token, jti = create_refresh_token(subject="user-99")
     payload = decode_token(token)
 
     assert payload.sub == "user-99"
     assert payload.type == "refresh"
+    assert payload.jti == jti
     expected_exp = datetime.now(UTC) + timedelta(days=settings.refresh_token_expire_days)
     assert abs(payload.exp - int(expected_exp.timestamp())) < 5
 
