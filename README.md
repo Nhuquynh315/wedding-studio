@@ -70,7 +70,7 @@ The demo account is pre-populated with a full sample wedding (guests, budget, ve
 | Backend runtime | AWS ECS Express Mode (managed ALB + Fargate service) |
 | Database | AWS RDS PostgreSQL 18.3 |
 | Secrets | AWS Secrets Manager (DB URL, JWT secret, Gemini API key, Sentry DSN) |
-| Observability | Sentry (frontend + backend, error tracking & performance) |
+| Observability | Sentry (separate projects per surface — `python-fastapi`, `javascript-react`; spike protection + allowed domains configured) |
 | Local dev DB | PostgreSQL 16 |
 
 ---
@@ -173,7 +173,7 @@ Creates `demo@weddingstudio.app` / `DemoPass2026` with guests, vendors, budget, 
 ## Testing
 
 ```bash
-# Backend — 188 tests
+# Backend — 194 tests
 cd backend
 source .venv/bin/activate
 pytest -q
@@ -209,14 +209,14 @@ Requests sent to the Gemini API on the free tier are subject to Google's data-us
 **`designs.html_content` stores JSON, not HTML**
 The `Design` model has an `html_content` column (VARCHAR) that the legacy Flask app used for rendered HTML. Phase 7 repurposed it to store `GeneratedTheme` JSON, avoiding a schema migration. The column name is misleading — a future cleanup would rename it to `theme_json` or migrate to a proper `JSONB` column on PostgreSQL. The data is valid and readable; only the name is wrong.
 
-**Token invalidation is client-side only**
-Logout clears the JWT from `localStorage`. The server has no blocklist, so a stolen token remains valid until expiry (15-minute access tokens, 7-day refresh tokens). Production: Redis-backed token blocklist checked on every request, or short-lived access tokens with server-side refresh token rotation.
+**Refresh tokens rotate on every use; access tokens are short-lived (15 min)**
+Logout calls POST /auth/logout, which blocklists the refresh token's jti in the revoked_tokens table. Subsequent refresh attempts with that token return 401 "Refresh token revoked". Access tokens are not blocklisted — they expire in 15 minutes, so the worst-case stolen-token window is 15 min, saving a per-request DB lookup. Production-equivalent: this IS the production pattern (used by Auth0, Okta); the only Phase 9 improvement would be periodic cleanup of expired revoked_tokens rows.
 
 ---
 
 ## Repository
 
-131 commits across 7 phases:
+138 commits across 8 phases:
 
 | Phase | Work |
 |---|---|
@@ -227,5 +227,6 @@ Logout clears the JWT from `localStorage`. The server has no blocklist, so a sto
 | 5 | Production deployment: Docker, ECR, ECS Fargate, RDS PostgreSQL, Vercel |
 | 6 | DB-level FK cascade; GitHub Actions CI/CD with OIDC + digest-pinned ECS deploys; local Postgres aligned to 18.x |
 | 7 | Sentry observability (frontend + backend); AI invitation designer — Gemini 2.5 Flash, three print-ready layouts, browser-native PDF export |
+| 8 | Refresh-token blocklist (logout invalidation); frontend tests + type-check in CI; paths-ignore on deploy workflow; Sentry hardening (spike protection + allowed domains) |
 
 Architecture decisions are documented in [docs/architecture.md](docs/architecture.md) (backend) and [docs/architecture-frontend.md](docs/architecture-frontend.md) (frontend).

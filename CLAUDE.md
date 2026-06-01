@@ -84,21 +84,19 @@ Note: a Flask-era `checklist_service.py` (35 default planning tasks) was NOT por
 
 **Database**: PostgreSQL 16+ locally; AWS RDS PostgreSQL 18.3 in production. Schema managed by Alembic — run `alembic upgrade head` on first setup and after every model change. Tests use a real local Postgres database (`wedding_studio_test`) with per-test transaction rollback via savepoints.
 
-## Known refactor opportunities (Phase 8)
-
-**Token blocklist for logout** — JWTs remain valid until expiry after logout. Server-side blocklist (DB table) needed for real invalidation. Originally scoped for Phase 7B; reprioritized in favor of AI invitation feature.
+## Known refactor opportunities (Phase 9)
 
 **Default checklist seeding** — the Flask-era logic that seeded ~35 default planning tasks on wedding create was not ported during the FastAPI refactor. New weddings start with an empty checklist.
 
 **AI invitation in-place edit** — currently the user generates an invitation and views/downloads it; no edit-in-place for tagline, RSVP date, or copy. Would need persistence back to `designs.html_content` and edge-case handling around layout switches.
 
-**Frontend tests in CI workflow** — Vitest tests exist locally but aren't run by GitHub Actions on push.
-
-**Docs-only commits trigger full deploy** — the deploy workflow doesn't use `paths-ignore`, so README/CLAUDE.md commits run the full ~13 min ECS rebuild.
-
 **Bundle size code-split** — `index-*.js` exceeds 1 MB minified (chunk-size warning pre-existing since Phase 5).
 
-**Sentry spike protection + allowed-domains** — currently using Sentry defaults; not explicitly configured.
+**Cleanup job for expired revoked_tokens rows** — the `revoked_tokens` table grows unbounded; expired rows (where `expires_at < now()`) can be safely deleted. A periodic job (cron or on-login sweep) would keep the table small.
+
+**GitHub Actions Node 24 migration** — deadline 2026-06-16. `actions/checkout@v4`, `actions/setup-node@v4`, etc. will be forced to Node.js 24. Update `node-version: '20'` in `.github/workflows/deploy.yml` before then.
+
+**Auto-run alembic migrations on deploy** — currently migrations must be run manually against prod (via temporary SG rule + local alembic). Adding a `migrate` job to the deploy workflow (ECS run-task with correct SG) would automate this.
 
 ## Verification policy
 
@@ -134,7 +132,7 @@ Completed across 13 commits (`d4e7b00` → `739ebc4`):
 
 ### Phase 3 — Port backend to FastAPI ✅ COMPLETE
 
-Migrated Flask routes to FastAPI with Pydantic schemas. SQLAlchemy models and Alembic migrations reused as-is. Output: JSON API at `/api/v1/*` with OpenAPI docs at `/api/v1/docs`. 171 tests passing (188 after Phase 7B added designs router tests).
+Migrated Flask routes to FastAPI with Pydantic schemas. SQLAlchemy models and Alembic migrations reused as-is. Output: JSON API at `/api/v1/*` with OpenAPI docs at `/api/v1/docs`. 171 tests passing (194 after Phase 7B + 8A).
 
 **Architecture decisions documented in `docs/architecture.md`** — JWT auth, backward-compatible password hashing, resource cloaking (404 over 403), three-schema pattern, cursor pagination, application-level SET NULL cascades, RFC 7807 errors, test isolation.
 
@@ -213,6 +211,16 @@ Block 7A — Sentry observability. Backend (`sentry-sdk[fastapi]`) and frontend 
 Block 7B — AI invitation generation. Google Gemini 2.5 Flash, native structured outputs via Pydantic `response_schema`. 5 tones (Romantic/Formal/Playful/Poetic/Simple), 3 React layouts (classic/modern/romantic) selected by AI from style description with user override. Browser print-to-PDF via portal-clone pattern. 188 tests total (+7 from designs router).
 
 **See `## Architecture notes — AI invitation feature` below for the print-portal pattern and AI-service exception model — both are non-obvious and shouldn't be "fixed" without understanding the constraints.**
+
+### Phase 8 — Hardening ✅ COMPLETE
+
+Block 8A — Refresh-token blocklist. Logout endpoint writes refresh-token jti to `revoked_tokens` table. /refresh checks blocklist and rotates (writes old jti, issues new pair). 6 new tests (188 → 194).
+
+Block 8B — `paths-ignore` on deploy workflow. Docs-only pushes (`**.md`, `docs/**`, `.gitignore`, `LICENSE`) skip the ~13 min ECS rebuild.
+
+Block 8C — Frontend tests in CI. New `frontend-test` job runs `vitest --run` + `tsc --noEmit`. Deploy now requires both backend and frontend test jobs to pass.
+
+Block 8D — Sentry hardening. Spike protection enabled on both projects (caps event volume to protect free-tier quota). Allowed Domains configured on javascript-react (wedding-studio-one.vercel.app + localhost) to prevent unauthorized origins from submitting events under the DSN.
 
 ## Architecture notes — AI invitation feature
 
